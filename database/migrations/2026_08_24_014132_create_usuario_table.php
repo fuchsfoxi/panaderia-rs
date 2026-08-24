@@ -12,7 +12,11 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('usuario', function (Blueprint $table) {
-            $table->id();
+            $table->id('usuario_id');
+            $table->string('nombre_usuario', 50)->unique();
+            $table->string('password_hash',255);
+            $table->foreignId('empleados_id')->constrained('empleados', 'empleados_id');
+            $table->foreignId('roles_id')->unique()->constrained('roles', 'roles_id');
             $table->timestamps();
         });
     }
