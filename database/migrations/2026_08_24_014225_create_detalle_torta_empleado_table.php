@@ -6,20 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('detalle_torta_empleado', function (Blueprint $table) {
-            $table->id();
+            $table->foreignId('detalle_torta_id')
+                  ->constrained('detalle_torta', 'detalle_torta_id')
+                  ->cascadeOnDelete();
+
+            $table->foreignId('empleado_id')
+                  ->constrained('empleados', 'empleados_id')
+                  ->cascadeOnDelete();
+
+            $table->string('rol', 20);
+
+            // Clave Primaria Compuesta (PK) según ERD
+            $table->primary(['detalle_torta_id', 'empleado_id']);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('detalle_torta_empleado');
