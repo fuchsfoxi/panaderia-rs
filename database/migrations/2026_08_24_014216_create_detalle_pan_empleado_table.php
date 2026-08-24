@@ -29,4 +29,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('detalle_pan_empleado');
     }
-};x
+};
