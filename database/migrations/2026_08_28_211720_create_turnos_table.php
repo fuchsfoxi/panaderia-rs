@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('turnos', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string('nombre_turnos', 100);
         });
     }
 
