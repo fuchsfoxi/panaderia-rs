@@ -10,7 +10,6 @@
 
 <div class="warm-glow warm-glow-left"></div>
 <div class="warm-glow warm-glow-right"></div>
-<div class="bg-decoration-text">Tradición &amp; IA</div>
 
 <div class="main-login-block">
 
@@ -63,7 +62,6 @@
         </form>
     </div>
 
-    <div class="login-footer">PanaderIA v2.4 • Con amor y levadura</div>
 
 </div>
 
