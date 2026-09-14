@@ -6,20 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('detalle_pedidos', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->foreignId('pedido_id')->constrained('pedidos')->cascadeOnDelete();
+            $table->foreignId('producto_id')->constrained('productos');
+            $table->foreignId('unidad_medida_id')->constrained('unidades_medida');
+            $table->decimal('cantidad', 10, 2);
+            $table->text('especificaciones')->nullable();
+            $table->string('foto_referencia', 255)->nullable();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('detalle_pedidos');

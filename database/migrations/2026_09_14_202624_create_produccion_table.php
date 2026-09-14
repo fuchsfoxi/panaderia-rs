@@ -6,20 +6,15 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('produccion', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->date('fecha');
+            $table->foreignId('registrado_por_usuario_id')->constrained('usuarios_sistema');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('produccion');

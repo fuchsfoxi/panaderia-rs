@@ -6,20 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('pedidos', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string('nombre_cliente', 100)->nullable();
+            $table->dateTime('fecha_registro')->useCurrent();
+            $table->dateTime('fecha_entrega_prometida');
+            $table->boolean('entregado')->default(false);
+            $table->foreignId('registrado_por_usuario_id')->constrained('usuarios_sistema');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pedidos');
