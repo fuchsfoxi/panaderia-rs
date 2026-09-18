@@ -4,20 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard - Panificadora Amazónica</title>
-@vite(['resources/css/dashboard.css', 'resources/js/dashboard.js'])
 </head>
 <body>
 
-<nav class="barra-lateral">
-    <a href="#" class="avatar"><i class="fas fa-user-circle"></i></a>
-    <div class="nav-iconos">
-        <a href="#" class="activo"><i class="fas fa-home"></i></a>
-        <a href="#"><i class="fas fa-clipboard-list"></i></a>
-        <a href="#"><i class="fas fa-receipt"></i></a>
-        <a href="#"><i class="fas fa-history"></i></a>
-    </div>
-    <a href="#" class="cerrar-sesion"><i class="fas fa-sign-out-alt"></i></a>
-</nav>
+
 
 <div class="contenido_informacion">
 
