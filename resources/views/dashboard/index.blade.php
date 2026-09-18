@@ -78,7 +78,7 @@
 
     <div class="encabezado_periodo_2">
         <strong>HOY</strong>
-        Producción | MAÑANA
+        Producción | TARDE
     </div>
 
     <div class="cartas-general">
