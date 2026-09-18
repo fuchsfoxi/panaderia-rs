@@ -1,14 +1,14 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const toggleBtn = document.querySelector('.toggle-password');
-    const passwordInput = document.getElementById('password');
+    const botonAlternar = document.querySelector('.alternar-contrasena');
+    const inputContrasena = document.getElementById('password');
 
-    if (!toggleBtn || !passwordInput) {
+    if (!botonAlternar || !inputContrasena) {
         return;
     }
 
-    toggleBtn.addEventListener('click', function () {
-        const isHidden = passwordInput.type === 'password';
-        passwordInput.type = isHidden ? 'text' : 'password';
-        toggleBtn.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+    botonAlternar.addEventListener('click', function () {
+        const estaOculta = inputContrasena.type === 'password';
+        inputContrasena.type = estaOculta ? 'text' : 'password';
+        botonAlternar.setAttribute('aria-label', estaOculta ? 'Ocultar contraseña' : 'Mostrar contraseña');
     });
 });
