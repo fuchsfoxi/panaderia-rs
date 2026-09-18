@@ -45,7 +45,7 @@
         </div>
     </div>
 
-    <div class="encabezado_periodo">
+    <div class="encabezado_periodo_1">
         <strong>HOY</strong>
         Producción | MAÑANA
     </div>
@@ -74,6 +74,11 @@
             </div>
             <button type="button" class="btn-detalles" data-abrir-modal="modal-bocadito">Detalles <i class="fas fa-arrow-right"></i></button>
         </div>
+    </div>
+
+    <div class="encabezado_periodo_2">
+        <strong>HOY</strong>
+        Producción | MAÑANA
     </div>
 
     <div class="cartas-general">
