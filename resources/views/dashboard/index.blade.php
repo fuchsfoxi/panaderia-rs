@@ -45,7 +45,7 @@
         </div>
     </div>
 
-    <div class="encabezado_periodo_1">
+    <div class="encabezado_periodo">
         <strong>HOY</strong>
         Producción | MAÑANA
     </div>
@@ -76,7 +76,7 @@
         </div>
     </div>
 
-    <div class="encabezado_periodo_2">
+    <div class="encabezado_periodo">
         <strong>HOY</strong>
         Producción | TARDE
     </div>
