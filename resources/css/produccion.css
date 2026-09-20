@@ -1,0 +1,440 @@
+body {
+    font-family: 'Huninn', sans-serif;
+    background-color: #F6F2EF;
+    margin: 0;
+    padding: 40px;
+    color: #33403A;
+}
+
+.pagina-produccion {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.titulo-produccion h2 {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #7D9481;
+    margin: 0 0 4px 0;
+    font-weight: 600;
+}
+
+.titulo-produccion h1 {
+    font-size: 32px;
+    color: #33403A;
+    margin: 0 0 24px 0;
+    font-weight: 700;
+}
+
+.titulo-historial h2 {
+    font-size: 20px;
+    color: #33403A;
+    margin: 40px 0 16px 0;
+    font-weight: 700;
+}
+
+.categoria-botones {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.btn-categoria {
+    flex: 1;
+    max-width: 220px;
+    padding: 16px 24px;
+    border: none;
+    border-radius: 16px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    background-color: #DCD6C4;
+    color: #33403A;
+    transition: background-color 0.2s ease;
+}
+
+.btn-categoria.activo {
+    background-color: #33403A;
+    color: #F6F2EF;
+}
+
+.btn-categoria:hover:not(.activo) {
+    background-color: #AEC0AC;
+}
+
+.contenido-produccion {
+    display: flex;
+    gap: 24px;
+    align-items: stretch;
+    margin-bottom: 20px;
+}
+
+.formulario-card {
+    background-color: #DCD6C4;
+    border-radius: 24px;
+    padding: 32px;
+    flex: 1;
+}
+
+.formulario-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.formulario-card-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #33403A;
+    margin: 0;
+}
+
+.estado-activo {
+    font-size: 12px;
+    color: #4F6355;
+    font-weight: 600;
+}
+
+.formulario-card hr {
+    border: none;
+    border-top: 1px solid #AEC0AC;
+    margin: 16px 0 24px 0;
+}
+
+.formulario-produccion {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.campo-ancho {
+    grid-column: 1 / -1;
+}
+
+.campo label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #33403A;
+}
+
+.campo input[type="date"],
+.campo input[type="number"],
+.campo input[type="text"],
+.campo select,
+.campo textarea {
+    font-family: inherit;
+    font-size: 15px;
+    padding: 12px 16px;
+    border: 1px solid #AEC0AC;
+    border-radius: 12px;
+    background-color: #F6F2EF;
+    color: #33403A;
+}
+
+.campo select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234F6355' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+}
+
+.campo textarea {
+    resize: vertical;
+    min-height: 90px;
+    font-family: inherit;
+}
+
+.campo input::placeholder,
+.campo textarea::placeholder {
+    color: #7D9481;
+}
+
+.campo-cantidad {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.campo-cantidad input {
+    flex: 1;
+}
+
+.campo-cantidad span {
+    font-size: 14px;
+    color: #4F6355;
+    white-space: nowrap;
+}
+
+.empleados-tags {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid #AEC0AC;
+    border-radius: 12px;
+    background-color: #F6F2EF;
+    min-height: 44px;
+}
+
+.empleado-tag {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #AEC0AC;
+    color: #33403A;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 999px;
+}
+
+.empleado-tag button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    color: #33403A;
+    line-height: 1;
+    padding: 0;
+}
+
+#agregar-empleado {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background-color: #DCD6C4;
+    color: #33403A;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.popover-empleado {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background-color: #F6F2EF;
+    border: 1px solid #AEC0AC;
+    border-radius: 10px;
+    padding: 8px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.popover-empleado select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid #AEC0AC;
+    border-radius: 8px;
+    background-color: #FFFFFF;
+    color: #33403A;
+}
+
+.popover-empleado button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    background-color: #33403A;
+    color: #F6F2EF;
+    cursor: pointer;
+}
+
+.formulario-botones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.formulario-botones button {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 12px 28px;
+    border-radius: 999px;
+    cursor: pointer;
+    border: none;
+}
+
+.formulario-botones button[type="button"] {
+    background-color: #F6F2EF;
+    color: #33403A;
+    border: 1px solid #AEC0AC;
+}
+
+.formulario-botones button[type="submit"] {
+    background-color: #33403A;
+    color: #F6F2EF;
+}
+
+.panel-info {
+    background-color: #F6F2EF;
+    border-radius: 24px;
+    padding: 28px;
+    flex: 1;
+    max-width: 340px;
+    box-shadow: 0 2px 12px rgba(51, 64, 58, 0.08);
+}
+
+.panel-info-etiqueta {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #C07F4E;
+    margin-bottom: 6px;
+}
+
+.panel-info h3 {
+    font-size: 18px;
+    color: #33403A;
+    margin: 0 0 8px 0;
+}
+
+.panel-info p {
+    font-size: 14px;
+    color: #4F6355;
+    line-height: 1.5;
+    margin: 0 0 20px 0;
+}
+
+.panel-info h4 {
+    font-size: 14px;
+    color: #33403A;
+    margin: 0 0 10px 0;
+}
+
+.forma-opciones {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.btn-forma {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #AEC0AC;
+    background-color: #F6F2EF;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7D9481;
+    cursor: pointer;
+}
+
+.btn-forma.activo {
+    background-color: #33403A;
+    color: #F6F2EF;
+    border-color: #33403A;
+}
+
+.foto-upload {
+    display: block;
+    border: 2px dashed #AEC0AC;
+    border-radius: 16px;
+    padding: 32px;
+    text-align: center;
+    color: #7D9481;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.campo-condicional {
+    display: none;
+}
+
+.contenedor-produccion {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tarjeta-produccion {
+    background-color: #DCD6C4;
+    border-radius: 16px;
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.tarjeta-header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+}
+
+.tarjeta-categoria {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background-color: #33403A;
+    color: #F6F2EF;
+    padding: 4px 10px;
+    border-radius: 999px;
+    width: fit-content;
+}
+
+.tarjeta-fecha {
+    font-size: 12px;
+    color: #4F6355;
+}
+
+.tarjeta-body {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex: 1;
+}
+
+.tarjeta-body h3 {
+    font-size: 16px;
+    color: #33403A;
+    margin: 0;
+    min-width: 160px;
+}
+
+.tarjeta-body p {
+    font-size: 14px;
+    color: #4F6355;
+    margin: 0;
+    min-width: 100px;
+}
+
+.tarjeta-empleados {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex: 1;
+}
+
+.tarjeta-empleados .empleado-tag {
+    background-color: #AEC0AC;
+    color: #33403A;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 999px;
+}

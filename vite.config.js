@@ -13,6 +13,9 @@ export default defineConfig({
                     'resources/js/login.js',
                     'resources/css/dashboard.css',
                     'resources/js/dashboard.js',
+                    'resources/css/produccion.css',
+                    'resources/js/produccion.js',
+                    'resources/css/produccion-index.css',
                 ],
             refresh: true,
             fonts: [

@@ -17,6 +17,7 @@
             <h1>DASHBOARD DE PRODUCCIÓN</h1>
         </div>
 
+        / --- FILTRO DE FECHA --- /
         <div class="filtro-fecha-inicio">
             <div class="filtro-fecha_desde">
                 <label for="fecha_inicio">Desde</label>
