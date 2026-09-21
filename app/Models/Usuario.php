@@ -35,5 +35,13 @@ class Usuario extends Model
         return $this->belongsTo(Rol::class, 'rol_id');
     }
 
+    // sirve para que Laravel sepa que el campo de la contraseña no se llama "password" sino "password_hash"
+    // esto es necesario para que funcione la autenticación con el sistema de login de Laravel
+    // ya que Laravel por defecto busca un campo llamado "password" para la autenticación
+    public function getAuthPassword()
+    {
+        return $this->password_hash;
+    }
+
 
 }
