@@ -6,5 +6,34 @@ use Illuminate\Database\Eloquent\Model;
 
 class Usuario extends Model
 {
-    //
+    // por defecto, Eloquent asume que el nombre de la tabla es el plural del nombre del modelo
+    // pero la tabla se llama diferente, por lo que debemos especificarlo manualmente
+    protected $table = 'usuarios_sistema';
+
+    // le decimos que solo queremos que se puedan asignar estos campos de manera masiva
+    // para evitar problemas de seguridad
+    protected $fillable = [
+        'username',
+        'password_hash',
+        'empleado_id',
+        'rol_id',
+    ];
+
+    // este borra  el campo password_hash de la respuesta cuando se devuelve un usuario, para no exponerlo (json, api, etc)
+    protected $hidden = [
+        'password_hash',
+    ];
+
+    // llama a la relación con el modelo Empleado y Rol, para poder acceder a los datos del empleado y rol desde el usuario
+    public function empleado()
+    {
+        return $this->belongsTo(Empleado::class, 'empleado_id');
+    }
+
+    public function rol()
+    {
+        return $this->belongsTo(Rol::class, 'rol_id');
+    }
+
+
 }
