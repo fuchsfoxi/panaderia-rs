@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Usuario extends Model
-{
+class Usuario extends Authenticatable{
     // por defecto, Eloquent asume que el nombre de la tabla es el plural del nombre del modelo
     // pero la tabla se llama diferente, por lo que debemos especificarlo manualmente
     protected $table = 'usuarios_sistema';
