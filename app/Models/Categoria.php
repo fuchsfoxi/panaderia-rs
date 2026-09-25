@@ -8,8 +8,10 @@ class Categoria extends Model
 {
     protected $table = 'categorias';
 
+    public $timestamps = false;
+
     protected $fillable = [
-        'nombre_categoria',
+        'nombre_categorias',
     ];
 
     public function productos()

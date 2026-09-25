@@ -8,9 +8,12 @@ class DetallePanEmpleado extends Model
 {
     protected $table = 'detalle_pan_empleado';
 
+    public $timestamps = false;
+    public $incrementing = false;
+
     protected $fillable = [
         'detalle_pan_id',
-        'empleados_id',
+        'empleado_id',
         'rol_produccion_id',
     ];
 
@@ -21,7 +24,7 @@ class DetallePanEmpleado extends Model
 
     public function empleado()
     {
-        return $this->belongsTo(Empleado::class, 'empleados_id');
+        return $this->belongsTo(Empleado::class, 'empleado_id');
     }
 
     public function rolProduccion()

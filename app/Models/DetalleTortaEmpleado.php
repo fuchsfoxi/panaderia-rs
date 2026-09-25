@@ -8,9 +8,12 @@ class DetalleTortaEmpleado extends Model
 {
     protected $table = 'detalle_torta_empleado';
 
+    public $timestamps = false;
+    public $incrementing = false;
+
     protected $fillable = [
         'detalle_torta_id',
-        'empleados_id',
+        'empleado_id',
         'rol_produccion_id',
     ];
 
@@ -21,7 +24,7 @@ class DetalleTortaEmpleado extends Model
 
     public function empleado()
     {
-        return $this->belongsTo(Empleado::class, 'empleados_id');
+        return $this->belongsTo(Empleado::class, 'empleado_id');
     }
 
     public function rolProduccion()

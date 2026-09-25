@@ -6,8 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class RolProduccion extends Model
 {
-    //
     protected $table = 'roles_produccion';
+
+    public $timestamps = false;
 
     protected $fillable = [
         'nombre_roles_produccion'
@@ -27,6 +28,4 @@ class RolProduccion extends Model
     {
         return $this->hasMany(DetalleBocaditoEmpleado::class);
     }
-
-
 }
