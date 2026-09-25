@@ -18,5 +18,6 @@ class LoginController extends Controller
             'username' => 'required',
             'password' => 'required',
         ]);
+
     }
-}   
+}
