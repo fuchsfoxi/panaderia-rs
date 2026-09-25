@@ -1,0 +1,218 @@
+@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+:root {
+  --verde-oscuro: #33403A;
+  --verde-medio: #4F6355;
+  --verde-sage: #7D9481;
+  --verde-claro: #AEC0AC;
+  --beige: #DCD6C4;
+  --crema: #F6F2EF;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: 'Huninn', sans-serif;
+}
+
+body {
+  background-color: var(--crema);
+  color: var(--verde-oscuro);
+  margin: 0;
+  padding: 40px;
+}
+
+.pagina-historial {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.titulo-historal h1 {
+  font-size: 1.8rem;
+  font-weight: 400;
+  margin-bottom: 24px;
+}
+
+.sub-titulo h2,
+.filtro-categoria h2 {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--verde-medio);
+  margin-bottom: 8px;
+}
+
+/* Botones de categoría */
+.categoria-botones {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.btn-categoria {
+  border: none;
+  border-radius: 20px;
+  padding: 10px 24px;
+  background-color: var(--beige);
+  color: var(--verde-oscuro);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background-color 0.2s ease;
+}
+
+.btn-categoria.active {
+  background-color: var(--verde-medio);
+  color: var(--crema);
+}
+
+.btn-categoria:hover:not(.active) {
+  background-color: var(--verde-claro);
+}
+
+/* Filtro de fecha */
+.filtro-fecha-general {
+  margin-bottom: 20px;
+}
+
+.filtro-fecha-principal {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.filtro-fecha-desde,
+.filtro-fecha-hasta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filtro-fecha-desde label,
+.filtro-fecha-hasta label,
+.campo label {
+  font-size: 0.85rem;
+  color: var(--verde-medio);
+}
+
+input[type="date"],
+select {
+  border: 1px solid var(--verde-claro);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background-color: var(--crema);
+  color: var(--verde-oscuro);
+  font-size: 0.95rem;
+}
+
+.campo-condicional {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 260px;
+}
+
+.campo-condicional.oculto {
+  display: none;
+}
+
+/* Botones de acción */
+.btn-filtro {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.btn-limpiar,
+.btn-filtrar {
+  border: none;
+  border-radius: 20px;
+  padding: 10px 24px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-limpiar {
+  background-color: var(--beige);
+  color: var(--verde-oscuro);
+}
+
+.btn-filtrar {
+  background-color: var(--verde-oscuro);
+  color: var(--crema);
+}
+
+.btn-limpiar:hover {
+  background-color: var(--verde-claro);
+}
+
+.btn-filtrar:hover {
+  background-color: var(--verde-medio);
+}
+
+/* Resultados */
+.datos-encontrados {
+  color: var(--verde-medio);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+
+.fecha-dia {
+  text-align: center;
+  color: var(--verde-medio);
+  font-size: 0.9rem;
+  margin: 24px 0 12px;
+  position: relative;
+}
+
+.carta-historial {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--beige);
+  border-radius: 16px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  gap: 16px;
+}
+
+.foto-producto {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.info-carta {
+  flex-grow: 1;
+}
+
+.info-carta h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.info-carta p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--verde-medio);
+}
+
+.meta-carta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--verde-medio);
+}
+
+.detalles-link {
+  color: var(--verde-oscuro);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.detalles-link:hover {
+  text-decoration: underline;
+}
