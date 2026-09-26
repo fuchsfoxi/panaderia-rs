@@ -43,16 +43,28 @@
 
                         <div class="campo campo-condicional" data-mostrar-en="pan" id="campo-turno">
                             <label for="turno">Turno</label>
+                            {{-- MODIFICADO: las <option> "1 = Mañana / 2 = Noche"
+                                 estaban fijas. Ahora salen de la tabla turnos y el
+                                 value es el id real. --}}
                             <select id="turno" name="turno_id">
-                                <option value="1">Mañana</option>
-                                <option value="2">Noche</option>
+                                @foreach ($turnos as $turno)
+                                    <option value="{{ $turno->id }}">{{ $turno->nombre_turnos }}</option>
+                                @endforeach
                             </select>
                         </div>
 
                         <div class="campo">
                             <label for="producto">Producto</label>
+                            {{-- MODIFICADO: el select estaba vacio (solo el
+                                 placeholder). Ahora se listan los productos
+                                 activos de la base, ordenados por nombre. --}}
                             <select id="producto" name="producto_id">
                                 <option value="">-- Selecciona un producto --</option>
+                                @forelse ($productos as $producto)
+                                    <option value="{{ $producto->id }}">{{ $producto->nombre_p }}</option>
+                                @empty
+                                    <option value="" disabled>-- No hay productos cargados --</option>
+                                @endforelse
                             </select>
                         </div>
 
@@ -78,16 +90,23 @@
                                 <button type="button" id="agregar-empleado">+</button>
 
                                 <div class="popover-empleado" id="popover-empleado" style="display:none;">
+                                    {{-- MODIFICADO: los 5 empleados y 2 roles estaban
+                                         escritos a mano. Ahora salen de la base y el
+                                         value es el id (la FK que necesita la tabla
+                                         pivote), no el nombre. --}}
                                     <select id="select-empleado">
-                                        <option value="Carlos M.">Carlos M.</option>
-                                        <option value="Ana R.">Ana R.</option>
-                                        <option value="Rosa P.">Rosa P.</option>
-                                        <option value="Luis F.">Luis F.</option>
-                                        <option value="Marta S.">Marta S.</option>
+                                        @forelse ($empleados as $empleado)
+                                            <option value="{{ $empleado->id }}">{{ $empleado->nombre_empleados }}</option>
+                                        @empty
+                                            <option value="" disabled>-- No hay empleados --</option>
+                                        @endforelse
                                     </select>
                                     <select id="select-rol">
-                                        <option value="Maestro">Maestro</option>
-                                        <option value="Ayudante">Ayudante</option>
+                                        @forelse ($rolesProduccion as $rol)
+                                            <option value="{{ $rol->id }}">{{ $rol->nombre_roles_produccion }}</option>
+                                        @empty
+                                            <option value="" disabled>-- No hay roles --</option>
+                                        @endforelse
                                     </select>
                                     <button type="button" id="confirmar-empleado">Agregar</button>
                                 </div>
@@ -135,52 +154,62 @@
             <h2>Registrado recientemente</h2>
         </div>
 
+        {{-- MODIFICADO: este bloque reemplaza las 3 tarjetas de prueba fijas
+             ("Pan Carioca / 3 coches / 23 Oct", "Torta de Chocolate / Circular",
+             "Alfajorcitos / 150 unidades"), que estaban escritas en el HTML.
+
+             Ahora se recorre $lineas, que ProduccionController obtiene de la
+             base con LineasProduccion (limite: 6 lineas, con los empleados
+             que participaron en cada una).
+
+             Cada $linea tiene claves fijas: fecha, producto, categoria,
+             cantidad, unidad, turno, forma, empleados. --}}
         <div class="contenedor-produccion" id="contenedor-produccion">
+            @forelse ($lineas as $linea)
+                <div class="tarjeta-produccion">
+                    <div class="tarjeta-header">
+                        <span class="tarjeta-categoria">{{ $linea->categoria }}</span>
+                        <span class="tarjeta-fecha">
+                            {{ date('d M Y', strtotime($linea->fecha)) }}
+                            — Turno {{ $linea->turno ?? 'Único' }}
+                        </span>
+                    </div>
+                    <div class="tarjeta-body">
+                        <h3>{{ $linea->producto }}</h3>
 
-            <div class="tarjeta-produccion">
-                <div class="tarjeta-header">
-                    <span class="tarjeta-categoria">Pan</span>
-                    <span class="tarjeta-fecha">23 Oct 2026 — Turno Mañana</span>
-                </div>
-                <div class="tarjeta-body">
-                    <h3>Pan Carioca</h3>
-                    <p>3 coches</p>
-                    <div class="tarjeta-empleados">
-                        <span class="empleado-tag">Carlos M. — Maestro</span>
-                        <span class="empleado-tag">Ana R. — Ayudante</span>
+                        @if ($linea->tipo === 'torta')
+                            {{-- Una torta es un registro, no lleva cantidad: se
+                                 muestra la forma. --}}
+                            <p>Forma: {{ ucfirst($linea->forma ?? 'sin definir') }}</p>
+                        @else
+                            {{-- Pan y bocadito llevan cantidad. El pan usa la
+                                 unidad de medida real; el bocadito no tiene
+                                 columna unidad_medida_id en el esquema, asi que
+                                 se rotula "unidades". --}}
+                            <p>{{ rtrim(rtrim(number_format($linea->cantidad, 2, ',', '.'), '0'), ',') }}
+                                {{ $linea->tipo === 'pan' ? $linea->unidad : 'unidades' }}</p>
+                        @endif
+
+                        {{-- @forelse tambien para los empleados: una linea puede
+                             no tener ninguno asignado. --}}
+                        <div class="tarjeta-empleados">
+                            @forelse ($linea->empleados as $empleado)
+                                <span class="empleado-tag">{{ $empleado->nombre }} — {{ $empleado->rol }}</span>
+                            @empty
+                                <span class="empleado-tag">Sin empleados asignados</span>
+                            @endforelse
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="tarjeta-produccion">
-                <div class="tarjeta-header">
-                    <span class="tarjeta-categoria">Torta</span>
-                    <span class="tarjeta-fecha">23 Oct 2026 — Turno Único</span>
-                </div>
-                <div class="tarjeta-body">
-                    <h3>Torta de Chocolate</h3>
-                    <p>Forma: Circular</p>
-                    <div class="tarjeta-empleados">
-                        <span class="empleado-tag">Rosa P. — Responsable</span>
+            @empty
+                {{-- Caso sin datos: mensaje amigable en vez de un bloque vacio. --}}
+                <div class="tarjeta-produccion">
+                    <div class="tarjeta-body">
+                        <h3>Todavía no hay producción registrada</h3>
+                        <p>Guardá un lote con el formulario de arriba y aparecerá en esta lista.</p>
                     </div>
                 </div>
-            </div>
-
-            <div class="tarjeta-produccion">
-                <div class="tarjeta-header">
-                    <span class="tarjeta-categoria">Bocadito</span>
-                    <span class="tarjeta-fecha">22 Oct 2026 — Turno Único</span>
-                </div>
-                <div class="tarjeta-body">
-                    <h3>Alfajorcitos</h3>
-                    <p>150 unidades</p>
-                    <div class="tarjeta-empleados">
-                        <span class="empleado-tag">Luis F. — Maestro</span>
-                        <span class="empleado-tag">Marta S. — Ayudante</span>
-                    </div>
-                </div>
-            </div>
-
+            @endforelse
         </div>
 
     </div>

@@ -68,41 +68,67 @@
     </div>
 
 
+    {{-- MODIFICADO: el total ahora viene del controlador, no del numero fijo
+         "23 registros encontrados" que estaba hardcodeado en el HTML. --}}
     <div class="datos-encontrados">
-        <i class="far fa-clipboard"></i> 23 registros encontrados
+        <i class="far fa-clipboard"></i> {{ $totalRegistros }} registros encontrados
     </div>
 
-    <div class="fecha-dia">
-        20 OCT 2026
-    </div>
+    {{-- MODIFICADO: este bloque reemplaza los 2 registros de prueba fijos
+         ("20 OCT 2026 / Pan carioco / 1 coche / rosa" y "19 OCT 2026 / ...")
+         que estaban escritos a mano en el HTML.
 
-    <div class="carta-historial">
-        <img src="https://via.placeholder.com/60" alt="Pan carioco" class="foto-producto">
-    <div class="info-carta">
-        <h3>Pan carioco</h3>
-        <p>Cantidad: 1 coche</p>
-    </div>
-        <div class="meta-carta">
-            <span><i class="far fa-user"></i> ingreso: rosa</span>
-            <a href="#" class="detalles-link">detalles →</a>
+         Ahora se recorre $registros, que HistorialController obtiene de la
+         base (App\Consultas\LineasProduccion normaliza pan + torta +
+         bocadito en una sola coleccion, ordenada de la fecha mas reciente
+         a la mas antigua).
+
+         Cada $registro es un objeto con claves fijas: fecha, producto,
+         categoria, cantidad, unidad, turno, forma, foto, usuario. --}}
+    @forelse ($registros as $registro)
+        {{-- Cabecera de fecha. Se imprime UNA vez por dia: cuando la fecha de
+             la linea actual es distinta de la de la linea anterior. --}}
+        @if ($loop->first || $registro->fecha !== $registros[$loop->index - 1]->fecha)
+            <div class="fecha-dia">
+                {{ strtoupper(date('d M Y', strtotime($registro->fecha))) }}
+            </div>
+        @endif
+
+        <div class="carta-historial">
+            {{-- Solo las tortas tienen columna 'foto'. Para pan y bocadito no
+                 hay imagen guardada, asi que no se renderiza el <img>
+                 (la URL via.placeholder.com del mock era un servicio muerto). --}}
+            @if ($registro->foto)
+                <img src="{{ $registro->foto }}" alt="{{ $registro->producto }}" class="foto-producto">
+            @endif
+
+            <div class="info-carta">
+                <h3>{{ $registro->producto }}</h3>
+                @if ($registro->cantidad !== null)
+                    {{-- Pan y bocadito llevan cantidad + unidad de medida. --}}
+                    <p>Cantidad: {{ rtrim(rtrim(number_format($registro->cantidad, 2, ',', '.'), '0'), ',') }}
+                        {{ $registro->unidad }}</p>
+                @else
+                    {{-- Una torta es un registro, sin cantidad. Se muestra la
+                         forma y, si hay, el turno no aplica. --}}
+                    <p>1 {{ strtolower($registro->categoria) }}@if ($registro->forma) {{ $registro->forma }}@endif</p>
+                @endif
+            </div>
+
+            <div class="meta-carta">
+                <span><i class="far fa-user"></i> ingreso: {{ $registro->usuario ?? 'sistema' }}</span>
+                <a href="#" class="detalles-link">detalles →</a>
+            </div>
         </div>
-    </div>
-
-    <div class="fecha-dia">
-        19 OCT 2026
-    </div>
-
-    <div class="carta-historial">
-        <img src="https://via.placeholder.com/60" alt="Pan carioco" class="foto-producto">
-    <div class="info-carta">
-        <h3>Pan carioco</h3>
-        <p>Cantidad: 4 coche</p>
-    </div>
-    <div class="meta-carta">
-            <span><i class="far fa-user"></i> ingreso: manuel</span>
-            <a href="#" class="detalles-link">detalles →</a>
+    @empty
+        {{-- Caso sin datos: mensaje amigable en vez de una lista vacia. --}}
+        <div class="carta-historial">
+            <div class="info-carta">
+                <h3>Aún no hay producción registrada</h3>
+                <p>Cuando cargues producción desde el formulario de producción, los registros van a aparecer acá.</p>
+            </div>
         </div>
-    </div>
+    @endforelse
 
     </div>
 </body>

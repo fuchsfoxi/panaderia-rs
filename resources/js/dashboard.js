@@ -19,15 +19,27 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     };
 
+    // MODIFICADO: los datos de los 3 graficos ya no estan fijos en este
+    // archivo. Los calcula DashboardController (ResumenDashboard::graficos())
+    // y los entrega en el <script id="datos-graficos"> de la vista Blade.
+    const nodoDatos = document.getElementById('datos-graficos');
+    const graficos = nodoDatos
+        ? JSON.parse(nodoDatos.textContent)
+        : { dia: { categorias: [], hoy: [], ayer: [] }, semana: { labels: [], valores: [] }, mes: { labels: [], valores: [] } };
+
     const canvasDia = document.getElementById('grafico_dia');
     if (canvasDia) {
         new Chart(canvasDia, {
             type: 'bar',
             data: {
-                labels: ['Torta', 'Pan', 'Bocadito'],
+                labels: graficos.dia.categorias,
                 datasets: [
-                    { label: 'Producción de hoy', data: [0, 0, 0], backgroundColor: colorVerdeOscuro },
-                    { label: 'Producción de ayer', data: [0, 0, 0], backgroundColor: colorVerdeSage }
+                    // MODIFICADO: [0, 0, 0] -> valores reales de la base.
+                    // Son CANTIDADES DE LÍNEAS por categoría, no sumas de
+                    // cantidad: una torta no tiene 'cantidad' (1 registro = 1
+                    // torta) y sumarla con los panes no significaría nada.
+                    { label: 'Producción de hoy', data: graficos.dia.categorias.map((c) => graficos.dia.hoy[c] || 0), backgroundColor: colorVerdeOscuro },
+                    { label: 'Producción de ayer', data: graficos.dia.categorias.map((c) => graficos.dia.ayer[c] || 0), backgroundColor: colorVerdeSage }
                 ]
             },
             options: opcionesComunes
@@ -39,9 +51,10 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(canvasSemana, {
             type: 'bar',
             data: {
-                labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+                // MODIFICADO: [0, 0, 0, 0, 0, 0] -> conteo real por día.
+                labels: graficos.semana.labels,
                 datasets: [
-                    { label: 'Producción de la semana', data: [0, 0, 0, 0, 0, 0], backgroundColor: colorVerdeOscuro }
+                    { label: 'Producción de la semana', data: graficos.semana.valores, backgroundColor: colorVerdeOscuro }
                 ]
             },
             options: opcionesComunes
@@ -53,9 +66,10 @@ document.addEventListener('DOMContentLoaded', function () {
         new Chart(canvasMes, {
             type: 'bar',
             data: {
-                labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+                // MODIFICADO: [0, 0, 0, 0] -> conteo real por semana del mes.
+                labels: graficos.mes.labels,
                 datasets: [
-                    { label: 'Producción del mes', data: [0, 0, 0, 0], backgroundColor: colorVerdeOscuro }
+                    { label: 'Producción del mes', data: graficos.mes.valores, backgroundColor: colorVerdeOscuro }
                 ]
             },
             options: opcionesComunes

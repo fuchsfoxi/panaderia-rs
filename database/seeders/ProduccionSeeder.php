@@ -20,31 +20,53 @@ class ProduccionSeeder extends Seeder
         $producto = fn (string $nombre) => DB::table('productos')->where('nombre_p', $nombre)->value('id');
         $unidadId = DB::table('unidades_medida')->where('nombre_unidades_medida', 'unidad')->value('id');
         $turno = fn (string $nombre) => DB::table('turnos')->where('nombre_turnos', $nombre)->value('id');
+        $empleado = fn (string $nombre) => DB::table('empleados')->where('nombre_empleados', $nombre)->orderBy('id')->value('id');
+        $rol = fn (string $nombre) => DB::table('roles_produccion')->where('nombre_roles_produccion', $nombre)->value('id');
 
+        // Cada linea de detalle incluye los empleados que la produjeron y el
+        // rol que tenian, para que las vistas tengan algo real que mostrar.
         $registros = [
             [
                 'fecha' => today(),
                 'observaciones' => 'Lote del dia, turno de manana.',
-                'pan' => [['Pan Francés', 24, 'Mañana'], ['Pan Yema', 18, 'Mañana']],
-                'bocaditos' => [['Alfajorcitos', 150]],
+                'pan' => [
+                    ['producto' => 'Pan Francés', 'cantidad' => 24, 'turno' => 'Mañana', 'empleados' => [['Carlos M.', 'Maestro'], ['Ana R.', 'Ayudante']]],
+                    ['producto' => 'Pan Yema', 'cantidad' => 18, 'turno' => 'Mañana', 'empleados' => [['Ana R.', 'Ayudante']]],
+                ],
+                'bocaditos' => [
+                    ['producto' => 'Alfajorcitos', 'cantidad' => 150, 'empleados' => [['Ana R.', 'Maestro']]],
+                ],
             ],
             [
                 'fecha' => today()->subDay(),
                 'observaciones' => null,
-                'tortas' => [['Torta de Chocolate', 'circular']],
-                'pan' => [['Pan Carioca', 12, 'Mañana']],
+                'tortas' => [
+                    ['producto' => 'Torta de Chocolate', 'forma' => 'circular', 'empleados' => [['Carlos M.', 'Maestro'], ['Ana R.', 'Ayudante']]],
+                ],
+                'pan' => [
+                    ['producto' => 'Pan Carioca', 'cantidad' => 12, 'turno' => 'Mañana', 'empleados' => [['Carlos M.', 'Maestro']]],
+                ],
             ],
             [
                 'fecha' => today()->subDays(2),
                 'observaciones' => 'Faltaron 2 unidades de convo, se completo con el turno noche.',
-                'bocaditos' => [['Conitos', 200], ['Pionono', 150]],
-                'pan' => [['Pan Integral', 30, 'Noche']],
+                'bocaditos' => [
+                    ['producto' => 'Conitos', 'cantidad' => 200, 'empleados' => [['Ana R.', 'Ayudante']]],
+                    ['producto' => 'Pionono', 'cantidad' => 150, 'empleados' => [['Carlos M.', 'Maestro']]],
+                ],
+                'pan' => [
+                    ['producto' => 'Pan Integral', 'cantidad' => 30, 'turno' => 'Noche', 'empleados' => [['Carlos M.', 'Maestro'], ['Ana R.', 'Ayudante']]],
+                ],
             ],
             [
                 'fecha' => today()->subDays(3),
                 'observaciones' => null,
-                'tortas' => [['Torta de Vainilla', 'rectangular']],
-                'bocaditos' => [['Empanaditas de Pollo', 300]],
+                'tortas' => [
+                    ['producto' => 'Torta de Vainilla', 'forma' => 'rectangular', 'empleados' => [['Ana R.', 'Maestro']]],
+                ],
+                'bocaditos' => [
+                    ['producto' => 'Empanaditas de Pollo', 'cantidad' => 300, 'empleados' => [['Carlos M.', 'Ayudante']]],
+                ],
             ],
         ];
 
@@ -55,32 +77,56 @@ class ProduccionSeeder extends Seeder
                 'registrado_por_usuario_id' => $usuarioId,
             ]);
 
-            foreach ($registro['pan'] ?? [] as [$nombre, $cantidad, $nombreTurno]) {
-                DB::table('detalle_pan')->insert([
+            foreach ($registro['pan'] ?? [] as $linea) {
+                $detalleId = DB::table('detalle_pan')->insertGetId([
                     'produccion_id' => $produccionId,
-                    'producto_id' => $producto($nombre),
+                    'producto_id' => $producto($linea['producto']),
                     'unidad_medida_id' => $unidadId,
-                    'turno_id' => $turno($nombreTurno),
-                    'cantidad' => $cantidad,
+                    'turno_id' => $turno($linea['turno']),
+                    'cantidad' => $linea['cantidad'],
                 ]);
+
+                foreach ($linea['empleados'] as [$nombreEmpleado, $nombreRol]) {
+                    DB::table('detalle_pan_empleado')->insert([
+                        'detalle_pan_id' => $detalleId,
+                        'empleado_id' => $empleado($nombreEmpleado),
+                        'rol_produccion_id' => $rol($nombreRol),
+                    ]);
+                }
             }
 
-            foreach ($registro['tortas'] ?? [] as [$nombre, $forma]) {
+            foreach ($registro['tortas'] ?? [] as $linea) {
                 // una torta = un registro, por eso no hay 'cantidad'
-                DB::table('detalle_torta')->insert([
+                $detalleId = DB::table('detalle_torta')->insertGetId([
                     'produccion_id' => $produccionId,
-                    'producto_id' => $producto($nombre),
+                    'producto_id' => $producto($linea['producto']),
                     'unidad_medida_id' => $unidadId,
-                    'forma' => $forma,
+                    'forma' => $linea['forma'],
                 ]);
+
+                foreach ($linea['empleados'] as [$nombreEmpleado, $nombreRol]) {
+                    DB::table('detalle_torta_empleado')->insert([
+                        'detalle_torta_id' => $detalleId,
+                        'empleado_id' => $empleado($nombreEmpleado),
+                        'rol_produccion_id' => $rol($nombreRol),
+                    ]);
+                }
             }
 
-            foreach ($registro['bocaditos'] ?? [] as [$nombre, $cantidad]) {
-                DB::table('detalle_bocadito')->insert([
+            foreach ($registro['bocaditos'] ?? [] as $linea) {
+                $detalleId = DB::table('detalle_bocadito')->insertGetId([
                     'produccion_id' => $produccionId,
-                    'producto_id' => $producto($nombre),
-                    'cantidad' => $cantidad,
+                    'producto_id' => $producto($linea['producto']),
+                    'cantidad' => $linea['cantidad'],
                 ]);
+
+                foreach ($linea['empleados'] as [$nombreEmpleado, $nombreRol]) {
+                    DB::table('detalle_bocadito_empleado')->insert([
+                        'detalle_bocadito_id' => $detalleId,
+                        'empleado_id' => $empleado($nombreEmpleado),
+                        'rol_produccion_id' => $rol($nombreRol),
+                    ]);
+                }
             }
         }
     }
