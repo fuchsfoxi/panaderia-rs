@@ -20,7 +20,7 @@ class Pedido extends Model
 
     public function usuario()
     {
-        return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
+        return $this->belongsTo(UsuarioSistema::class, 'registrado_por_usuario_id');
     }
 
     public function detallePedidos()

@@ -19,7 +19,7 @@ protected $fillable = [
 // belongsTo: produccion tiene la FK hacia usuarios_sistema
 public function usuario()
     {
-return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
+return $this->belongsTo(UsuarioSistema::class, 'registrado_por_usuario_id');
     }
 
 // hasOne: la FK vive en detalle_pan, pero por diseño cada producción

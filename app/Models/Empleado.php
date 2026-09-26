@@ -29,7 +29,7 @@ return $this->belongsTo(Cargo::class, 'cargo_id');
 // permite acceder a los datos de la tabla usuarios_sistema
 public function usuario()
     {
-return $this->hasOne(Usuario::class, 'empleado_id');
+return $this->hasOne(UsuarioSistema::class, 'empleado_id');
     }
 
     //"¿La columna FK está en MI tabla, o está en la OTRA tabla?"

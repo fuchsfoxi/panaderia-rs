@@ -23,7 +23,7 @@ protected $fillable = [
 //hasMany → "yo tengo varios de esos" (relación 1 a muchos)
 public function usuarios()
 {
-return $this->hasMany(Usuario::class, 'rol_id');
+return $this->hasMany(UsuarioSistema::class, 'rol_id');
 }
 
 }

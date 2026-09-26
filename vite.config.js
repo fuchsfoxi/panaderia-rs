@@ -15,7 +15,6 @@ export default defineConfig({
                     'resources/js/dashboard.js',
                     'resources/css/produccion.css',
                     'resources/js/produccion.js',
-                    'resources/css/produccion-index.css',
                     'resources/css/historial.css',
                     'resources/js/historial.js'
                 ],
