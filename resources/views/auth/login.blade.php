@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Panificadora Amazónica</title>
     {{-- filepath: resources/views/auth/login.blade.php --}}
+    {{-- variables.css primero: login.css usa la paleta de marca y esta
+         vista no extiende layouts/app, asi que la carga ella misma. --}}
+    @vite(['resources/css/variables.css'])
     @vite(['resources/css/login.css', 'resources/js/login.js'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>

@@ -1,13 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
-
-:root {
-  --verde-oscuro: #33403A;
-  --verde-medio: #4F6355;
-  --verde-sage: #7D9481;
-  --verde-claro: #AEC0AC;
-  --beige: #DCD6C4;
-  --crema: #F6F2EF;
-}
+/* Paleta de marca: ver resources/css/variables.css (un solo lugar).
+   DRY: este bloque estaba duplicado tambien en historial.css y login.css. */
 
 * {
   box-sizing: border-box;

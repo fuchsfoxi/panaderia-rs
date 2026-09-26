@@ -16,7 +16,9 @@ export default defineConfig({
                     'resources/css/produccion.css',
                     'resources/js/produccion.js',
                     'resources/css/historial.css',
-                    'resources/js/historial.js'
+                    'resources/js/historial.js',
+                    'resources/css/sidebar.css',
+                    'resources/css/variables.css'
                 ],
             refresh: true,
             fonts: [

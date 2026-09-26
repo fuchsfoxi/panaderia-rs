@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\Rol;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class RolSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('roles')->insert([
-            ['nombre_roles' => 'Administrador'],
-            ['nombre_roles' => 'Encargado'],
-            ['nombre_roles' => 'Operador'],
-        ]);
+        // firstOrCreate sobre el modelo en vez de DB::table()->insert():
+        // permite correr db:seed varias veces sin duplicar filas.
+        foreach (['Administrador', 'Encargado', 'Operador'] as $nombre) {
+            Rol::firstOrCreate(['nombre_roles' => $nombre]);
+        }
     }
 }

@@ -3,8 +3,11 @@
 namespace App\Consultas;
 
 use App\Models\DetalleBocadito;
+use App\Models\DetalleBocaditoEmpleado;
 use App\Models\DetallePan;
+use App\Models\DetallePanEmpleado;
 use App\Models\DetalleTorta;
+use App\Models\DetalleTortaEmpleado;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
@@ -36,6 +39,40 @@ use Illuminate\Support\Collection;
 class LineasProduccion
 {
     /**
+     * DRY: configuracion de las 3 categorias en un solo lugar.
+     *
+     * MODIFICADO: antes existian los metodos dePan(), deTorta() y deBocadito(),
+     * que repetian los mismos 30 campos cambiando solo un par de valores. Con
+     * esta tabla el mapa de cada categoria sale de aca: agregar una categoria
+     * nueva es agregar una fila, no copiar un metodo.
+     *
+     * El orden de las claves importa: obtener() los recorre en este orden y
+     * sortByDesc es estable, asi que dentro de una misma fecha las lineas
+     * quedan en el orden pan -> torta -> bocadito.
+     */
+    private const CATEGORIAS = [
+        'pan' => [
+            'modelo' => DetallePan::class,
+            'eager' => ['producto.categoria', 'unidadMedida', 'turno', 'produccion.usuario'],
+            'pivote' => [DetallePanEmpleado::class, 'detalle_pan_id'],
+        ],
+        'torta' => [
+            'modelo' => DetalleTorta::class,
+            // OJO: DetalleTorta no tiene relacion unidadMedida aunque la tabla
+            // si tiene la columna (agregada por la migracion
+            // 2026_09_25_230000). No se pide a proposito: una torta se muestra
+            // como "1 torta", no con cantidad, asi que la unidad no hace falta.
+            'eager' => ['producto.categoria', 'produccion.usuario'],
+            'pivote' => [DetalleTortaEmpleado::class, 'detalle_torta_id'],
+        ],
+        'bocadito' => [
+            'modelo' => DetalleBocadito::class,
+            'eager' => ['producto.categoria', 'produccion.usuario'],
+            'pivote' => [DetalleBocaditoEmpleado::class, 'detalle_bocadito_id'],
+        ],
+    ];
+
+    /**
      * @param  array{conEmpleados?: bool, limite?: int|null, fecha?: string|null}  $opciones
      *   conEmpleados  carga los empleados de cada linea (join al pivote)
      *   limite        corta el resultado a N lineas (para "registrado recientemente")
@@ -55,9 +92,11 @@ class LineasProduccion
             ? fn ($q) => $q->whereHas('produccion', fn ($p) => $p->whereDate('fecha', $fecha))
             : fn ($q) => $q;
 
-        $lineas = self::dePan($empleados, $filtroFecha)
-            ->merge(self::deTorta($empleados, $filtroFecha))
-            ->merge(self::deBocadito($empleados, $filtroFecha));
+        // Recorre self::CATEGORIAS en el orden declarado (pan, torta, bocadito).
+        $lineas = collect();
+        foreach (self::CATEGORIAS as $categoria => $config) {
+            $lineas = $lineas->merge(self::deCategoria($categoria, $config, $empleados, $filtroFecha));
+        }
 
         // sortByDesc es estable: mantiene el orden pan -> torta -> bocadito
         // dentro de una misma fecha.
@@ -68,72 +107,58 @@ class LineasProduccion
         return $limite ? $lineas->take($limite) : $lineas;
     }
 
-    private static function dePan(array $empleados, callable $filtroFecha): Collection
-    {
-        return $filtroFecha(DetallePan::with(['producto.categoria', 'unidadMedida', 'turno', 'produccion.usuario']))
+    /**
+     * DRY: una sola consulta + un solo mapeo para las 3 categorias.
+     *
+     * MODIFICADO: reemplaza dePan()/deTorta()/deBocadito(), que tenian el
+     * bloque de mapeo duplicado 3 veces.
+     */
+    private static function deCategoria(
+        string $categoria,
+        array $config,
+        array $empleados,
+        callable $filtroFecha
+    ): Collection {
+        return $filtroFecha($config['modelo']::with($config['eager']))
             ->get()
-            ->map(fn (DetallePan $d) => (object) [
-                'tipo' => 'pan',
-                'detalle_id' => $d->id,
-                'fecha' => self::fecha($d->produccion?->fecha),
-                'producto' => $d->producto?->nombre_p,
-                'categoria' => $d->producto?->categoria?->nombre_categorias,
-                'cantidad' => $d->cantidad !== null ? (float) $d->cantidad : null,
-                'unidad' => $d->unidadMedida?->nombre_unidades_medida,
-                'turno' => $d->turno?->nombre_turnos,
-                'forma' => null,
-                'foto' => null,
-                'usuario' => $d->produccion?->usuario?->username,
-                'observaciones' => $d->produccion?->observaciones,
-                'empleados' => $empleados['pan'][$d->id] ?? collect(),
-            ]);
+            ->map(fn ($d) => self::linea($d, $categoria, $empleados));
     }
 
-    private static function deTorta(array $empleados, callable $filtroFecha): Collection
+    /**
+     * DRY: el mapa comun de una linea. Las 13 claves son SIEMPRE las mismas,
+     * solo cambia su valor segun la categoria: por eso la vista puede usar un
+     * unico @forelse sin preguntar por el tipo.
+     */
+    private static function linea(mixed $d, string $categoria, array $empleados): object
     {
-        // OJO: DetalleTorta no tiene relacion unidadMedida aunque la tabla si
-        // tiene la columna (agregada por la migracion 2026_09_25_230000). Por
-        // eso no se pide unidad: una torta se muestra como "1 torta", no con
-        // cantidad, asi que no hace falta para la vista.
-        return $filtroFecha(DetalleTorta::with(['producto.categoria', 'produccion.usuario']))
-            ->get()
-            ->map(fn (DetalleTorta $d) => (object) [
-                'tipo' => 'torta',
-                'detalle_id' => $d->id,
-                'fecha' => self::fecha($d->produccion?->fecha),
-                'producto' => $d->producto?->nombre_p,
-                'categoria' => $d->producto?->categoria?->nombre_categorias,
-                // sin cantidad a proposito: una torta es un registro
-                'cantidad' => null,
-                'unidad' => null,
-                'turno' => null,
-                'forma' => $d->forma,
-                'foto' => $d->foto,
-                'usuario' => $d->produccion?->usuario?->username,
-                'observaciones' => $d->produccion?->observaciones,
-                'empleados' => $empleados['torta'][$d->id] ?? collect(),
-            ]);
-    }
+        $esPan = $categoria === 'pan';
+        $esTorta = $categoria === 'torta';
 
-    private static function deBocadito(array $empleados, callable $filtroFecha): Collection
-    {
-        return $filtroFecha(DetalleBocadito::with(['producto.categoria', 'produccion.usuario']))
-            ->get()
-            ->map(fn (DetalleBocadito $d) => (object) [
-                'tipo' => 'bocadito',
-                'detalle_id' => $d->id,
-                'fecha' => self::fecha($d->produccion?->fecha),
-                'producto' => $d->producto?->nombre_p,
-                'categoria' => $d->producto?->categoria?->nombre_categorias,
-                'cantidad' => $d->cantidad !== null ? (float) $d->cantidad : null,
-                'unidad' => null,
-                'turno' => null,
-                'forma' => null,
-                'foto' => null,
-                'usuario' => $d->produccion?->usuario?->username,
-                'observaciones' => $d->produccion?->observaciones,
-                'empleados' => $empleados['bocadito'][$d->id] ?? collect(),
-            ]);
+        return (object) [
+            'tipo' => $categoria,
+            'detalle_id' => $d->id,
+            'fecha' => self::fecha($d->produccion?->fecha),
+            'producto' => $d->producto?->nombre_p,
+            'categoria' => $d->producto?->categoria?->nombre_categorias,
+
+            // sin cantidad a proposito en torta: una torta es un registro.
+            // en bocadito la cantidad ya viene en unidades.
+            'cantidad' => $esTorta
+                ? null
+                : ($d->cantidad !== null ? (float) $d->cantidad : null),
+
+            // la unidad y el turno solo existen en detalle_pan; la forma y la
+            // foto solo en detalle_torta. En el resto se devuelven en null
+            // para que la vista no tenga que preguntar por el tipo.
+            'unidad' => $esPan ? $d->unidadMedida?->nombre_unidades_medida : null,
+            'turno' => $esPan ? $d->turno?->nombre_turnos : null,
+            'forma' => $esTorta ? $d->forma : null,
+            'foto' => $esTorta ? $d->foto : null,
+
+            'usuario' => $d->produccion?->usuario?->username,
+            'observaciones' => $d->produccion?->observaciones,
+            'empleados' => $empleados[$categoria][$d->id] ?? collect(),
+        ];
     }
 
     /**
@@ -141,36 +166,20 @@ class LineasProduccion
      */
     private static function empleadosPorDetalle(): array
     {
-        $pivotes = [
-            'pan' => \App\Models\DetallePanEmpleado::with(['empleado', 'rolProduccion'])
-                ->get()->map(fn ($p) => $p->toArray() + [
-                    'detalle_id' => $p->detalle_pan_id,
-                    'nombre' => $p->empleado?->nombre_empleados,
-                    'rol' => $p->rolProduccion?->nombre_roles_produccion,
-                ]),
-            'torta' => \App\Models\DetalleTortaEmpleado::with(['empleado', 'rolProduccion'])
-                ->get()->map(fn ($p) => $p->toArray() + [
-                    'detalle_id' => $p->detalle_torta_id,
-                    'nombre' => $p->empleado?->nombre_empleados,
-                    'rol' => $p->rolProduccion?->nombre_roles_produccion,
-                ]),
-            'bocadito' => \App\Models\DetalleBocaditoEmpleado::with(['empleado', 'rolProduccion'])
-                ->get()->map(fn ($p) => $p->toArray() + [
-                    'detalle_id' => $p->detalle_bocadito_id,
-                    'nombre' => $p->empleado?->nombre_empleados,
-                    'rol' => $p->rolProduccion?->nombre_roles_produccion,
-                ]),
-        ];
-
         $resultado = [];
 
-        foreach ($pivotes as $tipo => $pivote) {
-            $resultado[$tipo] = $pivote
-                ->groupBy('detalle_id')
+        // DRY: antes eran 3 bloques identicos que solo cambiaban la clase del
+        // pivote y el nombre de la columna FK. Ahora sale de self::CATEGORIAS.
+        foreach (self::CATEGORIAS as $categoria => $config) {
+            [$modeloPivote, $columnaDetalle] = $config['pivote'];
+
+            $resultado[$categoria] = $modeloPivote::with(['empleado', 'rolProduccion'])
+                ->get()
+                ->groupBy($columnaDetalle)
                 ->map(fn ($grupo) => $grupo
                     ->map(fn ($p) => (object) [
-                        'nombre' => $p['nombre'],
-                        'rol' => $p['rol'],
+                        'nombre' => $p->empleado?->nombre_empleados,
+                        'rol' => $p->rolProduccion?->nombre_roles_produccion,
                     ])
                     ->values()
                 )

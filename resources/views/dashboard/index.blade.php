@@ -1,13 +1,12 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dashboard - Panificadora Amazónica</title>
-@vite(['resources/css/dashboard.css', 'resources/js/dashboard.js'])
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-</head>
-<body>
+@extends('layouts.app')
+
+@section('titulo', 'Dashboard - Panificadora Amazónica')
+
+@push('styles')
+    @vite(['resources/css/dashboard.css'])
+@endpush
+
+@section('contenido')
 
 
 
@@ -271,6 +270,8 @@
 
      @json() escapa el contenido, así que es seguro usarlo como <script>. --}}
 <script id="datos-graficos" type="application/json">@json($graficos)</script>
+@endsection
 
-</body>
-</html>
+@push('scripts')
+    @vite(['resources/js/dashboard.js'])
+@endpush

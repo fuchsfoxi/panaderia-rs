@@ -76,29 +76,37 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     btnConfirmarEmpleado.addEventListener('click', function () {
-        const nombre = selectEmpleado.value;
-        const rol = selectRol.value;
+        // El value del <option> es el ID (es la FK que necesita la tabla
+        // pivote), no el nombre. Antes se mandaba ese ID con name="nombre",
+        // asi que el backend recibia un ID donde esperaba un texto.
+        const empleadoId = selectEmpleado.value;
+        const rolId = selectRol.value;
+
+        // Para la etiqueta visible hay que leer el TEXTO de la opcion, porque
+        // el value es el id y se veria "1 - 1" en pantalla.
+        const empleadoNombre = selectEmpleado.selectedOptions[0]?.text ?? '';
+        const rolNombre = selectRol.selectedOptions[0]?.text ?? '';
 
         const tag = document.createElement('span');
         tag.className = 'empleado-tag';
-        tag.innerHTML = `${nombre} — ${rol} <button type="button">×</button>`;
+        tag.innerHTML = `${empleadoNombre} — ${rolNombre} <button type="button">×</button>`;
 
-        const inputNombre = document.createElement('input');
-        inputNombre.type = 'hidden';
-        inputNombre.name = `empleados[${contadorEmpleados}][nombre]`;
-        inputNombre.value = nombre;
+        const inputEmpleado = document.createElement('input');
+        inputEmpleado.type = 'hidden';
+        inputEmpleado.name = `empleados[${contadorEmpleados}][empleado_id]`;
+        inputEmpleado.value = empleadoId;
 
         const inputRol = document.createElement('input');
         inputRol.type = 'hidden';
-        inputRol.name = `empleados[${contadorEmpleados}][rol]`;
-        inputRol.value = rol;
+        inputRol.name = `empleados[${contadorEmpleados}][rol_id]`;
+        inputRol.value = rolId;
 
-        empleadosInputs.appendChild(inputNombre);
+        empleadosInputs.appendChild(inputEmpleado);
         empleadosInputs.appendChild(inputRol);
 
         tag.querySelector('button').addEventListener('click', function () {
             tag.remove();
-            inputNombre.remove();
+            inputEmpleado.remove();
             inputRol.remove();
         });
 

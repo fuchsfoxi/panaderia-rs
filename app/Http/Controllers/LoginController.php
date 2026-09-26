@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class LoginController extends Controller
@@ -14,10 +15,13 @@ class LoginController extends Controller
 
     public function authenticate(Request $request)
     {
-        $credenciales = $request->validate([
-            'username' => 'required',
-            'password' => 'required',
-        ]);
+            $credentials = $request->validate([
+                'username' => ['required', 'string'],
+                'password' => ['required', 'string'],
+            ]);
 
     }
+
+
+
 }

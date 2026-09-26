@@ -13,6 +13,7 @@ public $timestamps = false;
 protected $fillable = [
 'produccion_id',
 'producto_id',
+'unidad_medida_id',
 'forma',
 'foto',
     ];

@@ -1,13 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Quicksand:wght@400;500;600;700&display=swap');
 
-:root {
-    --color-bg: #f6f2ef;
-    --color-card: #dcd6c4;
-    --color-dark: #33403a;
-    --color-medium: #4f6355;
-    --color-sage: #aec0ac;
-    --color-placeholder: #7d9481;
-}
+/* Los alias --color-* se quitaron: las paginas usan las variables de
+   marca de resources/css/variables.css. */
 
 * {
     box-sizing: border-box;
@@ -64,7 +58,7 @@ body {
     height: 400px;
     left: -100px;
     top: 60%;
-    background: radial-gradient(circle, var(--color-sage) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--verde-claro) 0%, transparent 70%);
 }
 
 .brillo-calido-derecho {
@@ -72,7 +66,7 @@ body {
     height: 350px;
     right: -100px;
     top: 20%;
-    background: radial-gradient(circle, var(--color-card) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--beige) 0%, transparent 70%);
 }
 
 /* --- Bloque principal --- */
@@ -98,7 +92,7 @@ body {
 .placa-icono-logo {
     width: 64px;
     height: 64px;
-    background-color: var(--color-dark);
+    background-color: var(--verde-oscuro);
     border-radius: 32px;
     display: flex;
     align-items: center;
@@ -126,14 +120,14 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 500;
     font-size: 15px;
-    color: #f6f2ef;
+    color: var(--crema);
     text-align: center;
     text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 /* --- Tarjeta del formulario --- */
 .tarjeta-login {
-    background-color: var(--color-card);
+    background-color: var(--beige);
     border-radius: 32px;
     padding: 40px;
     width: 100%;
@@ -147,7 +141,7 @@ body {
     font-family: 'Baloo 2', sans-serif;
     font-weight: 700;
     font-size: 24px;
-    color: var(--color-dark);
+    color: var(--verde-oscuro);
     margin-bottom: 4px;
 }
 
@@ -155,7 +149,7 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 400;
     font-size: 14px;
-    color: var(--color-medium);
+    color: var(--verde-medio);
 }
 
 .campos-formulario {
@@ -169,13 +163,13 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;
     font-size: 14px;
-    color: var(--color-dark);
+    color: var(--verde-oscuro);
     margin-bottom: 8px;
 }
 
 .caja-input {
-    background-color: var(--color-bg);
-    border: 1px solid var(--color-sage);
+    background-color: var(--crema);
+    border: 1px solid var(--verde-claro);
     border-radius: 16px;
     height: 52px;
     display: flex;
@@ -186,13 +180,13 @@ body {
 }
 
 .caja-input:focus-within {
-    border-color: var(--color-dark);
+    border-color: var(--verde-oscuro);
 }
 
 .caja-input .icon {
     width: 20px;
     height: 20px;
-    color: var(--color-medium);
+    color: var(--verde-medio);
     flex-shrink: 0;
 }
 
@@ -203,11 +197,11 @@ body {
     outline: none;
     font-family: 'Quicksand', sans-serif;
     font-size: 15px;
-    color: var(--color-dark);
+    color: var(--verde-oscuro);
 }
 
 .caja-input input::placeholder {
-    color: var(--color-placeholder);
+    color: var(--verde-sage);
 }
 
 .alternar-contrasena {
@@ -217,7 +211,7 @@ body {
     display: flex;
     align-items: center;
     padding: 0;
-    color: var(--color-medium);
+    color: var(--verde-medio);
 }
 
 .alternar-contrasena svg {
@@ -236,13 +230,13 @@ body {
 .separador-decorativo .linea {
     flex: 1;
     height: 1px;
-    background-color: var(--color-sage);
+    background-color: var(--verde-claro);
 }
 
 .separador-decorativo .diamante {
     width: 10px;
     height: 10px;
-    background-color: var(--color-sage);
+    background-color: var(--verde-claro);
     transform: rotate(45deg);
     flex-shrink: 0;
 }
@@ -257,8 +251,8 @@ body {
 }
 
 .btn-enviar {
-    background-color: var(--color-dark);
-    color: var(--color-bg);
+    background-color: var(--verde-oscuro);
+    color: var(--crema);
     border: none;
     height: 52px;
     width: 100%;
@@ -278,7 +272,7 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;
     font-size: 13px;
-    color: var(--color-medium);
+    color: var(--verde-medio);
     text-decoration: underline;
     background: none;
     border: none;

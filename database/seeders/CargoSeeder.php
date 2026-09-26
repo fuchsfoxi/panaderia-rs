@@ -2,19 +2,17 @@
 
 namespace Database\Seeders;
 
+use App\Models\Cargo;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class CargoSeeder extends Seeder
 {
     public function run(): void
     {
-        DB::table('cargos')->insert([
-            ['nombre_cargos' => 'Panadero'],
-            ['nombre_cargos' => 'Pastelero'],
-            ['nombre_cargos' => 'Repostero'],
-            ['nombre_cargos' => 'Atención al cliente'],
-            ['nombre_cargos' => 'Administrador'],
-        ]);
+        // firstOrCreate sobre el modelo en vez de DB::table()->insert():
+        // permite correr db:seed varias veces sin duplicar filas.
+        foreach (['Panadero', 'Pastelero', 'Repostero', 'Atención al cliente', 'Administrador'] as $nombre) {
+            Cargo::firstOrCreate(['nombre_cargos' => $nombre]);
+        }
     }
 }

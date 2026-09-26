@@ -1,0 +1,240 @@
+/* ==========================================================================
+   MENU LATERAL REUTILIZABLE
+   --------------------------------------------------------------------------
+   Este archivo es la UNICA definicion del menu lateral. Se carga una sola vez
+   desde resources/views/layouts/app.blade.php, que a su vez lo incluye en
+   todas las paginas. Antes cada vista traia su propio <html> completo y no
+   habia ningun menu compartido, asi que un cambio de navegacion habia que
+   replicarlo vista por vista.
+
+   Paleta de marca (segun especificacion):
+     - Fondo del sidebar completo .... #33403A  (verde bosque oscuro)
+     - Icono + label del item activo  blanco
+     - Iconos + labels inactivos .... #7D9481  (verde sage)
+   Tipografia Huninn peso 400. Estilo redondeado, no cuadrado.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+/* --- Contenedor ---------------------------------------------------------- */
+
+.lateral {
+    /* flex-basis fijo: el menu no crece ni se encoge con el contenido. */
+    flex: 0 0 248px;
+    width: 248px;
+    box-sizing: border-box;
+
+    /* El fondo llega hasta arriba y hasta abajo en todas las paginas. */
+    min-height: 100vh;
+    align-self: stretch;
+
+    padding: 30px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+
+    background-color: #33403A;
+    font-family: 'Huninn', sans-serif;
+    font-weight: 400;
+}
+
+/* --- Marca / logo -------------------------------------------------------- */
+
+.lateral__marca {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 8px;
+}
+
+.lateral__marca-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* circulo, no cuadrado */
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    border-radius: 50%;
+    background-color: #4F6355;
+    color: #FFFFFF;
+    font-size: 16px;
+}
+
+.lateral__marca-texto {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    overflow: hidden;
+}
+
+.lateral__marca-nombre {
+    color: #FFFFFF;
+    font-size: 15px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+.lateral__marca-sub {
+    color: #7D9481;
+    font-size: 11.5px;
+    font-weight: 400;
+    white-space: nowrap;
+}
+
+/* --- Navegacion ---------------------------------------------------------- */
+
+.lateral__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.lateral__grupo-titulo {
+    padding: 0 8px 8px;
+    color: #7D9481;
+    font-size: 10.5px;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* --- Items --------------------------------------------------------------- */
+
+.lateral__enlace {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+
+    /* esquinas redondeadas: es el look del sistema, nada de cajas cuadradas */
+    border-radius: 14px;
+    padding: 12px 16px;
+
+    color: #7D9481;              /* label inactivo */
+    font-family: 'Huninn', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lateral__enlace-icono {
+    width: 20px;
+    flex: 0 0 20px;
+    text-align: center;
+    font-size: 16px;
+    color: #7D9481;              /* icono inactivo */
+    transition: color 0.15s ease;
+}
+
+.lateral__enlace:hover {
+    background-color: #4F6355;
+    color: #FFFFFF;
+}
+
+.lateral__enlace:hover .lateral__enlace-icono {
+    color: #FFFFFF;
+}
+
+/* --- Item ACTIVO: icono y label en blanco -------------------------------- */
+
+.lateral__enlace.activo {
+    background-color: #4F6355;
+    color: #FFFFFF;
+    font-weight: 400;
+}
+
+.lateral__enlace.activo .lateral__enlace-icono {
+    color: #FFFFFF;
+}
+
+/* Marca de item activo que no mueve el layout (no suma margen). */
+.lateral__enlace.activo::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 3px;
+    align-self: stretch;
+    border-radius: 0 3px 3px 0;
+    background-color: #AEC0AC;
+}
+
+.lateral__enlace {
+    position: relative;
+}
+
+/* --- Pie ----------------------------------------------------------------- */
+
+.lateral__pie {
+    margin-top: auto;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background-color: #2C3733;
+    color: #7D9481;
+    font-family: 'Huninn', sans-serif;
+    font-size: 11.5px;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.lateral__pie strong {
+    display: block;
+    color: #AEC0AC;
+    font-weight: 400;
+}
+
+/* --- Integracion con el layout ------------------------------------------- */
+
+/* El body de las paginas (historial / produccion) traia padding: 40px que
+   corria el contenido contra el borde. Ahora ese padding vive en .app-main
+   para que el menu llegue hasta el borde superior e inferior. Se usa
+   .cuerpo-app (especificidad de clase) para ganarle al `body` de cada CSS. */
+body.cuerpo-app {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    min-height: 100vh;
+}
+
+.app-main {
+    flex: 1 1 auto;
+    min-width: 0;      /* evita que un table ancho reviente el flex */
+    box-sizing: border-box;
+    padding: 40px;
+}
+
+/* En pantallas angostas el menu pasa arriba y el contenido debajo. */
+@media (max-width: 900px) {
+    body.cuerpo-app {
+        flex-direction: column;
+    }
+
+    .lateral {
+        flex: 0 0 auto;
+        width: 100%;
+        min-height: auto;
+        flex-direction: row;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 18px;
+        overflow-x: auto;
+    }
+
+    .lateral__nav {
+        flex-direction: row;
+        gap: 8px;
+    }
+
+    .lateral__grupo-titulo,
+    .lateral__pie {
+        display: none;
+    }
+
+    .lateral__enlace.activo::before {
+        display: none;
+    }
+
+    .app-main {
+        padding: 24px;
+    }
+}

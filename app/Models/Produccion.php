@@ -13,6 +13,7 @@ public $timestamps = false;
 
 protected $fillable = [
 'fecha',
+'observaciones',
 'registrado_por_usuario_id',
     ];
 

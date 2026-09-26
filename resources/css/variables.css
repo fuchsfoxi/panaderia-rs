@@ -1,0 +1,34 @@
+/* ==========================================================================
+   VARIABLES DE MARCA
+   --------------------------------------------------------------------------
+   DRY: antes cada CSS traia su propio bloque :root con la misma paleta,
+   escrita de forma distinta cada vez:
+
+     dashboard.css  --verde-oscuro: #33403a;
+     historial.css  --verde-oscuro: #33403A;   (mismo valor, otro casing)
+     login.css      --color-dark:    #33403a;  (mismo valor, otro nombre)
+     produccion.css  (no tenia bloque :root, usaba #F6F2EF / #33403A sueltos)
+
+   Ademas produccion.css NO importaba la fuente y por eso el sitio se veia
+   con la tipografia del sistema. Ahora hay una sola definicion, y el @import
+   de la fuente va aca para que ningun CSS lo tenga que repetir.
+
+   Para cambiar un color de la marca: se cambia SOLO este archivo.
+   ========================================================================== */
+
+/* Huninn: rounded sans-serif, peso 400. Se importa una sola vez y todas las
+   paginas la heredan de aqui. */
+@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+:root {
+    /* Paleta de marca */
+    --verde-oscuro: #33403a;   /* verde bosque oscuro: fondo del sidebar */
+    --verde-medio: #4f6355;    /* estados hover / item activo */
+    --verde-sage: #7d9481;     /* iconos y labels inactivos */
+    --verde-claro: #aec0ac;
+    --beige: #dcd6c4;
+    --crema: #f6f2ef;          /* fondo de pagina */
+
+    /* Tipografia del sistema */
+    --fuente: 'Huninn', sans-serif;
+}
