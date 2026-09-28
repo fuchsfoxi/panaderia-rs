@@ -208,8 +208,11 @@
                 @enderror
 
                 <h4>Subir foto (Obligatorio)</h4>
+                {{-- Icono de Font Awesome y no un emoji: el emoji se ve
+                     distinto segun el sistema operativo del celular. --}}
                 <label for="foto" class="foto-upload">
-                    📷<br>Agregar foto
+                    <i class="fas fa-camera" aria-hidden="true"></i>
+                    Agregar foto
                 </label>
                 {{-- accept="image/*" hace que en el celular aparezca la
                      camara ademas de la galeria. --}}

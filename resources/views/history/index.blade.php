@@ -170,7 +170,9 @@
             @if ($hayFiltros)
                 <h3>Ningún registro coincide con el filtro</h3>
                 <p>Probá con otras fechas, otro tipo de producción o quitá el filtro de turno.</p>
-                <a href="{{ route('history.index') }}" class="detalles-link">Quitar los filtros →</a>
+                <a href="{{ route('history.index') }}" class="detalles-link">
+                    Quitar los filtros <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </a>
             @else
                 <h3>Aún no hay producción registrada</h3>
                 <p>Cuando cargues producción desde el formulario de producción, los registros van a aparecer acá.</p>

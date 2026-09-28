@@ -23,16 +23,53 @@ html {
     overflow-x: hidden;
 }
 
-/* Huninn: rounded sans-serif, peso 400. Es la tipografia del TEXTO del
-   sistema. */
-@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+/* ==========================================================================
+   TIPOGRAFIAS DE MARCA (archivos locales)
+   --------------------------------------------------------------------------
+   MODIFICADO: antes estas dos fuentes venían de Google Fonts con @import. Eso
+   significaba que sin internet (o con el navegador lento) el sistema se veía
+   con la tipografía genérica, justo lo que no puede pasar en una
+   presentación de marca.
 
-/* Baloo 2: redondeada, de la misma familia visual que Huninn, pero con mas
-   presencia. Se usa SOLO en titulos y subtitulos (--fuente-titulos) para
+   Ahora los archivos .woff2 están en public/fonts y se sirven desde el propio
+   proyecto: 52 KB en total y sin depender de ningún servicio externo.
+
+   Solo se baja el subconjunto "latin" de cada una. Google Fonts ofrece más de
+   100 archivos para Huninn (uno por idioma: cirílico, griego, vietnamita...)
+   que el sistema no usa y que solo agrega peso.
+
+   Baloo 2 es fuente variable: un solo archivo sirve para los dos pesos, asi
+   que se declara una vez con el rango "600 700".
+   ========================================================================== */
+
+/* Huninn: rounded sans-serif, peso 400. Es la tipografia del TEXTO normal. */
+@font-face {
+    font-family: 'Huninn';
+    font-style: normal;
+    font-weight: 400;
+    /* swap: si el archivo tarda, se muestra la fuente del sistema en vez de
+       texto invisible. Es lo que evita el salto de layout al cargar. */
+    font-display: swap;
+    src: url('/fonts/Huninn-Regular.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Baloo 2: redondeada, de la misma familia visual que Huninn pero con mas
+   presencia. Se usa SOLO en titulos y subtitulos (--fuente-titulos), para
    que los encabezados se destaquen sin inventar otra paleta ni otra
-   tipografia. Se piden solo los pesos 600 y 700, que son los que usa el
-   sitio, para no bajar un archivo de fuente entero. */
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&display=swap');
+   tipografia. */
+@font-face {
+    font-family: 'Baloo 2';
+    font-style: normal;
+    font-weight: 600 700;
+    font-display: swap;
+    src: url('/fonts/Baloo2-Variable.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+        U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+        U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 :root {
     /* Paleta de marca */

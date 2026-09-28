@@ -142,10 +142,10 @@
      registro: solo el usuario. --}}
 
 <!-- Modal: detalle de Pan -->
-<div class="overlay-modal" id="modal-pan">
+<div class="overlay-modal" id="modal-pan" role="dialog" aria-modal="true" aria-labelledby="modal-pan-titulo">
     <div class="caja-modal">
         <button type="button" class="cerrar-modal" data-cerrar-modal><i class="fas fa-times"></i></button>
-        <h2>Detalle de Producción — Pan</h2>
+        <h2 id="modal-pan-titulo">Detalle de Producción — Pan</h2>
         <p class="subtitulo-modal">Hoy — {{ $tarjetas['Pan']['texto'] }}</p>
 
         <h3>Desglose por tipo</h3>
@@ -182,10 +182,10 @@
 </div>
 
 <!-- Modal: detalle de Torta -->
-<div class="overlay-modal" id="modal-torta">
+<div class="overlay-modal" id="modal-torta" role="dialog" aria-modal="true" aria-labelledby="modal-torta-titulo">
     <div class="caja-modal">
         <button type="button" class="cerrar-modal" data-cerrar-modal><i class="fas fa-times"></i></button>
-        <h2>Detalle de Producción — Torta</h2>
+        <h2 id="modal-torta-titulo">Detalle de Producción — Torta</h2>
         <p class="subtitulo-modal">{{ $tarjetas['Torta']['texto'] }} registradas hoy</p>
 
         <h3>Tortas del día</h3>
@@ -224,10 +224,10 @@
 </div>
 
 <!-- Modal: detalle de Bocadito -->
-<div class="overlay-modal" id="modal-bocadito">
+<div class="overlay-modal" id="modal-bocadito" role="dialog" aria-modal="true" aria-labelledby="modal-bocadito-titulo">
     <div class="caja-modal">
         <button type="button" class="cerrar-modal" data-cerrar-modal><i class="fas fa-times"></i></button>
-        <h2>Detalle de Producción — Bocadito</h2>
+        <h2 id="modal-bocadito-titulo">Detalle de Producción — Bocadito</h2>
         <p class="subtitulo-modal">{{ $tarjetas['Bocadito']['texto'] }} registradas hoy</p>
 
         <h3>Desglose por tipo</h3>

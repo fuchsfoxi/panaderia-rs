@@ -151,4 +151,17 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    // Escape cierra el modal abierto. Es lo que espera cualquiera que use
+    // teclado en una laptop, y era el unico modo de cierre que faltaba: antes
+    // solo se cerraba con la X o tocando el fondo.
+    document.addEventListener('keydown', function (evento) {
+        if (evento.key !== 'Escape') {
+            return;
+        }
+
+        document.querySelectorAll('.overlay-modal.activo').forEach(function (overlay) {
+            overlay.classList.remove('activo');
+        });
+    });
 });

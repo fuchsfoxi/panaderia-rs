@@ -23,8 +23,22 @@ class ProduccionSeeder extends Seeder
         $empleado = fn (string $nombre) => DB::table('empleados')->where('nombre_empleados', $nombre)->orderBy('id')->value('id');
         $rol = fn (string $nombre) => DB::table('roles_produccion')->where('nombre_roles_produccion', $nombre)->value('id');
 
-        // Cada linea de detalle incluye los empleados que la produjeron y el
-        // rol que tenian, para que las vistas tengan algo real que mostrar.
+        /**
+         * Cada linea de detalle incluye los empleados que la produjeron y el
+         * rol que tenian, para que las vistas tengan algo real que mostrar.
+         *
+         * MODIFICADO: antes solo habia produccion de HOY y de los 3 dias
+         * anteriores. Con eso el dashboard se veia casi vacio: el grafico
+         * "Produccion por Mes" divide el mes en Sem 1 a Sem 4, y los 4 dias
+         * caian todos en la ultima semana, dejando 3 de 4 semanas en cero.
+         *
+         * Ahora hay historial repartido en las ultimas 5 semanas, y ademas se
+         * mantienen los registros de HOY, que son los que muestran las
+         * tarjetas del dashboard (ResumenDashboard filtra por today()).
+         *
+         * NO se inventan datos futuros: un dia que todavia no ocurrio se
+         * muestra en cero, que es la verdad.
+         */
         $registros = [
             [
                 'fecha' => today(),
@@ -66,6 +80,98 @@ class ProduccionSeeder extends Seeder
                 ],
                 'bocaditos' => [
                     ['producto' => 'Empanaditas de Pollo', 'cantidad' => 300, 'empleados' => [['Carlos M.', 'Ayudante']]],
+                ],
+            ],
+
+            /*
+             * Historial de las semanas anteriores: le da movimiento al grafico
+             * "por Mes" y volumen al historial al filtrar por rango de fechas.
+             */
+            [
+                'fecha' => today()->subDays(6),
+                'observaciones' => 'Produccion de cierre de semana.',
+                'pan' => [
+                    ['producto' => 'Pan Francés', 'cantidad' => 20, 'turno' => 'Mañana', 'empleados' => [['Luis P.', 'Maestro']]],
+                    ['producto' => 'Pan Carioca', 'cantidad' => 15, 'turno' => 'Noche', 'empleados' => [['Ana R.', 'Ayudante']]],
+                ],
+                'tortas' => [
+                    ['producto' => 'Torta de Chocolate', 'forma' => 'circular', 'empleados' => [['Rosa D.', 'Maestro']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(8),
+                'observaciones' => null,
+                'bocaditos' => [
+                    ['producto' => 'Alfajorcitos', 'cantidad' => 180, 'empleados' => [['Marta G.', 'Maestro']]],
+                ],
+                'pan' => [
+                    ['producto' => 'Pan Yema', 'cantidad' => 22, 'turno' => 'Mañana', 'empleados' => [['Luis P.', 'Maestro'], ['Ana R.', 'Ayudante']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(12),
+                'observaciones' => 'Se produjo para el fin de semana.',
+                'pan' => [
+                    ['producto' => 'Pan Integral', 'cantidad' => 28, 'turno' => 'Mañana', 'empleados' => [['Carlos M.', 'Maestro']]],
+                ],
+                'bocaditos' => [
+                    ['producto' => 'Empanaditas de Pollo', 'cantidad' => 250, 'empleados' => [['Marta G.', 'Ayudante']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(15),
+                'observaciones' => null,
+                'tortas' => [
+                    ['producto' => 'Torta de Vainilla', 'forma' => 'rectangular', 'empleados' => [['Rosa D.', 'Maestro'], ['Luis P.', 'Ayudante']]],
+                ],
+                'pan' => [
+                    ['producto' => 'Pan Francés', 'cantidad' => 26, 'turno' => 'Noche', 'empleados' => [['Carlos M.', 'Maestro']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(19),
+                'observaciones' => 'Lote de rutina.',
+                'bocaditos' => [
+                    ['producto' => 'Conitos', 'cantidad' => 160, 'empleados' => [['Ana R.', 'Maestro']]],
+                    ['producto' => 'Pionono', 'cantidad' => 120, 'empleados' => [['Marta G.', 'Ayudante']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(22),
+                'observaciones' => null,
+                'pan' => [
+                    ['producto' => 'Pan Carioca', 'cantidad' => 18, 'turno' => 'Mañana', 'empleados' => [['Luis P.', 'Maestro']]],
+                    ['producto' => 'Pan Yema', 'cantidad' => 20, 'turno' => 'Mañana', 'empleados' => [['Ana R.', 'Ayudante']]],
+                ],
+                'tortas' => [
+                    ['producto' => 'Torta de Chocolate', 'forma' => 'circular', 'empleados' => [['Rosa D.', 'Maestro']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(26),
+                'observaciones' => null,
+                'bocaditos' => [
+                    ['producto' => 'Alfajorcitos', 'cantidad' => 200, 'empleados' => [['Marta G.', 'Maestro']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(29),
+                'observaciones' => 'Inicio de la serie del mes.',
+                'pan' => [
+                    ['producto' => 'Pan Integral', 'cantidad' => 32, 'turno' => 'Mañana', 'empleados' => [['Carlos M.', 'Maestro'], ['Luis P.', 'Ayudante']]],
+                ],
+                'tortas' => [
+                    ['producto' => 'Torta de Vainilla', 'forma' => 'rectangular', 'empleados' => [['Rosa D.', 'Maestro']]],
+                ],
+            ],
+            [
+                'fecha' => today()->subDays(33),
+                'observaciones' => null,
+                'pan' => [
+                    ['producto' => 'Pan Francés', 'cantidad' => 24, 'turno' => 'Noche', 'empleados' => [['Carlos M.', 'Maestro']]],
+                ],
+                'bocaditos' => [
+                    ['producto' => 'Conitos', 'cantidad' => 190, 'empleados' => [['Ana R.', 'Ayudante']]],
                 ],
             ],
         ];

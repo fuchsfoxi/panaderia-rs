@@ -43,7 +43,7 @@
             {{-- route('login.attempt') y no url('login'): es la ruta POST que
                  procesa el login. Con GET /login solo, el envio del formulario
                  daba "405 Method Not Allowed". --}}
-            <form action="{{ route('login.attempt') }}" method="POST" class="campos-formulario" novalidate>
+            <form action="{{ route('login.attempt') }}" method="POST" class="campos-formulario">
                 {{-- Token anti CSRF: sin esto Laravel responde 419. --}}
                 @csrf
 
