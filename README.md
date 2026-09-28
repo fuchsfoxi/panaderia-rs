@@ -7,6 +7,10 @@ de pan, tortas y bocaditos, historial de producción y dashboard.
 - Blade con CSS y JS propios, sin frameworks CSS
 - Autenticación propia sobre `App\Models\UsuarioSistema` (tabla `usuarios_sistema`)
 
+> Documentación con el detalle de cada decisión técnica (por qué se hizo lo que
+> se hizo, qué alternativas se descartaron y qué quedó pendiente):
+> [`DOCUMENTACION-TECNICA.md`](DOCUMENTACION-TECNICA.md)
+
 ---
 
 ## 1. Requisitos
