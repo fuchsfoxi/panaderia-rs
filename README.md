@@ -88,7 +88,9 @@ npm run build               # recompilar estilos
 
 ## 5. Probar desde un celular
 
-El celular tiene que estar en la **misma red Wi-Fi** que la laptop.
+El celular tiene que estar en la **misma red Wi-Fi** que la laptop, y la
+laptop tiene que estar conectada por Wi-Fi (no solo por cable, porque con
+cable el celular no llega).
 
 ```bash
 # 1. Compilar los estilos (obligatorio: con Vite dev el celular no carga nada)
@@ -98,13 +100,14 @@ npm run build
 php artisan serve --host=0.0.0.0 --port=8000
 ```
 
-3. Averiguar la IP de la laptop:
+3. Averiguar la IP de la laptop (la de la Wi-Fi, no la `127.0.0.1`):
 
 ```bash
-ip -4 addr show | grep inet
-# o más corto:
-hostname -I
+ip -4 addr show scope global
 ```
+
+Sale algo como `inet 192.168.18.35/24` en la interfaz `wlan0`. La IP es
+`192.168.18.35`.
 
 4. En el navegador del celular abrir:
 
@@ -112,26 +115,59 @@ hostname -I
 http://IP-DE-LA-LAPTOP:8000
 ```
 
-Ejemplo: `http://192.168.0.15:8000`
+Ejemplo: `http://192.168.18.35:8000`
 
 ### Si el celular no entra
 
 Casi siempre es el firewall. En CachyOS (firewalld):
 
 ```bash
-# Ver si el puerto ya está abierto
-sudo firewall-cmd --list-ports
+# Ver la zona de la interfaz Wi-Fi y los puertos ya abiertos
+sudo firewall-cmd --get-active-zones
+sudo firewall-cmd --list-all
 
-# Abrir el 8000 para la red privada (ajustar la zona si es otra)
-sudo firewall-cmd --zone=trusted --add-port=8000/tcp
+# Abrir el 8000 en la zona de la Wi-Fi (cambiar 'trusted' por la zona que
+# devuelva --get-active-zones; en redes de invitados o públicas usar 'public')
+sudo firewall-cmd --zone=trusted --add-port=8000/tcp --permanent
+sudo firewall-cmd --reload
 
-# Dejarlo permanente (si no, se pierde al reiniciar)
-sudo firewall-cmd --permanent --zone=trusted --add-port=8000/tcp
+# Comprobar que quedó abierto
+sudo firewall-cmd --zone=trusted --list-ports
+```
+
+Si la red Wi-Fi está en la zona `public`, el comando queda:
+
+```bash
+sudo firewall-cmd --zone=public --add-port=8000/tcp --permanent
 sudo firewall-cmd --reload
 ```
 
-Si la red Wi-Fi está marcada como zona pública, usar `--zone=public` en vez de
-`trusted`.
+> Con `--permanent` el puerto sigue abierto después de reiniciar. Sin esa
+> bandera, el cambio se pierde al apagar la máquina.
+
+### Probar sin tocar el firewall
+
+Para descartar que el problema sea el firewall, se puede levantar el servidor
+en una red abierta solo mientras se prueba:
+
+```bash
+# temporal, se cierra con Ctrl+C
+sudo firewall-cmd --zone=trusted --add-port=8000/tcp
+php artisan serve --host=0.0.0.0 --port=8000
+```
+
+Y después devolver todo a como estaba:
+
+```bash
+sudo firewall-cmd --zone=trusted --remove-port=8000/tcp
+```
+
+### Other causas
+
+- **El celular y la laptop en redes distintas.** Wi-Fi de guests, o datos
+  móviles del celular en vez de la Wi-Fi de la casa. No hay salida.
+- **La laptop tiene dos Wi-Fi / VPN.** A veces la IP de la VPN es la que
+  muestra `ip addr` y no es la de la red local.
 
 ### Antes de probar con usuarios reales
 
@@ -228,7 +264,7 @@ npm run build && php artisan serve --host=0.0.0.0 --port=8000
 |---|---|
 | El celular entra sin estilos | Falta `npm run build`, o quedó `public/hot` de `npm run dev`. Se borra con `rm public/hot` |
 | "419 La sesión expiró" | La sesión de 120 minutos venció, o el reloj cambió. Volver a entrar |
-| "405 Method Not Allowed" en el login | Hay un `public/hot` o un `.env` viejo; verificar que el login haga POST a `route('login.attempt')` |
+| "405 Method Not Allowed" en el login | El login tiene que hacer POST a `route('login.attempt')`. Si hay un build viejo, volver a compilar con `npm run build` |
 | Login dice "Usuario o contraseña incorrectos" y el usuario existe | Correr `php artisan db:seed` para crear el usuario de prueba |
 | El login no encuentra al usuario | `usuarios_sistema` está vacía: `php artisan db:seed` |
 | No se ve la fuente Huninn / Baloo 2 | Sin internet: las fuentes vienen de Google Fonts |
