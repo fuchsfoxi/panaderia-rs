@@ -112,19 +112,34 @@
     </div>
 
     <div class="graficos">
+        {{-- El <canvas> va dentro de .grafico-lienzo, un contenedor con alto
+             FIJO. No es cosmetico: dashboard.js crea los graficos con
+             maintainAspectRatio: false, y con esa opcion Chart.js le pone al
+             canvas la altura de su contenedor. Si el contenedor Sacara su
+             altura del propio canvas, cada redimensionado lo agrandaria un poco
+             mas y el grafico crecia sin limite (el canvas empujaba la pagina
+             hacia abajo sin parar). Al estar posicionado en absoluto dentro de
+             una caja de alto fijo, el canvas no suma altura al layout y el
+             bucle se corta. --}}
         <div class="grafico">
             <h2>Producción por Día</h2>
-            <canvas id="grafico_dia"></canvas>
+            <div class="grafico-lienzo">
+                <canvas id="grafico_dia"></canvas>
+            </div>
         </div>
 
         <div class="grafico">
             <h2>Producción por Semana</h2>
-            <canvas id="grafico_semana"></canvas>
+            <div class="grafico-lienzo">
+                <canvas id="grafico_semana"></canvas>
+            </div>
         </div>
 
         <div class="grafico">
             <h2>Producción por Mes</h2>
-            <canvas id="grafico_mes"></canvas>
+            <div class="grafico-lienzo">
+                <canvas id="grafico_mes"></canvas>
+            </div>
         </div>
     </div>
 

@@ -70,7 +70,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Chart.js con responsive + maintainAspectRatio:false (opcionesComunes)
     // redimensiona solo cuando cambia el ancho, tambien al girar el celular.
-    // El alto lo define el CSS del <canvas> (.grafico canvas en dashboard.css).
+    //
+    // OJO con maintainAspectRatio: false: hace que Chart.js le asigne al
+    // <canvas> la ALTURA de su contenedor. Por eso el canvas tiene que estar
+    // dentro de .grafico-lienzo (alto fijo en el CSS) y en posicion absoluta.
+    // Si queda directo dentro de .grafico, que tiene alto automatico, el
+    // canvas agranda al contenedor, el contenedor vuelve a medir mas grande y
+    // el grafico crece sin limite. El alto lo define
+    // .grafico-lienzo en dashboard.css, no el canvas.
     const canvasDia = document.getElementById('grafico_dia');
     if (canvasDia && graficos.dia.categorias.length > 0) {
         new Chart(canvasDia, {

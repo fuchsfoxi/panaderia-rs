@@ -272,14 +272,40 @@ body {
     margin-bottom: 20px;
 }
 
-/* El alto va DEFINIDO en el <canvas>, no solo como max-height: dashboard.js
-   crea los graficos con maintainAspectRatio: false y con eso Chart.js estira
-   el lienzo hasta llenar el contenedor. Sin un alto en el contenedor, el
-   grafico queda plano o directamente no se ve. */
-.grafico canvas {
-    display: block;
-    width: 100%;
+/* Contenedor del grafico, con alto FIJO.
+
+   Es la pieza que evita que el grafico crezca sin limite. dashboard.js crea
+   los graficos con maintainAspectRatio: false, y con esa opcion Chart.js le
+   asigna al <canvas> la altura de su contenedor. Si el contenedor sacara su
+   altura del canvas (que es lo que pasaba antes, cuando el canvas estaba
+   directo dentro de .grafico, que tiene alto automatico), entonces:
+
+       Chart.js mide el contenedor -> le pone esa altura al canvas
+       -> el canvas agranda el contenedor
+       -> el ResizeObserver de Chart.js vuelve a medir
+       -> el grafico crece otra vez, y asi sin fin.
+
+   Por eso el canvas va posicionado en absoluto DENTRO de esta caja: no
+   participa del calculo de la altura del layout, asi que el contenedor siempre
+   mide lo mismo y el ciclo se corta. Es el patron que recomienda Chart.js
+   cuando se usa maintainAspectRatio: false. */
+.grafico-lienzo {
+    position: relative;
     height: 280px;
+}
+
+.grafico-lienzo canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+
+    /* Segunda barrera, por si alguien vuelve a anidar el canvas fuera de
+       .grafico-lienzo. Chart.js le escribe la altura en px como estilo
+       inline, pero max-height sigue aplicando por encima: el grafico se
+       recorta en vez de empujar la pagina hacia abajo. Con el contenedor de
+       alto fijo esto no llega a activarse nunca; esta es la red de
+       seguridad, no la solución. */
+    max-height: 100%;
 }
 
 /* --- Modal de detalles --- */
@@ -508,7 +534,7 @@ body {
         padding: 20px 16px;
     }
 
-    .grafico canvas {
+    .grafico-lienzo {
         /* Mas bajo en el celular: 280px de grafico con el resto de la pagina
            obliga a scrollear de mas. */
         height: 220px;
