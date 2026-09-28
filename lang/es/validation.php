@@ -5,11 +5,63 @@
 | ARCHIVO DE TRADUCCIONES DE VALIDACION (es)
 |--------------------------------------------------------------------------
 |
-| El framework solo trae los mensajes en ingles, asi que este archivo agrega
-| los que usa el sistema, en español. Los mensajes que no esten listados aqui
-| caen en el idioma de respaldo (tambien es), no en ingles.
+| ============================================================================
+| CÓMO FUNCIONA ESTE ARCHIVO
+| ============================================================================
 |
-| Para agregar una regla nueva alcanza con sumar su linea.
+| Cuando una regla de validación falla, Laravel arma una clave con el nombre
+| de la regla y el del campo, y la busca en lang/{idioma}/validation.php.
+|
+| Por ejemplo, si falla la regla 'required' sobre el campo 'producto_id', busca:
+|
+|     'required.producto_id'
+|
+| Después:
+|
+|   1. Si existe esa clave exacta, usa ese texto.
+|   2. Si no existe, prueba con la regla sola: 'required'.
+|   3. Si tampoco existe, usa el idioma de respaldo (que en AppServiceProvider
+|      también quedó en español).
+|   4. Reemplaza los :placeholders: por los valores que le pasa el
+|      validador: :attribute (el nombre del campo), :min, :max, :other, etc.
+|
+| ---------------------------------------------------------------------------
+| POR QUÉ EXISTE ESTE ARCHIVO
+| ---------------------------------------------------------------------------
+|
+| El framework de Laravel trae SOLO los mensajes en inglés. No hay ningún otro
+| idioma en vendor/, así que sin este archivo toda validación saldría en
+| inglés: "The producto id field is required." frente a un panadero.
+|
+| Se traduce una sola vez, en lugar de escribir los mensajes directo en cada
+| controlador, porque:
+|
+|   - Un mensaje se escribe UNA vez y sirve para todos los lugares que usen
+|     esa regla. Si mañana se agrega otro formulario, el mensaje ya está.
+|   - Permite cambiar el idioma completo del sistema tocando un solo archivo
+|     (o cambiando 'app.locale' en AppServiceProvider).
+|
+| ---------------------------------------------------------------------------
+| CÓMO AGREGAR UN MENSAJE NUEVO
+| ---------------------------------------------------------------------------
+|
+|   - Una regla que no está en la lista de abajo: copiala de los comentarios
+|     de la regla 'other' y ajustá los :placeholders: a los que documents esa
+|     regla. Ejemplo de la regla 'after' (un campo tiene que ser posterior a
+|     otro):
+|         'after' => 'El campo :attribute debe ser una fecha posterior a :date.',
+|
+|   - Un mensaje más amable para un campo puntual: sumalo en la sección
+|     'custom', con el nombre de la regla y el del campo:
+|         'foto' => [
+|             'max' => 'La foto no puede pesar más de 2 MB.',
+|         ],
+|     Esto PISA el mensaje genérico de la regla, solo para ese campo.
+|
+|   - El nombre humano de un campo: sumalo en la sección 'attributes'. Con
+|     eso, 'required.producto_id' no encuentra nada pero el mensaje genérico de
+|     'required' ya sale como "El campo producto es obligatorio", sin llegar a
+|     escribir un mensaje a medida.
 |
 */
 

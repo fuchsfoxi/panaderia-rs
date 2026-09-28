@@ -20,6 +20,79 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+/**
+ * ============================================================================
+ * INGRESO DE PRODUCCION
+ * ============================================================================
+ *
+ * Solo se le agregó el bloque try/catch de la foto. El resto del método ya
+ * estaba escrito y documentado antes de este trabajo, así que se respetó tal
+ * cual. Lo que sigue es el mapa de lo que hace, para poder leerlo de un
+ * vistazo.
+ *
+ * ---------------------------------------------------------------------------
+ * EL PROBLEMA QUE RESUELVE
+ * ---------------------------------------------------------------------------
+ *
+ * Una producción se guarda SIEMPRE en cuatro o cinco tablas distintas, según
+ * la categoría del producto elegido:
+ *
+ *     produccion           (una fila: fecha, observaciones, quién la cargó)
+ *     detalle_pan          (cantidad, unidad, turno)
+ *     detalle_torta        (forma, foto)
+ *     detalle_bocadito     (cantidad)
+ *     detalle_X_empleado   (uno por cada empleado que la produjo, con su rol)
+ *
+ * El producto elegido define cuál de las tres tablas de detalle corresponde.
+ * Y hay que hacerlo todo en una transacción, porque una torta guardada sin su
+ * foto, o un lote de pan sin los empleados, es un registro incompleto que
+ * después no se puede corregir desde la pantalla.
+ *
+ * ---------------------------------------------------------------------------
+ * EL FLUJO DE store(), PASO A PASO
+ * ---------------------------------------------------------------------------
+ *
+ *  1. BUSCAR EL PRODUCTO. Se carga con su categoría relacionada. La categoría
+ *     NO se lee del input oculto 'categoria' del formulario, sino del producto
+ *     elegido: el input lo pone el JavaScript con los botones y podría no
+ *     coincidir con el select. Así el registro nunca queda en una tabla que no
+ *     le corresponde.
+ *
+ *  2. ARMAR LAS REGLAS DE VALIDACIÓN DINÁMICAMENTE. Según la categoría, se exige
+ *     turno y cantidad en coches (pan), o forma y foto (torta), o cantidad en
+ *     unidades (bocadito). Lo que no aplica queda en nullable y no se guarda.
+ *     Ver $esPan / $esTorta / $esBocadito más abajo.
+ *
+ *  3. TRANSACCIÓN (DB::transaction). Todo lo de abajo es una sola unidad: si
+ *     algo falla, se revierte TODO. Es lo que garantiza que no queden filas
+ *     huérfanas. El try/catch de la foto está adentro de la transacción, y por
+ *     eso un error de escritura aborta el guardado completo.
+ *
+ *  4. CREAR produccion. Ojo: esa tabla NO tiene created_at/updated_at
+ *     (public $timestamps = false en el modelo), por eso no hay forma de
+ *     mostrar la hora de registro en la pantalla. Solo queda el usuario.
+ *
+ *  5. SUBIR LA FOTO, si es torta. Va directo a public/images/tortas y no al
+ *     disco 'public' de Laravel: ese disco deja el archivo en
+ *     storage/app/public y necesita php artisan storage:link para que sea
+ *     visible. Acá no hace falta ningún symlink.
+ *
+ *  6. CREAR EL DETALLE. El match elige la tabla según la categoría. Cada tabla
+ *     tiene columnas propias, así que no se puede guardar todo junto.
+ *
+ *  7. CREAR LOS EMPLEADOS. Se recorren y se inserta uno por cada persona con
+ *     el rol que tenía. El nombre de la tabla pivote y el de su columna de FK
+ *     salen de self::PIVOTES_EMPLEADOS, declarado arriba: antes cada categoría
+ *     repetía su propio foreach con las tres claves escritas a mano.
+ *
+ * ---------------------------------------------------------------------------
+ * UNA COSA QUE PUEDE CONFUNDIR AL LEER EL CÓDIGO
+ * ---------------------------------------------------------------------------
+ *
+ * En $esTorta, la cantidad no se guarda porque ESA TABLA NO TIENE ESA COLUMNA.
+ * 1 registro de detalle_torta ES una torta. Por eso el dashboard y el
+ * historial hacen lo mismo: cuentan filas en vez de sumar una cantidad.
+ */
 class ProduccionController extends Controller
 {
     /**
