@@ -190,8 +190,10 @@ body {
 }
 
 .caja-input .icon {
-    width: 20px;
-    height: 20px;
+    /* Material Symbols es una fuente: el tamaño se controla con font-size.
+       Antes era un SVG y por eso se le ponia width/height. Con 24px (el valor
+       por defecto de la clase) el glifo se pasaba de la caja de 52px. */
+    font-size: 20px;
     color: var(--verde-medio);
     flex-shrink: 0;
 }
@@ -234,9 +236,9 @@ body {
     border-radius: 8px;
 }
 
-.alternar-contrasena svg {
-    width: 18px;
-    height: 18px;
+/* El icono de mostrar la contrasena: tambien es texto ahora. */
+.alternar-contrasena .material-symbols-rounded {
+    font-size: 20px;
 }
 
 /* --- Separador decorativo --- */
@@ -284,6 +286,7 @@ body {
 .alerta-error i {
     margin-top: 2px;
     flex: 0 0 auto;
+    font-size: 1.25rem;
 }
 
 .alerta-error ul {

@@ -71,6 +71,59 @@ html {
         U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ==========================================================================
+   ICONOS: Material Symbols Rounded
+   --------------------------------------------------------------------------
+   Reemplaza a Font Awesome. Se eligio esta familia porque es redondeada de
+   verdad, igual que Huninn y Baloo 2, y es la unica de las evaluadas que suma
+   un toque mas juegton sin romper el carater redondeado de la marca.
+
+   El archivo tiene SOLO los 17 iconos que usa el sistema. La version
+   completa son 542 KB con 4.298 iconos; esta pesa 5 KB. Google Fonts permite
+   pedir un subconjunto por parametro (icon_names=...), asi que no hace falta
+   instalar herramientas de recorte.
+
+   Material Symbols no usa clases con nombres de icono: dibuja el icono a
+   partir del TEXTO interior del elemento, mediante ligaduras. Por eso el
+   "nombre" va dentro del <i> en vez de en el atributo class.
+   ========================================================================== */
+
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    font-weight: 400;
+    font-display: block;
+    src: url('/fonts/MaterialSymbolsRounded.woff2') format('woff2');
+}
+
+/* Definicion copiada de Google, con sus atributos, que no son redundantes: la
+   ligadura 'liga' es la que convierte el texto en el dibujo, y el
+   text-transform evita que el navegador modifique el nombre del icono. */
+.material-symbols-rounded {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+
+    /* 1em y NO los 24px que trae la definicion de Google. Es un cambio
+       deliberado: Font Awesome heredaba el tamano del texto padre, asi que
+       un icono dentro de un boton de 13px se dibujaba a 13px. Google en
+       cambio pone 24px en el elemento, que NO heredan, y todos los iconos
+       del sistema Habrian salido del mismo tamano, disproportionados.
+       Con 1em el comportamiento es identico al que teniamos antes y cada
+       icono toma el tamano de su contexto, sin tocar todas las reglas. */
+    font-size: 1em;
+    line-height: 1;
+    letter-spacing: normal;
+    text-transform: none;
+    display: inline-block;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'liga';
+}
+
 :root {
     /* Paleta de marca */
     --verde-oscuro: #33403a;   /* verde bosque oscuro: fondo del sidebar */

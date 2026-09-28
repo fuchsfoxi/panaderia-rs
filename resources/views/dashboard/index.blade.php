@@ -21,13 +21,13 @@
         <div class="filtro-fecha-inicio">
             <div class="filtro-fecha_desde">
                 <label for="fecha_inicio">Desde</label>
-                <i class="far fa-calendar-alt"></i>
+                <i class="material-symbols-rounded">calendar_month</i>
                 <input type="date" id="fecha_inicio" name="fecha_inicio">
             </div>
 
             <div class="filtro_fecha_hasta">
                 <label for="fecha_fin">Hasta</label>
-                <i class="far fa-calendar-alt"></i>
+                <i class="material-symbols-rounded">calendar_month</i>
                 <input type="date" id="fecha_fin" name="fecha_fin">
             </div>
 
@@ -58,7 +58,7 @@
                 {{-- 'texto' ya viene formateado ("84 unidad" o "5 lata + 2 coche"). --}}
                 {{ $tarjetas['Pan']['texto'] }}
             </div>
-            <button type="button" class="btn-detalles" data-abrir-modal="modal-pan">Detalles <i class="fas fa-arrow-right"></i></button>
+            <button type="button" class="btn-detalles" data-abrir-modal="modal-pan">Detalles <i class="material-symbols-rounded">arrow_forward</i></button>
         </div>
 
         {{-- TORTA: no hay columna 'cantidad' en detalle_torta, 1 registro = 1
@@ -69,7 +69,7 @@
             <div class="valor_categoria">
                 {{ $tarjetas['Torta']['texto'] }}
             </div>
-            <button type="button" class="btn-detalles" data-abrir-modal="modal-torta">Detalles <i class="fas fa-arrow-right"></i></button>
+            <button type="button" class="btn-detalles" data-abrir-modal="modal-torta">Detalles <i class="material-symbols-rounded">arrow_forward</i></button>
         </div>
 
         {{-- BOCADITO: tiene 'cantidad' pero no 'unidad_medida_id', así que la
@@ -79,7 +79,7 @@
             <div class="valor_categoria">
                 {{ $tarjetas['Bocadito']['texto'] }}
             </div>
-            <button type="button" class="btn-detalles" data-abrir-modal="modal-bocadito">Detalles <i class="fas fa-arrow-right"></i></button>
+            <button type="button" class="btn-detalles" data-abrir-modal="modal-bocadito">Detalles <i class="material-symbols-rounded">arrow_forward</i></button>
         </div>
     </div>
 
@@ -159,7 +159,7 @@
 <!-- Modal: detalle de Pan -->
 <div class="overlay-modal" id="modal-pan" role="dialog" aria-modal="true" aria-labelledby="modal-pan-titulo">
     <div class="caja-modal">
-        <button type="button" class="cerrar-modal" data-cerrar-modal><i class="fas fa-times"></i></button>
+        <button type="button" class="cerrar-modal" data-cerrar-modal><i class="material-symbols-rounded">close</i></button>
         <h2 id="modal-pan-titulo">Detalle de Producción — Pan</h2>
         <p class="subtitulo-modal">Hoy — {{ $tarjetas['Pan']['texto'] }}</p>
 
@@ -186,7 +186,7 @@
         </ul>
 
         <div class="registrado-por">
-            <i class="fas fa-user-check"></i>
+            <i class="material-symbols-rounded">person_check</i>
             @if ($registradoPor = $tarjetas['Pan']['lineasDeHoy']->pluck('usuario')->filter()->unique())
                 Registrado por <strong>{{ $registradoPor->implode(', ') }}</strong> — hoy
             @else
@@ -199,7 +199,7 @@
 <!-- Modal: detalle de Torta -->
 <div class="overlay-modal" id="modal-torta" role="dialog" aria-modal="true" aria-labelledby="modal-torta-titulo">
     <div class="caja-modal">
-        <button type="button" class="cerrar-modal" data-cerrar-modal><i class="fas fa-times"></i></button>
+        <button type="button" class="cerrar-modal" data-cerrar-modal><i class="material-symbols-rounded">close</i></button>
         <h2 id="modal-torta-titulo">Detalle de Producción — Torta</h2>
         <p class="subtitulo-modal">{{ $tarjetas['Torta']['texto'] }} registradas hoy</p>
 
@@ -228,7 +228,7 @@
         </ul>
 
         <div class="registrado-por">
-            <i class="fas fa-user-check"></i>
+            <i class="material-symbols-rounded">person_check</i>
             @if ($registradoPor = $tarjetas['Torta']['lineasDeHoy']->pluck('usuario')->filter()->unique())
                 Registrado por <strong>{{ $registradoPor->implode(', ') }}</strong> — hoy
             @else
@@ -241,7 +241,7 @@
 <!-- Modal: detalle de Bocadito -->
 <div class="overlay-modal" id="modal-bocadito" role="dialog" aria-modal="true" aria-labelledby="modal-bocadito-titulo">
     <div class="caja-modal">
-        <button type="button" class="cerrar-modal" data-cerrar-modal><i class="fas fa-times"></i></button>
+        <button type="button" class="cerrar-modal" data-cerrar-modal><i class="material-symbols-rounded">close</i></button>
         <h2 id="modal-bocadito-titulo">Detalle de Producción — Bocadito</h2>
         <p class="subtitulo-modal">{{ $tarjetas['Bocadito']['texto'] }} registradas hoy</p>
 
@@ -267,7 +267,7 @@
         </ul>
 
         <div class="registrado-por">
-            <i class="fas fa-user-check"></i>
+            <i class="material-symbols-rounded">person_check</i>
             @if ($registradoPor = $tarjetas['Bocadito']['lineasDeHoy']->pluck('usuario')->filter()->unique())
                 Registrado por <strong>{{ $registradoPor->implode(', ') }}</strong> — hoy
             @else

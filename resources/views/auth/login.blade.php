@@ -9,7 +9,6 @@
          vista no extiende layouts/app, asi que la carga ella misma. --}}
     @vite(['resources/css/variables.css'])
     @vite(['resources/css/login.css', 'resources/js/login.js'])
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
@@ -52,7 +51,7 @@
                      tener que buscar el campo. --}}
                 @if ($errors->any())
                     <div class="alerta-error" role="alert">
-                        <i class="fas fa-circle-exclamation"></i>
+                        <i class="material-symbols-rounded">error</i>
                         <ul>
                             @foreach ($errors->all() as $error)
                                 <li>{{ $error }}</li>
@@ -64,7 +63,7 @@
                 <div class="grupo-input">
                     <label for="username">Usuario</label>
                     <div class="caja-input">
-                        <i class="fas fa-user icon"></i>
+                        <i class="material-symbols-rounded icon">person</i>
                         {{-- autocomplete="username" + autofocus: el celular
                              ofrece el usuario guardado y el teclado se abre
                              directo en el campo. old() mantiene lo escrito si
@@ -81,7 +80,7 @@
                 <div class="grupo-input">
                     <label for="password">Contraseña</label>
                     <div class="caja-input">
-                        <i class="fas fa-key icon"></i>
+                        <i class="material-symbols-rounded icon">key</i>
                         {{-- autocomplete="current-password": es el campo de una
                              cuenta existente, no de una nueva. --}}
                         <input type="password" id="password" name="password"
@@ -89,7 +88,7 @@
                                autocomplete="current-password"
                                maxlength="255" required>
                         <button type="button" class="alternar-contrasena" aria-label="Mostrar contraseña">
-                            <i class="fas fa-eye"></i>
+                            <i class="material-symbols-rounded">visibility</i>
                         </button>
                     </div>
                 </div>
@@ -109,6 +108,5 @@
 
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
 </body>
 </html>

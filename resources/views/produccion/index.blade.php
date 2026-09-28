@@ -25,7 +25,7 @@
          ->with('status', ...) cuando la produccion se guardo. --}}
     @if (session('status'))
         <div class="alerta alerta-ok" role="status">
-            <i class="fas fa-circle-check"></i> {{ session('status') }}
+            <i class="material-symbols-rounded">check_circle</i> {{ session('status') }}
         </div>
     @endif
 
@@ -35,7 +35,7 @@
          categoria invalida). --}}
     @if ($errors->any())
         <div class="alerta alerta-error" role="alert">
-            <i class="fas fa-circle-exclamation"></i>
+            <i class="material-symbols-rounded">error</i>
             <ul>
                 @foreach ($errors->all() as $error)
                     <li>{{ $error }}</li>
@@ -211,7 +211,7 @@
                 {{-- Icono de Font Awesome y no un emoji: el emoji se ve
                      distinto segun el sistema operativo del celular. --}}
                 <label for="foto" class="foto-upload">
-                    <i class="fas fa-camera" aria-hidden="true"></i>
+                    <i class="material-symbols-rounded" aria-hidden="true">photo_camera</i>
                     Agregar foto
                 </label>
                 {{-- accept="image/*" hace que en el celular aparezca la

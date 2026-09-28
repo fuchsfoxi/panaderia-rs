@@ -69,7 +69,8 @@
     border-radius: 50%;
     background-color: var(--verde-medio);
     color: var(--texto-claro);
-    font-size: 16px;
+    font-size: 18px;
+    font-variation-settings: 'FILL' 1;
 }
 
 .lateral__marca-texto {
@@ -142,6 +143,11 @@
     font-size: 16px;
     color: var(--verde-sage);           /* icono inactivo */
     transition: color 0.15s ease;
+
+    /* FILL 1 = icono relleno en vez de contorno. Sobre el verde oscuro del
+       menu, el contorno de 1px se ve finito; relleno tiene la presencia que
+       corresponde a un ícono de navegación. */
+    font-variation-settings: 'FILL' 1;
 }
 
 .lateral__enlace:hover {
@@ -215,6 +221,7 @@
     align-items: center;
     justify-content: center;
     gap: 9px;
+    font-size: 17px;
 
     /* 44px de alto: minimo para que el dedo lo alcance en el celular. */
     min-height: var(--toque-minimo);
@@ -265,7 +272,8 @@
     border-radius: 14px;
     background-color: var(--verde-oscuro);
     color: var(--texto-claro);
-    font-size: 18px;
+    font-size: 20px;
+    font-variation-settings: 'FILL' 1;
     cursor: pointer;
 }
 
@@ -307,6 +315,9 @@
 .alerta i {
     margin-top: 2px;
     flex: 0 0 auto;
+    /* Los avisos comparten la tipografia del texto (1rem), que para un icono
+       seria enorme. */
+    font-size: 1.25rem;
 }
 
 .alerta ul {

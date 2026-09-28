@@ -61,13 +61,13 @@
 
                 <div class="filtro-fecha-desde">
                     <label for="fecha_inicio">Desde</label>
-                    <i class="far fa-calendar-alt"></i>
+                    <i class="material-symbols-rounded">calendar_month</i>
                     <input type="date" id="fecha_inicio" name="desde" value="{{ $filtros['desde'] }}">
                 </div>
 
                 <div class="filtro-fecha-hasta">
                     <label for="fecha_fin">Hasta</label>
-                    <i class="far fa-calendar-alt"></i>
+                    <i class="material-symbols-rounded">calendar_month</i>
                     <input type="date" id="fecha_fin" name="hasta" value="{{ $filtros['hasta'] }}">
                 </div>
             </div>
@@ -107,14 +107,14 @@
          fechas, en vez de mostrar una lista vacia sin explicacion. --}}
     @if ($filtros['error'])
         <div class="alerta alerta-error" role="alert">
-            <i class="fas fa-circle-exclamation"></i> {{ $filtros['error'] }}
+            <i class="material-symbols-rounded">error</i> {{ $filtros['error'] }}
         </div>
     @endif
 
 {{-- MODIFICADO: el total ahora viene del controlador, no del numero fijo
      "23 registros encontrados" que estaba hardcodeado en el HTML. --}}
 <div class="datos-encontrados">
-    <i class="far fa-clipboard"></i> {{ $totalRegistros }} registros encontrados
+    <i class="material-symbols-rounded">content_paste</i> {{ $totalRegistros }} registros encontrados
 </div>
 
 {{-- MODIFICADO: este bloque reemplaza los 2 registros de prueba fijos
@@ -159,7 +159,7 @@
         </div>
 
         <div class="meta-carta">
-            <span><i class="far fa-user"></i> ingreso: {{ $registro->usuario ?? 'sistema' }}</span>
+            <span><i class="material-symbols-rounded">person</i> ingreso: {{ $registro->usuario ?? 'sistema' }}</span>
         </div>
     </div>
 @empty
@@ -171,7 +171,7 @@
                 <h3>Ningún registro coincide con el filtro</h3>
                 <p>Probá con otras fechas, otro tipo de producción o quitá el filtro de turno.</p>
                 <a href="{{ route('history.index') }}" class="detalles-link">
-                    Quitar los filtros <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                    Quitar los filtros <i class="material-symbols-rounded" aria-hidden="true">arrow_forward</i>
                 </a>
             @else
                 <h3>Aún no hay producción registrada</h3>

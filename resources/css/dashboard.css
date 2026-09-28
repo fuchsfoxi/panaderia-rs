@@ -343,6 +343,7 @@ body {
     background: none;
     border: none;
     font-size: 22px;
+    font-variation-settings: 'FILL' 1;
     color: var(--verde-medio);
     cursor: pointer;
 }
@@ -461,6 +462,7 @@ body {
 
 .registrado-por i {
     color: var(--verde-sage);
+    font-size: 16px;
 }
 /* ==========================================================================
    CELULAR

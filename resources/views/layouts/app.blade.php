@@ -37,7 +37,6 @@
          pagina. --}}
     @vite(['resources/css/sidebar.css'])
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body class="cuerpo-app">
 
@@ -47,7 +46,7 @@
          sepa si el panel esta abierto. --}}
     <button type="button" class="app-burger" id="app-burger"
             aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-lateral">
-        <i class="fas fa-bars" aria-hidden="true"></i>
+        <i class="material-symbols-rounded" aria-hidden="true">menu</i>
     </button>
 
     {{-- Fondo oscuro detras del panel. Tocar aca lo cierra (sidebar.js).

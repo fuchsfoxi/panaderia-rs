@@ -17,19 +17,19 @@
         [
             'ruta' => 'dashboard',
             'patron' => 'dashboard',
-            'icono' => 'fa-solid fa-gauge-high',
+            'icono' => 'space_dashboard',
             'label' => 'Dashboard',
         ],
         [
             'ruta' => 'produccion.index',
             'patron' => 'produccion.*',
-            'icono' => 'fa-solid fa-bread-slice',
+            'icono' => 'bakery_dining',
             'label' => 'Producción',
         ],
         [
             'ruta' => 'history.index',
             'patron' => 'history.*',
-            'icono' => 'fa-solid fa-clock-rotate-left',
+            'icono' => 'history',
             'label' => 'Historial',
         ],
         // Modulo sin implementar: el enlace lleva a una pagina de aviso, no a
@@ -37,7 +37,7 @@
         [
             'ruta' => 'pedidos.index',
             'patron' => 'pedidos.*',
-            'icono' => 'fa-solid fa-receipt',
+            'icono' => 'receipt_long',
             'label' => 'Pedidos',
         ],
     ];
@@ -49,7 +49,7 @@
 <aside class="lateral" id="menu-lateral">
     <div class="lateral__marca">
         <span class="lateral__marca-icono">
-            <i class="fa-solid fa-bread-slice"></i>
+            <i class="material-symbols-rounded">bakery_dining</i>
         </span>
         <span class="lateral__marca-texto">
             <span class="lateral__marca-nombre">Panificadora</span>
@@ -70,7 +70,10 @@
                class="lateral__enlace {{ request()->routeIs($item['patron']) ? 'activo' : '' }}"
                title="{{ $item['label'] }}"
                @if (request()->routeIs($item['patron'])) aria-current="page" @endif>
-                <i class="lateral__enlace-icono {{ $item['icono'] }}" aria-hidden="true"></i>
+                {{-- Material Symbols dibuja el icono a partir del TEXTO
+                     interior (ligadura): el nombre va adentro del <i>, no en
+                     una clase. --}}
+                <i class="lateral__enlace-icono material-symbols-rounded" aria-hidden="true">{{ $item['icono'] }}</i>
                 <span class="lateral__enlace-texto">{{ $item['label'] }}</span>
             </a>
         @endforeach
@@ -89,7 +92,7 @@
         <form method="POST" action="{{ route('logout') }}">
             @csrf
             <button type="submit" class="lateral__salir" title="Cerrar sesión">
-                <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                <i class="material-symbols-rounded" aria-hidden="true">logout</i>
                 <span class="lateral__salir-texto">Cerrar sesión</span>
             </button>
         </form>
