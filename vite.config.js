@@ -17,6 +17,8 @@ export default defineConfig({
                     'resources/js/produccion.js',
                     'resources/css/historial.css',
                     'resources/js/historial.js',
+                    'resources/css/proximamente.css',
+                    'resources/css/errores.css',
                     'resources/css/sidebar.css',
                     'resources/css/variables.css'
                 ],

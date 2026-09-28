@@ -32,6 +32,14 @@
             'icono' => 'fa-solid fa-clock-rotate-left',
             'label' => 'Historial',
         ],
+        // Modulo sin implementar: el enlace lleva a una pagina de aviso, no a
+        // un 404. Si se implementa, se cambia el destino por el controlador.
+        [
+            'ruta' => 'pedidos.index',
+            'patron' => 'pedidos.*',
+            'icono' => 'fa-solid fa-receipt',
+            'label' => 'Pedidos',
+        ],
     ];
 @endphp
 

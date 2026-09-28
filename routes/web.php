@@ -56,6 +56,14 @@ Route::middleware('auth:web')->group(function () {
     Route::get('/history', [HistorialController::class, 'index'])->name('history.index');
 
     /**
+     * Modulo de pedidos: NO esta implementado todavia. La ruta existe para que
+     * el enlace del menu no se rompa y muestre una pagina de aviso, en vez de
+     * dejar un href="#" o un 404. Va dentro del grupo 'auth' porque el menu
+     * lateral solo se ve con sesion.
+     */
+    Route::get('/pedidos', fn () => view('pedidos.index'))->name('pedidos.index');
+
+    /**
      * Logout por POST y no por GET: un GET se puede disparar desde un <img>
      * o un enlace externo y cerraria la sesion del usuario sin que el lo pida.
      */

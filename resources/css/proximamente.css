@@ -1,0 +1,73 @@
+/* ==========================================================================
+   PAGINA "PROXIMAMENTE" (modulo de pedidos)
+   --------------------------------------------------------------------------
+   El modulo de pedidos no esta implementado todavia. Esta es la unica hoja
+   de estilos del sistema que se carga sin sesion de datos: son 4 reglas de
+   maquetacion, asi que conviene tenerlas en un archivo propio en vez de
+   mezclarlas con el CSS de otra pagina.
+   ========================================================================== */
+
+.pagina-proximamente {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.pagina-proximamente h1 {
+    font-family: var(--fuente);
+    font-size: clamp(1.5rem, 5vw, 2rem);
+    font-weight: 400;
+    color: var(--verde-oscuro);
+}
+
+.pagina-proximamente .carta {
+    width: 100%;
+    max-width: 34rem;
+    padding: 28px;
+    border-radius: 16px;
+    background-color: var(--crema);
+    border: 1px solid var(--beige);
+}
+
+.pagina-proximamente .carta h2 {
+    font-family: var(--fuente);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--verde-medio);
+    margin-bottom: 12px;
+}
+
+.pagina-proximamente .carta p {
+    font-family: var(--fuente);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--verde-oscuro);
+    margin-bottom: 24px;
+}
+
+.btn-continuar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    /* 44px de alto: minimo para que el dedo lo alcance en el celular. */
+    min-height: 44px;
+    padding: 0 22px;
+
+    border-radius: 22px;
+    background-color: var(--verde-oscuro);
+    color: var(--crema);
+    font-family: var(--fuente);
+    font-size: 1rem;
+    text-decoration: none;
+}
+
+.btn-continuar:hover {
+    background-color: var(--verde-medio);
+}
+
+.btn-continuar:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: 2px;
+}
