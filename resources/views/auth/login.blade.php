@@ -40,14 +40,41 @@
                 <p>Ingresa tus credenciales para acceder al obrador digital.</p>
             </div>
 
-            <form action="{{ url('login') }}" method="POST" class="campos-formulario">
+            {{-- route('login.attempt') y no url('login'): es la ruta POST que
+                 procesa el login. Con GET /login solo, el envio del formulario
+                 daba "405 Method Not Allowed". --}}
+            <form action="{{ route('login.attempt') }}" method="POST" class="campos-formulario" novalidate>
+                {{-- Token anti CSRF: sin esto Laravel responde 419. --}}
                 @csrf
+
+                {{-- Errores de validacion y de credenciales. Se muestran juntos
+                     arriba del formulario para que el usuario vea el motivo sin
+                     tener que buscar el campo. --}}
+                @if ($errors->any())
+                    <div class="alerta-error" role="alert">
+                        <i class="fas fa-circle-exclamation"></i>
+                        <ul>
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
                 <div class="grupo-input">
                     <label for="username">Usuario</label>
                     <div class="caja-input">
                         <i class="fas fa-user icon"></i>
-                        <input type="text" id="username" name="username" placeholder="Nombre de usuario" required>
+                        {{-- autocomplete="username" + autofocus: el celular
+                             ofrece el usuario guardado y el teclado se abre
+                             directo en el campo. old() mantiene lo escrito si
+                             el login falla. --}}
+                        <input type="text" id="username" name="username"
+                               value="{{ old('username') }}"
+                               placeholder="Nombre de usuario"
+                               autocomplete="username"
+                               autocapitalize="none" spellcheck="false"
+                               maxlength="50" required autofocus>
                     </div>
                 </div>
 
@@ -55,7 +82,12 @@
                     <label for="password">Contraseña</label>
                     <div class="caja-input">
                         <i class="fas fa-key icon"></i>
-                        <input type="password" id="password" name="password" placeholder="••••••••••••" required>
+                        {{-- autocomplete="current-password": es el campo de una
+                             cuenta existente, no de una nueva. --}}
+                        <input type="password" id="password" name="password"
+                               placeholder="••••••••••••"
+                               autocomplete="current-password"
+                               maxlength="255" required>
                         <button type="button" class="alternar-contrasena" aria-label="Mostrar contraseña">
                             <i class="fas fa-eye"></i>
                         </button>

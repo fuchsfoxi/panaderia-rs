@@ -183,6 +183,47 @@
     font-weight: 400;
 }
 
+/* --- Boton de cerrar sesion ---------------------------------------------- */
+
+/* El <form> existe para poder hacer POST con @csrf, asi que no debe pegar el
+   boton contra el borde: se le saca el margen por defecto. */
+.lateral__pie form {
+    margin: 12px 0 0;
+}
+
+.lateral__salir {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+
+    /* 44px de alto: minimo para que el dedo lo alcance en el celular. */
+    min-height: 44px;
+    width: 100%;
+    padding: 0 14px;
+
+    border: 1px solid var(--verde-medio);
+    border-radius: 14px;
+    background-color: transparent;
+    color: var(--verde-claro);
+    font-family: 'Huninn', sans-serif;
+    font-size: 13.5px;
+    font-weight: 400;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.lateral__salir:hover {
+    background-color: var(--verde-medio);
+    color: var(--crema);
+}
+
+/* Foco visible: sin esto el teclado se pierde al navegar con Tab. */
+.lateral__salir:focus-visible {
+    outline: 2px solid var(--verde-claro);
+    outline-offset: 2px;
+}
+
 /* --- Integracion con el layout ------------------------------------------- */
 
 /* El body de las paginas (historial / produccion) traia padding: 40px que

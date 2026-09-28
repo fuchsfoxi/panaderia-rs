@@ -241,6 +241,37 @@ body {
     flex-shrink: 0;
 }
 
+/* --- Alerta de error (credenciales incorrectas / validacion) -------------
+   Se agrega con el login. NO se introduce un color nuevo: usa el verde medio
+   de la paleta con texto crema, y lo que marca el error es el icono de aviso
+   + la posicion del bloque, para no romper la identidad de marca. */
+.alerta-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background-color: var(--verde-medio);
+    color: var(--crema);
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.alerta-error i {
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
+.alerta-error ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
 /* --- Acciones --- */
 .acciones {
     display: flex;

@@ -64,5 +64,16 @@
     <div class="lateral__pie">
         <strong>Sesión activa</strong>
         {{ auth()->user()?->empleado?->nombre_empleados ?? auth()->user()?->username ?? 'Invitado' }}
+
+        {{-- Logout: tiene que ser un POST dentro de un <form>. Un <a href> no
+             sirve porque el cierre de sesion cambia el estado del servidor, y
+             ademas un GET se podria disparar desde cualquier pagina externa.
+             El @csrf es obligatorio. --}}
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <button type="submit" class="lateral__salir">
+                <i class="fas fa-sign-out-alt"></i> Cerrar sesión
+            </button>
+        </form>
     </div>
 </aside>
