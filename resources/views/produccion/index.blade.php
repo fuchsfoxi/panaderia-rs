@@ -21,6 +21,29 @@
         <button type="button" class="btn-categoria" data-categoria="bocadito">Bocadito</button>
     </div>
 
+    {{-- Mensaje de exito: lo manda ProduccionController@store con
+         ->with('status', ...) cuando la produccion se guardo. --}}
+    @if (session('status'))
+        <div class="alerta alerta-ok" role="status">
+            <i class="fas fa-circle-check"></i> {{ session('status') }}
+        </div>
+    @endif
+
+    {{-- Resumen de errores. Cada campo tambien muestra su propio error mas
+         abajo, con @error. Este bloque sirve para los errores que no
+         pertenecen a un campo visible (por ejemplo, el producto con una
+         categoria invalida). --}}
+    @if ($errors->any())
+        <div class="alerta alerta-error" role="alert">
+            <i class="fas fa-circle-exclamation"></i>
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form action="{{ route('produccion.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
         <input type="hidden" name="categoria" id="categoria-seleccionada" value="pan">
@@ -38,7 +61,11 @@
 
                     <div class="campo">
                         <label for="fecha">Fecha</label>
-                        <input type="date" id="fecha" name="fecha">
+                        <input type="date" id="fecha" name="fecha"
+                               value="{{ old('fecha') }}">
+                        @error('fecha')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="campo campo-condicional" data-mostrar-en="pan" id="campo-turno">
@@ -47,10 +74,19 @@
                              estaban fijas. Ahora salen de la tabla turnos y el
                              value es el id real. --}}
                         <select id="turno" name="turno_id">
+                            {{-- old() mantiene la selección si el guardado
+                                 falla y se vuelve a pintar el formulario. --}}
+                            <option value="">-- Selecciona un turno --</option>
                             @foreach ($turnos as $turno)
-                                <option value="{{ $turno->id }}">{{ $turno->nombre_turnos }}</option>
+                                <option value="{{ $turno->id }}"
+                                    @selected((string) old('turno_id') === (string) $turno->id)>
+                                    {{ $turno->nombre_turnos }}
+                                </option>
                             @endforeach
                         </select>
+                        @error('turno_id')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="campo">
@@ -61,27 +97,41 @@
                         <select id="producto" name="producto_id">
                             <option value="">-- Selecciona un producto --</option>
                             @forelse ($productos as $producto)
-                                <option value="{{ $producto->id }}">{{ $producto->nombre_p }}</option>
+                                <option value="{{ $producto->id }}"
+                                    @selected((string) old('producto_id') === (string) $producto->id)>
+                                    {{ $producto->nombre_p }}
+                                </option>
                             @empty
                                 <option value="" disabled>-- No hay productos cargados --</option>
                             @endforelse
                         </select>
+                        @error('producto_id')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="campo campo-condicional" data-mostrar-en="pan" id="campo-cantidad-pan">
                         <label for="cantidad_pan">Cantidad (Coches)</label>
                         <div class="campo-cantidad">
-                            <input type="number" id="cantidad_pan" name="cantidad_coches" min="0">
+                            <input type="number" id="cantidad_pan" name="cantidad_coches" min="0" step="0.01"
+                                   value="{{ old('cantidad_coches') }}">
                             <span>coches</span>
                         </div>
+                        @error('cantidad_coches')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="campo campo-condicional" data-mostrar-en="bocadito" id="campo-cantidad-bocadito">
                         <label for="cantidad_bocadito">Cantidad (Unidades)</label>
                         <div class="campo-cantidad">
-                            <input type="number" id="cantidad_bocadito" name="cantidad_unidades" min="0">
+                            <input type="number" id="cantidad_bocadito" name="cantidad_unidades" min="0" step="0.01"
+                                   value="{{ old('cantidad_unidades') }}">
                             <span>unidades</span>
                         </div>
+                        @error('cantidad_unidades')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="campo campo-ancho">
@@ -112,11 +162,25 @@
                             </div>
                         </div>
                         <div id="empleados-inputs"></div>
+                        @error('empleados')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
+                        @error('empleados.*.empleado_id')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
+                        @error('empleados.*.rol_id')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="campo campo-ancho">
                         <label for="observaciones">Observaciones</label>
-                        <textarea id="observaciones" name="observaciones" placeholder="Notas adicionales o novedades del lote..."></textarea>
+                        <textarea id="observaciones" name="observaciones"
+                                  maxlength="1000"
+                                  placeholder="Notas adicionales o novedades del lote...">{{ old('observaciones') }}</textarea>
+                        @error('observaciones')
+                            <p class="campo-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                 </div>
@@ -138,13 +202,21 @@
                     <button type="button" class="btn-forma" data-forma="circular">Circular</button>
                     <button type="button" class="btn-forma" data-forma="rectangular">Rectang.</button>
                 </div>
-                <input type="hidden" name="forma" id="forma-seleccionada">
+                <input type="hidden" name="forma" id="forma-seleccionada" value="{{ old('forma') }}">
+                @error('forma')
+                    <p class="campo-error">{{ $message }}</p>
+                @enderror
 
                 <h4>Subir foto (Obligatorio)</h4>
                 <label for="foto" class="foto-upload">
                     📷<br>Agregar foto
                 </label>
+                {{-- accept="image/*" hace que en el celular aparezca la
+                     camara ademas de la galeria. --}}
                 <input type="file" id="foto" name="foto" accept="image/*" style="display:none;">
+                @error('foto')
+                    <p class="campo-error">{{ $message }}</p>
+                @enderror
             </div>
 
         </div>

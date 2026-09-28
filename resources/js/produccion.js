@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const inputCategoria = document.getElementById('categoria-seleccionada');
     const camposCondicionales = document.querySelectorAll('.campo-condicional');
 
+    // Sin el input oculto no hay forma de saber que categoria esta
+    // seleccionada, asi que el script no puede hacer nada.
+    if (!inputCategoria) {
+        return;
+    }
+
     function mostrarCamposDe(categoria) {
         camposCondicionales.forEach(function (campo) {
             if (campo.dataset.mostrarEn === categoria) {
@@ -49,15 +55,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnCancelar = document.getElementById('btn-cancelar-form');
     const formulario = document.querySelector('form');
 
-    btnCancelar.addEventListener('click', function () {
-        formulario.reset();
-        botonesCategoria.forEach(function (b) {
-            b.classList.remove('activo');
+    // Antes se agregaba el listener sin comprobar que el boton exista: si no
+    // estaba, el navegador tiraba "Cannot read properties of null" en cada
+    // carga de la pagina.
+    if (btnCancelar && formulario) {
+        btnCancelar.addEventListener('click', function () {
+            formulario.reset();
+            botonesCategoria.forEach(function (b) {
+                b.classList.remove('activo');
+            });
+            const botonPan = document.querySelector('.btn-categoria[data-categoria="pan"]');
+            if (botonPan) {
+                botonPan.classList.add('activo');
+            }
+            inputCategoria.value = 'pan';
+            mostrarCamposDe('pan');
         });
-        document.querySelector('.btn-categoria[data-categoria="pan"]').classList.add('activo');
-        inputCategoria.value = 'pan';
-        mostrarCamposDe('pan');
-    });
+    }
 
     // --- Agregar empleados dinámicamente ---
     const btnAgregarEmpleado = document.getElementById('agregar-empleado');
@@ -69,6 +83,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const empleadosInputs = document.getElementById('empleados-inputs');
 
     let contadorEmpleados = 0;
+
+    // Todo este bloque depende de los 5 elementos del selector de empleados.
+    // Si falta alguno, no se registra ningun listener (antes fallaba al
+    // agregar uno solo que faltara).
+    if (!btnAgregarEmpleado || !popoverEmpleado || !selectEmpleado ||
+        !selectRol || !btnConfirmarEmpleado || !empleadosTags || !empleadosInputs) {
+        return;
+    }
 
     btnAgregarEmpleado.addEventListener('click', function () {
         popoverEmpleado.style.display =
@@ -87,9 +109,18 @@ document.addEventListener('DOMContentLoaded', function () {
         const empleadoNombre = selectEmpleado.selectedOptions[0]?.text ?? '';
         const rolNombre = selectRol.selectedOptions[0]?.text ?? '';
 
+        // El texto se arma con textContent en vez de innerHTML: el nombre del
+        // empleado viene de la base y no hace falta que se interprete como
+        // HTML. El boton de quitar se agrega por separado.
         const tag = document.createElement('span');
         tag.className = 'empleado-tag';
-        tag.innerHTML = `${empleadoNombre} — ${rolNombre} <button type="button">×</button>`;
+        tag.appendChild(document.createTextNode(empleadoNombre + ' — ' + rolNombre + ' '));
+
+        const botonQuitar = document.createElement('button');
+        botonQuitar.type = 'button';
+        botonQuitar.textContent = '×';
+        botonQuitar.setAttribute('aria-label', 'Quitar ' + empleadoNombre);
+        tag.appendChild(botonQuitar);
 
         const inputEmpleado = document.createElement('input');
         inputEmpleado.type = 'hidden';
@@ -104,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
         empleadosInputs.appendChild(inputEmpleado);
         empleadosInputs.appendChild(inputRol);
 
-        tag.querySelector('button').addEventListener('click', function () {
+        botonQuitar.addEventListener('click', function () {
             tag.remove();
             inputEmpleado.remove();
             inputRol.remove();

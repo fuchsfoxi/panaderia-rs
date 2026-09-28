@@ -10,14 +10,15 @@ use App\Models\DetallePanEmpleado;
 use App\Models\DetalleTorta;
 use App\Models\DetalleTortaEmpleado;
 use App\Models\Empleado;
-use App\Models\Producto;
 use App\Models\Produccion;
+use App\Models\Producto;
 use App\Models\RolProduccion;
 use App\Models\Turno;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ProduccionController extends Controller
 {
@@ -116,6 +117,9 @@ class ProduccionController extends Controller
             'cantidad_coches' => [$esPan ? 'required' : 'nullable', 'numeric', 'min:0'],
             'cantidad_unidades' => [$esBocadito ? 'required' : 'nullable', 'numeric', 'min:0'],
             'forma' => [$esTorta ? 'required' : 'nullable', 'string', 'max:100'],
+            // max:2048 son KB (2 MB), que es lo que acepta un celular con
+            // fotos de la camara comprimidas y lo que no demora en subir por
+            // la red del local.
             'foto' => [$esTorta ? 'required' : 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
 
             // el select de empleados manda el id del <option>, no el nombre
@@ -155,7 +159,20 @@ class ProduccionController extends Controller
                 // Nombre aleatorio para no sobreescribir si dos personas suben
                 // "torta.png" el mismo dia.
                 $nombreFoto = Str::random(40).'.'.$request->file('foto')->extension();
-                $request->file('foto')->move(public_path('images/tortas'), $nombreFoto);
+
+                // Si la carpeta no se puede escribir (permisos, disco lleno),
+                // move() lanza una excepcion y el usuario veria una pantalla
+                // de error en blanco. Se avisa con un mensaje y se corta la
+                // transaccion para que no quede una torta guardada sin foto.
+                try {
+                    $request->file('foto')->move(public_path('images/tortas'), $nombreFoto);
+                } catch (\Throwable $e) {
+                    report($e);
+
+                    throw ValidationException::withMessages([
+                        'foto' => 'No se pudo guardar la foto. Avisá al administrador.',
+                    ]);
+                }
 
                 // Con "/" inicial porque las vistas la imprimen directo en
                 // src="" sin asset(), y asi funciona desde cualquier ruta.

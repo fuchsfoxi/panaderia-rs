@@ -578,3 +578,13 @@ body {
         min-width: 0;
     }
 }
+
+/* Error de un campo puntual, debajo del campo. El bloque de aviso general
+   (.alerta) vive en sidebar.css, que se carga en todas las paginas internas
+   y asi no se repite el mismo bloque en cada CSS. */
+.campo-error {
+    font-family: var(--fuente);
+    font-size: 0.875rem;
+    line-height: 1.3;
+    color: var(--verde-medio);
+}

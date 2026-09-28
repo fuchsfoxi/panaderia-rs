@@ -273,6 +273,51 @@
     background-color: rgba(51, 64, 58, 0.55);
 }
 
+/* --- Avisos de estado (compartidos) ---------------------------------------
+   .alerta-ok es el mensaje de exito de un guardado y .alerta-error el resumen
+   de errores de validacion. Viven aca (y no en el CSS de cada pagina) porque
+   sidebar.css es la unica hoja que carga layouts/app.blade.php en TODAS las
+   paginas internas, asi que el bloque no se repite. Ningun color nuevo: se
+   usan los de la paleta y lo que marca el error es el icono. */
+
+.alerta {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    font-family: var(--fuente);
+    font-size: 1rem;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.alerta i {
+    margin-top: 2px;
+    flex: 0 0 auto;
+}
+
+.alerta ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.alerta li + li {
+    margin-top: 4px;
+}
+
+.alerta-ok {
+    background-color: var(--verde-medio);
+    color: var(--texto-claro);
+}
+
+.alerta-error {
+    background-color: var(--verde-oscuro);
+    color: var(--texto-claro);
+}
+
 /* --- Integracion con el layout ------------------------------------------- */
 
 /* El body de las paginas (historial / produccion) traia padding: 40px que

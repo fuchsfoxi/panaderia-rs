@@ -18,6 +18,12 @@ class EmpleadoSeeder extends Seeder
         $empleados = [
             ['nombre' => 'Carlos M.', 'numero' => '001', 'cargo' => 'Administrador'],
             ['nombre' => 'Ana R.', 'numero' => '002', 'cargo' => 'Panadero'],
+            // MODIFICADO: con 2 empleados el formulario de produccion quedaba
+            // sin gente para asignar y se veia un prototipo vacio. Con 5 hay
+            // con quien probar la asignacion de maestro y ayudante.
+            ['nombre' => 'Luis P.', 'numero' => '003', 'cargo' => 'Panadero'],
+            ['nombre' => 'Rosa D.', 'numero' => '004', 'cargo' => 'Pastelero'],
+            ['nombre' => 'Marta G.', 'numero' => '005', 'cargo' => 'Repostero'],
         ];
 
         foreach ($empleados as $empleado) {
