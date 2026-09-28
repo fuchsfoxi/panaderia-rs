@@ -32,14 +32,30 @@
     @stack('styles')
 
     {{-- Menu lateral: se carga en todas las paginas, una sola definicion.
-         Va despues de @stack para poder sobrescribir el fondo del body. --}}
+         Va despues de @stack para poder sobrescribir el fondo del body, y
+         para que las reglas del panel movil queden por encima del CSS de la
+         pagina. --}}
     @vite(['resources/css/sidebar.css'])
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body class="cuerpo-app">
 
-    {{-- Menu lateral reutilizable --}}
+    {{-- Boton hamburguesa. Solo se ve en menos de 768px (ver sidebar.css), en
+         escritorio queda oculto y el menu se muestra siempre. aria-expanded
+         lo mantiene actualizado sidebar.js para que un lector de pantalla
+         sepa si el panel esta abierto. --}}
+    <button type="button" class="app-burger" id="app-burger"
+            aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-lateral">
+        <i class="fas fa-bars" aria-hidden="true"></i>
+    </button>
+
+    {{-- Fondo oscuro detras del panel. Tocar aca lo cierra (sidebar.js).
+         No lleva [hidden] porque la visibilidad la maneja el CSS, que es lo
+         que permite la transicion. --}}
+    <div class="app-velo" id="app-velo"></div>
+
+    {{-- Menu lateral reutilizable. --}}
     <x-sidebar />
 
     <main class="app-main">
@@ -49,5 +65,7 @@
     {{-- JS propio de la pagina --}}
     @stack('scripts')
 
+    {{-- Menu hamburguesa. Va al final para que el DOM ya este completo. --}}
+    @vite(['resources/js/sidebar.js'])
 </body>
 </html>

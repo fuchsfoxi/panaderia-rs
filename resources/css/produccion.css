@@ -2,8 +2,9 @@ body {
     font-family: var(--fuente);
     background-color: var(--crema);
     margin: 0;
-    padding: 40px;
+    padding: 0;
     color: var(--verde-oscuro);
+    min-height: 100dvh;
 }
 
 .pagina-produccion {
@@ -21,14 +22,16 @@ body {
 }
 
 .titulo-produccion h1 {
-    font-size: 32px;
+    font-family: var(--fuente-titulos);
+    font-size: clamp(1.5rem, 6vw, 2rem);
     color: var(--verde-oscuro);
     margin: 0 0 24px 0;
     font-weight: 700;
 }
 
 .titulo-historial h2 {
-    font-size: 20px;
+    font-family: var(--fuente-titulos);
+    font-size: 1.25rem;
     color: var(--verde-oscuro);
     margin: 40px 0 16px 0;
     font-weight: 700;
@@ -44,6 +47,8 @@ body {
     flex: 1;
     max-width: 220px;
     padding: 16px 24px;
+    /* 44px de alto: minimo para que el dedo lo alcance en el celular. */
+    min-height: var(--toque-minimo);
     border: none;
     border-radius: 16px;
     font-family: inherit;
@@ -53,6 +58,11 @@ body {
     background-color: var(--beige);
     color: var(--verde-oscuro);
     transition: background-color 0.2s ease;
+}
+
+.btn-categoria:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: 2px;
 }
 
 .btn-categoria.activo {
@@ -130,15 +140,28 @@ body {
 .campo input[type="date"],
 .campo input[type="number"],
 .campo input[type="text"],
+.campo input[type="file"],
 .campo select,
 .campo textarea {
     font-family: inherit;
-    font-size: 15px;
+    /* 16px es el minimo: por debajo, iOS hace zoom al enfocar el campo y
+       despues la pagina queda corrida y hay que scrollear para volver. */
+    font-size: 16px;
     padding: 12px 16px;
+    /* 44px de alto para que el campo sea alcanzable con el dedo. */
+    min-height: var(--toque-minimo);
+    width: 100%;
     border: 1px solid var(--verde-claro);
     border-radius: 12px;
     background-color: var(--crema);
     color: var(--verde-oscuro);
+}
+
+.campo input:focus-visible,
+.campo select:focus-visible,
+.campo textarea:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: 1px;
 }
 
 .campo select {
@@ -210,8 +233,9 @@ body {
 }
 
 #agregar-empleado {
-    width: 26px;
-    height: 26px;
+    /* 44px: con 26px es casi imposible tocarlo en el celular. */
+    width: var(--toque-minimo);
+    height: var(--toque-minimo);
     border-radius: 50%;
     border: none;
     background-color: var(--beige);
@@ -237,19 +261,21 @@ body {
 
 .popover-empleado select {
     font-family: inherit;
-    font-size: 13px;
+    font-size: 16px;
     padding: 6px 10px;
+    min-height: var(--toque-minimo);
     border: 1px solid var(--verde-claro);
     border-radius: 8px;
-    background-color: #FFFFFF;
+    background-color: var(--crema);
     color: var(--verde-oscuro);
 }
 
 .popover-empleado button {
     font-family: inherit;
-    font-size: 13px;
+    font-size: 16px;
     font-weight: 700;
     padding: 6px 14px;
+    min-height: var(--toque-minimo);
     border: none;
     border-radius: 8px;
     background-color: var(--verde-oscuro);
@@ -265,12 +291,18 @@ body {
 
 .formulario-botones button {
     font-family: inherit;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
     padding: 12px 28px;
+    min-height: var(--toque-minimo);
     border-radius: 999px;
     cursor: pointer;
     border: none;
+}
+
+.formulario-botones button:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: 2px;
 }
 
 .formulario-botones button[type="button"] {
@@ -298,7 +330,9 @@ body {
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: #C07F4E;
+    /* Antes era #C07F4E, un color que no pertenece a la paleta de marca. Se
+       cambia por --verde-medio (mismo rol: texto de acento). */
+    color: var(--verde-medio);
     margin-bottom: 6px;
 }
 
@@ -330,8 +364,11 @@ body {
 .btn-forma {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     padding: 8px 14px;
+    min-height: var(--toque-minimo);
+    flex: 1;
     border-radius: 999px;
     border: 1px solid var(--verde-claro);
     background-color: var(--crema);
@@ -353,6 +390,7 @@ body {
     border: 2px dashed var(--verde-claro);
     border-radius: 16px;
     padding: 32px;
+    min-height: var(--toque-minimo);
     text-align: center;
     color: var(--verde-sage);
     font-size: 14px;
@@ -376,6 +414,11 @@ body {
     display: flex;
     align-items: center;
     gap: 24px;
+    /* min-width: 0 + wrap: sin esto un nombre de producto largo (por
+       ejemplo "Empanaditas de Pollo") empujaba la tarjeta y hacia scroll
+       horizontal en la pagina. */
+    min-width: 0;
+    flex-wrap: wrap;
 }
 
 .tarjeta-header {
@@ -437,4 +480,101 @@ body {
     font-weight: 600;
     padding: 5px 10px;
     border-radius: 999px;
+}
+/* ==========================================================================
+   CELULAR
+   --------------------------------------------------------------------------
+   En menos de 768px el formulario pasa a UNA SOLA columna y todos los campos
+   a ancho completo: con dos columnas de 180px los <select> quedaban ilegibles
+   y el boton de guardar caia fuera de la pantalla.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .pagina-produccion {
+        max-width: 100%;
+    }
+
+    .categoria-botones {
+        /* Los 3 botones de categoria ocupan todo el ancho, sin scroll
+           horizontal. */
+        gap: 8px;
+    }
+
+    .btn-categoria {
+        max-width: none;
+        min-width: 0;
+        padding: 12px 8px;
+        font-size: 15px;
+    }
+
+    .contenido-produccion {
+        /* El panel de "torta" pasa debajo del formulario en vez de al lado. */
+        flex-direction: column;
+    }
+
+    .formulario-card {
+        padding: 20px 16px;
+    }
+
+    .formulario-produccion {
+        /* UNA columna: es el punto clave del formulario en el celular. */
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .campo-ancho {
+        grid-column: auto;
+    }
+
+    .panel-info {
+        max-width: none;
+        padding: 20px 16px;
+    }
+
+    .formulario-botones {
+        /* Cancelar y Guardar apilados y a ancho completo: el boton principal
+           queda siempre a la vista sin scrollear. */
+        flex-direction: column-reverse;
+    }
+
+    .formulario-botones button {
+        width: 100%;
+    }
+
+    .foto-upload {
+        padding: 24px 16px;
+    }
+
+    .popover-empleado {
+        /* Los dos selects y el boton se apilan: en 360px no entraban en una
+           sola fila y se salian del borde. */
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .tarjeta-produccion {
+        padding: 16px;
+        gap: 12px;
+    }
+
+    .tarjeta-header {
+        /* El bloque de fecha ocupa el ancho completo en vez de una columna
+           angosta al costado. */
+        min-width: 100%;
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .tarjeta-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        min-width: 100%;
+    }
+
+    .tarjeta-body h3,
+    .tarjeta-body p {
+        min-width: 0;
+    }
 }

@@ -1,24 +1,38 @@
 /* ==========================================================================
    VARIABLES DE MARCA
    --------------------------------------------------------------------------
-   DRY: antes cada CSS traia su propio bloque :root con la misma paleta,
-   escrita de forma distinta cada vez:
-
-     dashboard.css  --verde-oscuro: #33403a;
-     historial.css  --verde-oscuro: #33403A;   (mismo valor, otro casing)
-     login.css      --color-dark:    #33403a;  (mismo valor, otro nombre)
-     produccion.css  (no tenia bloque :root, usaba #F6F2EF / #33403A sueltos)
-
-   Ademas produccion.css NO importaba la fuente y por eso el sitio se veia
-   con la tipografia del sistema. Ahora hay una sola definicion, y el @import
-   de la fuente va aca para que ningun CSS lo tenga que repetir.
-
-   Para cambiar un color de la marca: se cambia SOLO este archivo.
+   Este archivo es el unico lugar donde se define la paleta, la tipografia y
+   el reset base. Se carga PRIMERO en todas las paginas (layouts/app.blade.php
+   y errors/layout.blade.php), asi que cualquier CSS de pagina puede usar estas
+   variables sin importar nada.
    ========================================================================== */
 
-/* Huninn: rounded sans-serif, peso 400. Se importa una sola vez y todas las
-   paginas la heredan de aqui. */
+/* Reset global. Antes cada CSS traia su propio bloque `*` con
+   box-sizing y margenes, y si alguno se olvidaba la caja se desbordaba.
+   dvh en vez de vh: en el celular vh no descuenta la barra del navegador, y
+   eso hacia que el login quedara con scroll vertical. */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    /* 100vw incluye la barra de scroll y hacia aparecer scroll horizontal
+       en el celular. dvh ademas se ajusta a la barra del navegador. */
+    overflow-x: hidden;
+}
+
+/* Huninn: rounded sans-serif, peso 400. Es la tipografia del TEXTO del
+   sistema. */
 @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+/* Baloo 2: redondeada, de la misma familia visual que Huninn, pero con mas
+   presencia. Se usa SOLO en titulos y subtitulos (--fuente-titulos) para
+   que los encabezados se destaquen sin inventar otra paleta ni otra
+   tipografia. Se piden solo los pesos 600 y 700, que son los que usa el
+   sitio, para no bajar un archivo de fuente entero. */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&display=swap');
 
 :root {
     /* Paleta de marca */
@@ -29,6 +43,20 @@
     --beige: #dcd6c4;
     --crema: #f6f2ef;          /* fondo de pagina */
 
+    /* Sombra del verde oscuro, para el bloque de "sesión activa" del menú.
+       No es un color nuevo de marca: es el --verde-oscuro oscurecido, y ya
+       estaba escrito a mano en sidebar.css. */
+    --verde-pie: #2c3733;
+
+    /* El crema es el color de papel de la marca y casi blanco. Sirve para
+       texto sobre los verdes oscuros, que es el unico uso previsto. */
+    --texto-claro: var(--crema);
+
     /* Tipografia del sistema */
-    --fuente: 'Huninn', sans-serif;
+    --fuente: 'Huninn', sans-serif;          /* texto normal */
+    --fuente-titulos: 'Baloo 2', var(--fuente);  /* titulos y subtitulos */
+
+    /* Alto minimo de un control tocable. 44px es el minimo comodo para el
+       dedo en un celular; se usa en botones, links de menu y campos. */
+    --toque-minimo: 44px;
 }

@@ -53,7 +53,7 @@
              una unidad_medida_id por línea y sumar 24 unidad + 3 coche no
              es una operación válida. --}}
         <div class="tarjeta_categoria">
-            <img src="{{ asset('images/placeholder-pan.jpg') }}" alt="Pan" class="imagen_categoria">
+            <img src="{{ asset('images/placeholder-pan.svg') }}" alt="Pan" class="imagen_categoria">
             <div class="valor_categoria">
                 {{-- 'texto' ya viene formateado ("84 unidad" o "5 lata + 2 coche"). --}}
                 {{ $tarjetas['Pan']['texto'] }}
@@ -65,7 +65,7 @@
              torta, así que se cuenta la cantidad de líneas. El mock decía
              "15 Unidades", lo que contradecía el esquema. --}}
         <div class="tarjeta_categoria">
-            <img src="{{ asset('images/placeholder-torta.jpg') }}" alt="Torta" class="imagen_categoria">
+            <img src="{{ asset('images/placeholder-torta.svg') }}" alt="Torta" class="imagen_categoria">
             <div class="valor_categoria">
                 {{ $tarjetas['Torta']['texto'] }}
             </div>
@@ -75,7 +75,7 @@
         {{-- BOCADITO: tiene 'cantidad' pero no 'unidad_medida_id', así que la
              cantidad ya está en unidades. --}}
         <div class="tarjeta_categoria">
-            <img src="{{ asset('images/placeholder-bocadito.jpg') }}" alt="Bocadito" class="imagen_categoria">
+            <img src="{{ asset('images/placeholder-bocadito.svg') }}" alt="Bocadito" class="imagen_categoria">
             <div class="valor_categoria">
                 {{ $tarjetas['Bocadito']['texto'] }}
             </div>
@@ -194,7 +194,7 @@
         <div class="galeria-tortas">
             @forelse ($tarjetas['Torta']['lineasDeHoy'] as $torta)
                 <div class="tarjeta-torta-individual">
-                    <img src="{{ $torta->foto ?: asset('images/placeholder-torta.jpg') }}" alt="{{ $torta->producto }}">
+                    <img src="{{ $torta->foto ?: asset('images/placeholder-torta.svg') }}" alt="{{ $torta->producto }}">
                     <p class="tipo-torta">{{ $torta->producto }}</p>
                     <p class="forma-torta">{{ ucfirst($torta->forma ?? 'sin definir') }}</p>
                 </div>

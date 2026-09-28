@@ -3,18 +3,19 @@
    --------------------------------------------------------------------------
    Este archivo es la UNICA definicion del menu lateral. Se carga una sola vez
    desde resources/views/layouts/app.blade.php, que a su vez lo incluye en
-   todas las paginas. Antes cada vista traia su propio <html> completo y no
-   habia ningun menu compartido, asi que un cambio de navegacion habia que
-   replicarlo vista por vista.
+   todas las paginas.
 
-   Paleta de marca (segun especificacion):
-     - Fondo del sidebar completo .... #33403A  (verde bosque oscuro)
-     - Icono + label del item activo  blanco
-     - Iconos + labels inactivos .... #7D9481  (verde sage)
-   Tipografia Huninn peso 400. Estilo redondeado, no cuadrado.
+   Paleta: todo sale de resources/css/variables.css. Antes este archivo
+   repetia los hexadecimales de la marca a mano, que es justo como la paleta
+   se desincroniza entre CSS. Ahora se usan las variables: el valor es el
+   mismo, solo cambia donde esta escrito.
+
+   Comportamiento por ancho:
+     - 768px o mas: menu fijo a la izquierda, 248px, siempre visible.
+       Es lo que ya se veia en escritorio y NO cambia.
+     - menos de 768px: el menu se oculta y se abre desde el boton
+       hamburguesa como panel lateral, con fondo oscuro detras.
    ========================================================================== */
-
-@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
 
 /* --- Contenedor ---------------------------------------------------------- */
 
@@ -22,10 +23,9 @@
     /* flex-basis fijo: el menu no crece ni se encoge con el contenido. */
     flex: 0 0 248px;
     width: 248px;
-    box-sizing: border-box;
 
     /* El fondo llega hasta arriba y hasta abajo en todas las paginas. */
-    min-height: 100vh;
+    min-height: 100dvh;
     align-self: stretch;
 
     padding: 30px 18px;
@@ -33,8 +33,8 @@
     flex-direction: column;
     gap: 30px;
 
-    background-color: #33403A;
-    font-family: 'Huninn', sans-serif;
+    background-color: var(--verde-oscuro);
+    font-family: var(--fuente);
     font-weight: 400;
 }
 
@@ -56,8 +56,8 @@
     height: 38px;
     flex: 0 0 38px;
     border-radius: 50%;
-    background-color: #4F6355;
-    color: #FFFFFF;
+    background-color: var(--verde-medio);
+    color: var(--texto-claro);
     font-size: 16px;
 }
 
@@ -69,14 +69,14 @@
 }
 
 .lateral__marca-nombre {
-    color: #FFFFFF;
+    color: var(--texto-claro);
     font-size: 15px;
     font-weight: 400;
     white-space: nowrap;
 }
 
 .lateral__marca-sub {
-    color: #7D9481;
+    color: var(--verde-sage);
     font-size: 11.5px;
     font-weight: 400;
     white-space: nowrap;
@@ -92,7 +92,7 @@
 
 .lateral__grupo-titulo {
     padding: 0 8px 8px;
-    color: #7D9481;
+    color: var(--verde-sage);
     font-size: 10.5px;
     font-weight: 400;
     letter-spacing: 0.1em;
@@ -102,6 +102,7 @@
 /* --- Items --------------------------------------------------------------- */
 
 .lateral__enlace {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 13px;
@@ -110,8 +111,13 @@
     border-radius: 14px;
     padding: 12px 16px;
 
-    color: #7D9481;              /* label inactivo */
-    font-family: 'Huninn', sans-serif;
+    /* 44px de alto: minimo para que el dedo alcance el enlace en el celular.
+       Con padding vertical de 12px y fuente de 15px ya daba ~45px, pero se
+       fija el minimo para que no dependa del texto. */
+    min-height: var(--toque-minimo);
+
+    color: var(--verde-sage);           /* label inactivo */
+    font-family: var(--fuente);
     font-size: 15px;
     font-weight: 400;
     text-decoration: none;
@@ -123,29 +129,29 @@
     flex: 0 0 20px;
     text-align: center;
     font-size: 16px;
-    color: #7D9481;              /* icono inactivo */
+    color: var(--verde-sage);           /* icono inactivo */
     transition: color 0.15s ease;
 }
 
 .lateral__enlace:hover {
-    background-color: #4F6355;
-    color: #FFFFFF;
+    background-color: var(--verde-medio);
+    color: var(--texto-claro);
 }
 
 .lateral__enlace:hover .lateral__enlace-icono {
-    color: #FFFFFF;
+    color: var(--texto-claro);
 }
 
 /* --- Item ACTIVO: icono y label en blanco -------------------------------- */
 
 .lateral__enlace.activo {
-    background-color: #4F6355;
-    color: #FFFFFF;
+    background-color: var(--verde-medio);
+    color: var(--texto-claro);
     font-weight: 400;
 }
 
 .lateral__enlace.activo .lateral__enlace-icono {
-    color: #FFFFFF;
+    color: var(--texto-claro);
 }
 
 /* Marca de item activo que no mueve el layout (no suma margen). */
@@ -156,11 +162,13 @@
     width: 3px;
     align-self: stretch;
     border-radius: 0 3px 3px 0;
-    background-color: #AEC0AC;
+    background-color: var(--verde-claro);
 }
 
-.lateral__enlace {
-    position: relative;
+/* Foco visible con teclado: sin esto el menu es inutilizable con Tab. */
+.lateral__enlace:focus-visible {
+    outline: 2px solid var(--verde-claro);
+    outline-offset: -2px;
 }
 
 /* --- Pie ----------------------------------------------------------------- */
@@ -169,9 +177,9 @@
     margin-top: auto;
     padding: 14px 16px;
     border-radius: 14px;
-    background-color: #2C3733;
-    color: #7D9481;
-    font-family: 'Huninn', sans-serif;
+    background-color: var(--verde-pie);
+    color: var(--verde-sage);
+    font-family: var(--fuente);
     font-size: 11.5px;
     font-weight: 400;
     line-height: 1.5;
@@ -179,7 +187,7 @@
 
 .lateral__pie strong {
     display: block;
-    color: #AEC0AC;
+    color: var(--verde-claro);
     font-weight: 400;
 }
 
@@ -198,7 +206,7 @@
     gap: 9px;
 
     /* 44px de alto: minimo para que el dedo lo alcance en el celular. */
-    min-height: 44px;
+    min-height: var(--toque-minimo);
     width: 100%;
     padding: 0 14px;
 
@@ -206,7 +214,7 @@
     border-radius: 14px;
     background-color: transparent;
     color: var(--verde-claro);
-    font-family: 'Huninn', sans-serif;
+    font-family: var(--fuente);
     font-size: 13.5px;
     font-weight: 400;
     cursor: pointer;
@@ -215,13 +223,54 @@
 
 .lateral__salir:hover {
     background-color: var(--verde-medio);
-    color: var(--crema);
+    color: var(--texto-claro);
 }
 
-/* Foco visible: sin esto el teclado se pierde al navegar con Tab. */
 .lateral__salir:focus-visible {
     outline: 2px solid var(--verde-claro);
     outline-offset: 2px;
+}
+
+/* --- Boton hamburguesa ---------------------------------------------------
+   Solo existe en el celular (ver el media query al final). En escritorio se
+   queda oculto, asi que el menu de escritorio no cambia. */
+
+.app-burger {
+    display: none;
+
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 60;
+
+    align-items: center;
+    justify-content: center;
+
+    /* 44x44: el minimo para que el dedo lo alcance. */
+    width: var(--toque-minimo);
+    height: var(--toque-minimo);
+
+    border: none;
+    border-radius: 14px;
+    background-color: var(--verde-oscuro);
+    color: var(--texto-claro);
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.app-burger:focus-visible {
+    outline: 2px solid var(--verde-claro);
+    outline-offset: 2px;
+}
+
+/* Fondo oscuro detras del panel. Se muestra solo cuando el menu esta
+   abierto; el click en este fondo lo cierra (lo maneja sidebar.js). */
+.app-velo {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background-color: rgba(51, 64, 58, 0.55);
 }
 
 /* --- Integracion con el layout ------------------------------------------- */
@@ -234,48 +283,59 @@ body.cuerpo-app {
     margin: 0;
     padding: 0;
     display: flex;
-    min-height: 100vh;
+    min-height: 100dvh;
 }
 
 .app-main {
     flex: 1 1 auto;
-    min-width: 0;      /* evita que un table ancho reviente el flex */
-    box-sizing: border-box;
+    min-width: 0;      /* evita que un bloque ancho reviente el flex */
     padding: 40px;
 }
 
-/* En pantallas angostas el menu pasa arriba y el contenido debajo. */
-@media (max-width: 900px) {
-    body.cuerpo-app {
-        flex-direction: column;
+/* --- Celular: menu como panel lateral ------------------------------------
+   Antes de 768px el menu se ponia arriba como barra horizontal con
+   overflow-x: auto, que en un celular de 360px obligaba a scrollear para
+   ver Historial. Ahora es un panel que entra desde la izquierda. */
+
+@media (max-width: 768px) {
+    .app-burger {
+        display: flex;
+    }
+
+    .app-velo.activo {
+        display: block;
     }
 
     .lateral {
-        flex: 0 0 auto;
-        width: 100%;
-        min-height: auto;
-        flex-direction: row;
-        align-items: center;
-        gap: 18px;
-        padding: 14px 18px;
-        overflow-x: auto;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
+
+        width: 264px;
+        flex: none;
+        min-height: 100dvh;
+
+        /* Sale de la pantalla y entra al abrir. transform en vez de display
+           para que la transicion funcione y para que siga en el DOM (los
+           links siguen siendo accesibles para el lector de pantalla). */
+        transform: translateX(-100%);
+        transition: transform 0.2s ease;
     }
 
-    .lateral__nav {
-        flex-direction: row;
-        gap: 8px;
+    .lateral.lateral--abierto {
+        transform: translateX(0);
     }
 
-    .lateral__grupo-titulo,
-    .lateral__pie {
-        display: none;
-    }
-
-    .lateral__enlace.activo::before {
-        display: none;
-    }
-
+    /* El contenido se corre hacia la derecha del boton para que el titulo no
+       quede debajo. */
     .app-main {
-        padding: 24px;
+        padding: 72px 18px 28px;
     }
+}
+
+/* Con el menu abierto no se scrollea el fondo: asi tocar el contenido de
+   atras no lo mueve y el fondo oscurecido se lee como fondo. */
+body.cuerpo-app.menu-abierto {
+    overflow: hidden;
 }

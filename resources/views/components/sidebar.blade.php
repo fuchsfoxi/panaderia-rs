@@ -43,7 +43,10 @@
     ];
 @endphp
 
-<aside class="lateral">
+{{-- El id lo usa el boton hamburguesa (aria-controls) para apuntar a este
+     panel. En menos de 768px se oculta y se abre desde el boton; en
+     escritorio se muestra siempre. --}}
+<aside class="lateral" id="menu-lateral">
     <div class="lateral__marca">
         <span class="lateral__marca-icono">
             <i class="fa-solid fa-bread-slice"></i>

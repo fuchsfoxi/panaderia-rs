@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Bocadito">
+  <rect width="120" height="120" rx="18" fill="#DCD6C4"/>
+  <circle cx="60" cy="62" r="30" fill="#AEC0AC"/>
+  <circle cx="48" cy="52" r="5" fill="#7D9481"/>
+  <circle cx="70" cy="58" r="4" fill="#7D9481"/>
+  <circle cx="56" cy="74" r="5" fill="#7D9481"/>
+  <circle cx="74" cy="76" r="3.5" fill="#4F6355"/>
+  <rect x="26" y="92" width="68" height="6" rx="3" fill="#33403A"/>
+</svg>

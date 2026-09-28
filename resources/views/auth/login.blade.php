@@ -28,7 +28,7 @@
 
         <div class="encabezado-marca">
             <div class="placa-icono-logo">
-                <img src="{{ asset('images/icono_login.png') }}" alt="icono_login">
+                <img src="{{ asset('images/icono_login.svg') }}" alt="icono_login">
             </div>
             <h1 class="titulo-marca">PANIFICADORA AMAZÓNICA</h1>
             <p class="subtitulo-marca">Sistema de Gestión de Producción de Panadería</p>

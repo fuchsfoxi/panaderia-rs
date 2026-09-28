@@ -1,17 +1,17 @@
-@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Quicksand:wght@400;500;600;700&display=swap');
-
-/* Los alias --color-* se quitaron: las paginas usan las variables de
-   marca de resources/css/variables.css. */
+/* Las fuentes (Huninn para el texto y Baloo 2 para los titulos) se importan
+   una sola vez en resources/css/variables.css. Antes login.css traia su propio
+   import con Baloo 2 y Quicksand y ponia Quicksand en el body, con lo cual el
+   login se veia en una tipografia distinta a la del resto del sistema. */
 
 * {
-    box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
 body {
-    font-family: 'Quicksand', sans-serif;
-    min-height: 100vh;
+    /* Texto normal del sistema. */
+    font-family: var(--fuente);
+    min-height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -25,10 +25,16 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    /* 100% y no 100vw: 100vw no descuenta la barra de scroll del navegador y
+       hacia aparecer scroll horizontal en el celular. */
+    width: 100%;
+    height: 100dvh;
     overflow: hidden;
     z-index: -1;
+
+    /* Respaldo: si el video no carga o no se reproduce, el fondo se ve igual
+       con el crema de la paleta en vez de negro. */
+    background-color: var(--verde-oscuro);
 }
 
 .video-fondo {
@@ -107,17 +113,17 @@ body {
 }
 
 .titulo-marca {
-    font-family: 'Baloo 2', sans-serif;
+    font-family: var(--fuente-titulos);
     font-weight: 700;
-    font-size: 40px;
-    color: #ffffff;
+    font-size: clamp(1.75rem, 8vw, 2.5rem);
+    color: var(--texto-claro);
     text-align: center;
     line-height: 1.1;
     text-shadow: 0 2px 4px rgba(0,0,0,0.6);
 }
 
 .subtitulo-marca {
-    font-family: 'Quicksand', sans-serif;
+    font-family: var(--fuente);
     font-weight: 500;
     font-size: 15px;
     color: var(--crema);
@@ -138,15 +144,15 @@ body {
 }
 
 .encabezado-tarjeta h1 {
-    font-family: 'Baloo 2', sans-serif;
+    font-family: var(--fuente-titulos);
     font-weight: 700;
-    font-size: 24px;
+    font-size: 1.5rem;
     color: var(--verde-oscuro);
     margin-bottom: 4px;
 }
 
 .encabezado-tarjeta p {
-    font-family: 'Quicksand', sans-serif;
+    font-family: var(--fuente);
     font-weight: 400;
     font-size: 14px;
     color: var(--verde-medio);
@@ -160,7 +166,7 @@ body {
 
 .grupo-input label {
     display: block;
-    font-family: 'Quicksand', sans-serif;
+    font-family: var(--fuente);
     font-weight: 600;
     font-size: 14px;
     color: var(--verde-oscuro);
@@ -195,8 +201,10 @@ body {
     border: none;
     background: transparent;
     outline: none;
-    font-family: 'Quicksand', sans-serif;
-    font-size: 15px;
+    font-family: var(--fuente);
+    /* 16px es el minimo: por debajo, iOS hace zoom al enfocar el campo y
+       despues la pagina queda corrida. */
+    font-size: 16px;
     color: var(--verde-oscuro);
 }
 
@@ -210,8 +218,20 @@ body {
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
+    /* El icono mide 18px, que es demasiado chico para el dedo: el area
+       tocable se lleva a 44px. */
+    width: var(--toque-minimo);
+    height: var(--toque-minimo);
+    margin-right: -12px;
     padding: 0;
     color: var(--verde-medio);
+}
+
+.alternar-contrasena:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: -4px;
+    border-radius: 8px;
 }
 
 .alternar-contrasena svg {
@@ -254,7 +274,7 @@ body {
     border-radius: 14px;
     background-color: var(--verde-medio);
     color: var(--crema);
-    font-family: 'Quicksand', sans-serif;
+    font-family: var(--fuente);
     font-weight: 600;
     font-size: 14px;
     line-height: 1.4;
@@ -288,7 +308,7 @@ body {
     height: 52px;
     width: 100%;
     border-radius: 26px;
-    font-family: 'Quicksand', sans-serif;
+    font-family: var(--fuente);
     font-weight: 700;
     font-size: 16px;
     cursor: pointer;
@@ -299,13 +319,94 @@ body {
     opacity: 0.9;
 }
 
+.btn-enviar:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: 3px;
+}
+
 .olvido-contrasena {
-    font-family: 'Quicksand', sans-serif;
+    font-family: var(--fuente);
     font-weight: 600;
-    font-size: 13px;
+    /* 44px de alto: area tactil comoda en el celular. */
+    min-height: var(--toque-minimo);
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
     color: var(--verde-medio);
     text-decoration: underline;
     background: none;
     border: none;
     cursor: pointer;
+}
+/* ==========================================================================
+   MOVIMIENTO REDUCIDO
+   --------------------------------------------------------------------------
+   Si la persona pidio menos animacion en el sistema, el video de fondo no se
+   reproduce: queda el color de respaldo de la paleta. El formulario y el
+   layout siguen igual, solo deja de moverse el fondo.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+    .video-fondo {
+        display: none;
+    }
+
+    .contenedor-video-fondo {
+        background-color: var(--verde-oscuro);
+    }
+}
+
+/* ==========================================================================
+   CELULAR
+   --------------------------------------------------------------------------
+   En menos de 768px el video de fondo se apaga: en un celular descarga datos
+   y, si hay poca bateria, el navegador lo frena. El fondo queda con el color
+   de la paleta, que es justo el color de respaldo de arriba, asi que el login
+   se ve igual de bien sin el video.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    body {
+        /* Sin los 64px verticales de escritorio: en una pantalla de 667px de
+           alto dejaban la tarjeta casi sin lugar. */
+        padding: 24px 16px;
+        align-items: flex-start;
+    }
+
+    .video-fondo {
+        /* Oculto en celular: el fondo queda en --verde-oscuro. */
+        display: none;
+    }
+
+    .bloque-principal-login {
+        gap: 24px;
+        width: 100%;
+    }
+
+    .encabezado-marca {
+        margin-bottom: 8px;
+    }
+
+    .placa-icono-logo,
+    .placa-icono-logo img,
+    .placa-icono-logo svg {
+        width: 44px;
+        height: 44px;
+    }
+
+    .tarjeta-login {
+        padding: 24px 20px;
+        border-radius: 24px;
+        gap: 20px;
+    }
+
+    .separador-decorativo {
+        /* La linea y el rombo decorativo no aportan en una pantalla chica. */
+        display: none;
+    }
+
+    .btn-enviar {
+        /* Ancho completo: el boton principal siempre a la vista. */
+        width: 100%;
+    }
 }

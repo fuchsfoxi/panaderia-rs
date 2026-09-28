@@ -1,16 +1,15 @@
 /* Paleta de marca: ver resources/css/variables.css (un solo lugar).
    DRY: este bloque estaba duplicado tambien en historial.css y login.css. */
 
-* {
-  box-sizing: border-box;
-  font-family: 'Huninn', sans-serif;
-}
-
+/* El reset global (box-sizing, margenes) vive en variables.css, que se carga
+   en todas las paginas. Antes estaba duplicado aca. */
 body {
+  font-family: var(--fuente);
   background-color: var(--crema);
   color: var(--verde-oscuro);
   margin: 0;
-  padding: 40px;
+  padding: 0;
+  min-height: 100dvh;
 }
 
 .pagina-historial {
@@ -19,15 +18,18 @@ body {
 }
 
 .titulo-historal h1 {
-  font-size: 1.8rem;
-  font-weight: 400;
+  font-family: var(--fuente-titulos);
+  font-size: clamp(1.5rem, 5.5vw, 1.8rem);
+  font-weight: 700;
+  color: var(--verde-oscuro);
   margin-bottom: 24px;
 }
 
 .sub-titulo h2,
 .filtro-categoria h2 {
-  font-size: 1rem;
-  font-weight: 400;
+  font-family: var(--fuente-titulos);
+  font-size: 1.0625rem;
+  font-weight: 600;
   color: var(--verde-medio);
   margin-bottom: 8px;
 }
@@ -43,11 +45,19 @@ body {
   border: none;
   border-radius: 20px;
   padding: 10px 24px;
+  /* 44px de alto: minimo para que el dedo lo alcance en el celular. */
+  min-height: var(--toque-minimo);
   background-color: var(--beige);
   color: var(--verde-oscuro);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-family: inherit;
+  font-size: 1rem;
   transition: background-color 0.2s ease;
+}
+
+.btn-categoria:focus-visible {
+  outline: 2px solid var(--verde-medio);
+  outline-offset: 2px;
 }
 
 .btn-categoria.active {
@@ -89,9 +99,20 @@ select {
   border: 1px solid var(--verde-claro);
   border-radius: 12px;
   padding: 10px 14px;
+  /* 16px es el minimo en iPhone: por debajo el teclado hace zoom y la pagina
+     queda corrida. */
+  font-size: 16px;
+  min-height: var(--toque-minimo);
+  width: 100%;
   background-color: var(--crema);
   color: var(--verde-oscuro);
-  font-size: 0.95rem;
+  font-family: inherit;
+}
+
+input[type="date"]:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--verde-medio);
+  outline-offset: 1px;
 }
 
 .campo-condicional {
@@ -118,8 +139,20 @@ select {
   border: none;
   border-radius: 20px;
   padding: 10px 24px;
+  min-height: var(--toque-minimo);
   cursor: pointer;
-  font-size: 0.95rem;
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.btn-filtrar {
+  flex: 1;
+}
+
+.btn-limpiar:focus-visible,
+.btn-filtrar:focus-visible {
+  outline: 2px solid var(--verde-medio);
+  outline-offset: 2px;
 }
 
 .btn-limpiar {
@@ -164,6 +197,10 @@ select {
   padding: 16px 20px;
   margin-bottom: 16px;
   gap: 16px;
+  /* Sin min-width: 0, un <h3> con nombre largo (por ejemplo "Empanaditas de
+     Pollo") estira la flex y aparece scroll horizontal en toda la pagina. */
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .foto-producto {
@@ -176,12 +213,16 @@ select {
 
 .info-carta {
   flex-grow: 1;
+  /* Permite que el texto largo baje de linea en vez de empujar el ancho. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .info-carta h3 {
+  font-family: var(--fuente-titulos);
   margin: 0 0 4px;
-  font-size: 1rem;
-  font-weight: 400;
+  font-size: 1.0625rem;
+  font-weight: 600;
 }
 
 .info-carta p {
@@ -200,6 +241,9 @@ select {
 }
 
 .detalles-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
   color: var(--verde-oscuro);
   text-decoration: none;
   font-size: 0.85rem;
@@ -207,4 +251,109 @@ select {
 
 .detalles-link:hover {
   text-decoration: underline;
+}
+/* ==========================================================================
+   CELULAR
+   --------------------------------------------------------------------------
+   Los filtros pasan a una sola columna y los resultados se muestran como
+   tarjetas apiladas: en 360px, la fila de filtros lado a lado obligaba a
+   scrollear para llegar al boton Filtrar.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .pagina-historial {
+    max-width: 100%;
+  }
+
+  .categoria-botones {
+    /* Los 3 botones reparten el ancho sin scroll horizontal. */
+    gap: 8px;
+  }
+
+  .btn-categoria {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 8px;
+  }
+
+  .filtro-fecha-principal {
+    /* Desde y Hasta apilados, cada uno a ancho completo. */
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .campo-condicional {
+    max-width: none;
+  }
+
+  .btn-filtro {
+    /* Limpiar y Filtrar en fila, cada uno con la mitad del ancho. */
+    gap: 10px;
+  }
+
+  .btn-limpiar,
+  .btn-filtrar {
+    flex: 1;
+    padding: 10px 8px;
+  }
+
+  .carta-historial {
+    /* La foto, el texto y la fecha se apilan en vez de ir en una fila. */
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .foto-producto {
+    width: 100%;
+    height: 160px;
+  }
+
+  .meta-carta {
+    /* En columna y alineado a la izquierda: al costado quedaba apretado
+       contra el borde. */
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+}
+
+/* ==========================================================================
+   CONTENEDOR CON SCROLL HORIZONTAL
+   --------------------------------------------------------------------------
+   Util para las tablas anchas. El div que envuelve la tabla lleva
+   .tabla-scroll y la tabla .tabla: en pantallas angostas la tabla scrollea
+   dentro de su caja y no arrastra a la pagina entera, que es lo que hacia
+   que el celular pudiera moverse de lado a lado.
+   ========================================================================== */
+
+.tabla-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+
+.tabla {
+  width: 100%;
+  min-width: 32rem;
+  border-collapse: collapse;
+}
+
+.tabla th,
+.tabla td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--verde-claro);
+  white-space: nowrap;
+}
+
+.tabla th {
+  font-family: var(--fuente-titulos);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--verde-oscuro);
+  background-color: var(--beige);
 }

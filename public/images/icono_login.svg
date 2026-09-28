@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Panadería RS">
+  <rect width="64" height="64" rx="16" fill="#33403A"/>
+  <path d="M12 38c0-11 9-18 20-18s20 7 20 18v9a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4z" fill="#AEC0AC"/>
+  <path d="M20 36c2-6 6-9 11-10" stroke="#4F6355" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <path d="M32 38c2-5 6-8 11-9" stroke="#4F6355" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <rect x="12" y="49" width="40" height="4" rx="2" fill="#7D9481"/>
+</svg>

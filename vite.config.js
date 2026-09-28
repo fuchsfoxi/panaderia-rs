@@ -20,6 +20,7 @@ export default defineConfig({
                     'resources/css/proximamente.css',
                     'resources/css/errores.css',
                     'resources/css/sidebar.css',
+                    'resources/js/sidebar.js',
                     'resources/css/variables.css'
                 ],
             refresh: true,

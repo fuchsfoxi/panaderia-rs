@@ -8,10 +8,10 @@
 }
 
 body {
-    font-family: 'Huninn', sans-serif;
+    font-family: var(--fuente);
     background-color: var(--crema);
     color: var(--verde-oscuro);
-    min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
 }
 
@@ -25,7 +25,7 @@ body {
     left: 36px;
     transform: translateY(-50%);
     max-height: 700px;
-    height: 85vh;
+    height: 85dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -87,9 +87,11 @@ body {
 }
 
 .titulo_inicio h1 {
-    font-family: 'Huninn', sans-serif;
-    font-weight: 400;
-    font-size: 36px;
+    font-family: var(--fuente-titulos);
+    font-weight: 700;
+    /* clamp: el titulo se achica solo en pantallas angostas en vez de
+       desbordar con nowrap. */
+    font-size: clamp(1.5rem, 5vw, 2.25rem);
     color: var(--verde-oscuro);
     white-space: nowrap;
 }
@@ -121,9 +123,12 @@ body {
 .filtro_fecha_hasta input {
     border: none;
     background: transparent;
-    font-family: 'Huninn', sans-serif;
+    font-family: var(--fuente);
+    /* 16px minimo: con menos, iOS hace zoom al enfocar el campo y la pagina
+       queda descolocada. */
     font-size: 16px;
     color: var(--verde-oscuro);
+    min-height: var(--toque-minimo);
 }
 
 .filtro_fecha_boton button {
@@ -132,9 +137,15 @@ body {
     border: none;
     border-radius: 16px;
     padding: 12px 28px;
-    font-family: 'Huninn', sans-serif;
+    min-height: var(--toque-minimo);
+    font-family: var(--fuente);
     font-size: 16px;
     cursor: pointer;
+}
+
+.filtro_fecha_boton button:focus-visible {
+    outline: 2px solid var(--verde-medio);
+    outline-offset: 2px;
 }
 
 /* --- Tarjetas por categoría (HOY | Producción Mañana) --- */
@@ -148,11 +159,13 @@ body {
     display: block;
 }
 
+/* auto-fit + minmax: la grilla mete tantas columnas como entren en el ancho
+   y baja a 1 sola en el celular, sin una media query por cada caso. */
 .fila_categorias {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
     gap: 20px;
     margin-bottom: 48px;
-    flex-wrap: wrap;
 }
 
 .tarjeta_categoria {
@@ -194,6 +207,8 @@ body {
     border: none;
     border-radius: 50px;
     padding: 4px 14px;
+    min-height: 32px;
+    font-family: var(--fuente);
     font-size: 13px;
     cursor: pointer;
     display: flex;
@@ -201,12 +216,17 @@ body {
     gap: 6px;
 }
 
+.tarjeta_categoria .btn-detalles:focus-visible {
+    outline: 2px solid var(--verde-oscuro);
+    outline-offset: 2px;
+}
+
 /* --- Tarjetas generales (Total / Pendiente / Completada) --- */
 .cartas-general {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.75rem), 1fr));
     gap: 20px;
     margin-bottom: 48px;
-    flex-wrap: wrap;
 }
 
 .carta {
@@ -226,14 +246,14 @@ body {
 }
 
 .carta p {
-    font-size: 40px;
+    font-size: clamp(2rem, 8vw, 2.5rem);
     color: var(--verde-oscuro);
 }
 
 /* --- Gráficos: uno debajo del otro, más grandes --- */
 .graficos {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 26rem), 1fr));
     gap: 24px;
 }
 
@@ -245,14 +265,21 @@ body {
 }
 
 .grafico h2 {
-    font-size: 22px;
-    font-weight: 400;
+    font-family: var(--fuente-titulos);
+    font-size: 1.375rem;
+    font-weight: 600;
     color: var(--verde-oscuro);
     margin-bottom: 20px;
 }
 
+/* El alto va DEFINIDO en el <canvas>, no solo como max-height: dashboard.js
+   crea los graficos con maintainAspectRatio: false y con eso Chart.js estira
+   el lienzo hasta llenar el contenedor. Sin un alto en el contenedor, el
+   grafico queda plano o directamente no se ve. */
 .grafico canvas {
-    max-height: 400px;
+    display: block;
+    width: 100%;
+    height: 280px;
 }
 
 /* --- Modal de detalles --- */
@@ -276,7 +303,9 @@ body {
     padding: 32px;
     width: 90%;
     max-width: 520px;
-    max-height: 85vh;
+    /* 92dvh deja margen para que el modal no quede pegado a los bordes en
+       pantallas bajas, y dvh se ajusta a la barra del navegador del celular. */
+    max-height: 92dvh;
     overflow-y: auto;
     position: relative;
 }
@@ -293,7 +322,9 @@ body {
 }
 
 .caja-modal h2 {
-    font-size: 24px;
+    font-family: var(--fuente-titulos);
+    font-size: 1.5rem;
+    font-weight: 600;
     color: var(--verde-oscuro);
     margin-bottom: 4px;
 }
@@ -305,7 +336,9 @@ body {
 }
 
 .caja-modal h3 {
-    font-size: 16px;
+    font-family: var(--fuente-titulos);
+    font-size: 1rem;
+    font-weight: 600;
     color: var(--verde-oscuro);
     margin-bottom: 12px;
     padding-bottom: 8px;
@@ -357,7 +390,8 @@ body {
 
 .galeria-tortas {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    /* auto-fit: dos columnas en escritorio, una sola en el celular. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
     gap: 16px;
     margin-bottom: 24px;
 }
@@ -401,4 +435,97 @@ body {
 
 .registrado-por i {
     color: var(--verde-sage);
+}
+/* ==========================================================================
+   CELULAR
+   --------------------------------------------------------------------------
+   Lo de arriba ya se adapta solo con grid + auto-fit. Acá solo van los
+   ajustes que no se resuelven solos: padding, tamaño de las imagenes de las
+   tarjetas y el ancho de los modales.
+   ========================================================================== */
+
+@media (max-width: 768px) {
+    .contenido_informacion {
+        /* El margen izquierdo de 173px era para la barra flotante vieja. Con
+           el menu lateral como panel, el contenido ocupa todo el ancho. */
+        margin-left: 0;
+        width: 100%;
+        padding: 24px 18px;
+    }
+
+    .encabezado-superior {
+        /* El filtro de fechas deja de ir al lado del titulo y pasa debajo,
+           a ancho completo, para que las fechas no queden apretadas. */
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .filtro-fecha-inicio {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .filtro-fecha_desde,
+    .filtro_fecha_hasta {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .filtro_fecha_boton button {
+        width: 100%;
+    }
+
+    .fila_categorias,
+    .cartas-general,
+    .graficos {
+        margin-bottom: 32px;
+    }
+
+    .tarjeta_categoria {
+        /* La imagen y el valor van apilados: en 360px side by side no
+           entraban y el numero quedaba partido en dos lineas raras. */
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .tarjeta_categoria .imagen_categoria {
+        width: 100%;
+        height: 140px;
+    }
+
+    .tarjeta_categoria .btn-detalles {
+        position: static;
+        align-self: stretch;
+        justify-content: center;
+        /* 44px: el detalle se abre con el dedo y tiene que ser comodo. */
+        min-height: var(--toque-minimo);
+    }
+
+    .grafico {
+        padding: 20px 16px;
+    }
+
+    .grafico canvas {
+        /* Mas bajo en el celular: 280px de grafico con el resto de la pagina
+           obliga a scrollear de mas. */
+        height: 220px;
+    }
+
+    .caja-modal {
+        padding: 24px 20px;
+    }
+
+    .caja-modal .cerrar-modal {
+        /* 44px de area tactil alrededor de la X. */
+        width: var(--toque-minimo);
+        height: var(--toque-minimo);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        top: 8px;
+        right: 8px;
+    }
 }
