@@ -385,6 +385,26 @@ body {
     border-color: var(--verde-oscuro);
 }
 
+/* ==========================================================================
+   FOTO DE LA TORTA
+   --------------------------------------------------------------------------
+   El input no se esconde con style="display:none" (asi queda fuera del
+   recorrido del teclado): se oculta con la tecnica de "solo para lectores de
+   pantalla", que lo deja enfocable con Tab.
+   ========================================================================== */
+
+.foto-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 .foto-upload {
     display: block;
     text-align: center;
@@ -396,6 +416,76 @@ body {
     color: var(--verde-sage);
     font-size: 14px;
     cursor: pointer;
+}
+
+/* Al enfocar el input (con Tab) se resalta el recuadro: sin esto el foco seria
+   invisible, porque el input real mide 1px. */
+.foto-envio:focus-within .foto-upload {
+    border-color: var(--verde-medio);
+}
+
+/* --- Vista previa de la foto elegida --- */
+
+.foto-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--verde-claro);
+    border-radius: 16px;
+    background-color: var(--crema);
+}
+
+/* El atributo hidden tiene que ganarle al display:flex de arriba. */
+.foto-preview[hidden] {
+    display: none;
+}
+
+.foto-preview-img {
+    display: block;
+    width: 100%;
+    max-height: 260px;
+    object-fit: contain;
+    border-radius: 12px;
+    background-color: var(--beige);
+}
+
+.foto-preview-datos {
+    font-size: 12px;
+    color: var(--verde-medio);
+    overflow-wrap: anywhere;
+}
+
+.foto-preview-acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.foto-preview-boton {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--toque-minimo);
+    padding: 0 16px;
+    border: 1px solid var(--verde-claro);
+    border-radius: 999px;
+    background-color: var(--beige);
+    color: var(--verde-oscuro);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.foto-preview-boton--quitar {
+    background-color: transparent;
+    color: var(--verde-medio);
+}
+
+.foto-preview-boton .material-symbols-rounded {
+    font-size: 18px;
 }
 
 /* El icono de la camara se muestra encima del texto, como estaba antes

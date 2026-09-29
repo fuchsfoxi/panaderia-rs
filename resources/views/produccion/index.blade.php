@@ -52,7 +52,7 @@
 
             <div class="formulario-card">
                 <div class="formulario-card-header">
-                    <h3>Detalles de Producción de Pan</h3>
+                    <h3 id="titulo-formulario">Detalles de Producción de Pan</h3>
                     <span class="estado-activo">Activo</span>
                 </div>
                 <hr>
@@ -208,18 +208,45 @@
                 @enderror
 
                 <h4>Subir foto (Obligatorio)</h4>
-                {{-- Icono de Font Awesome y no un emoji: el emoji se ve
+                {{-- El div agrupa el boton, el input y la vista previa: sirve
+                     para que al enfocar el input con el teclado se pueda
+                     resaltar el recuadro (.foto-envio:focus-within). --}}
+                <div class="foto-envio">
+                {{-- Icono de Material Symbols y no un emoji: el emoji se ve
                      distinto segun el sistema operativo del celular. --}}
                 <label for="foto" class="foto-upload">
                     <i class="material-symbols-rounded" aria-hidden="true">photo_camera</i>
-                    Agregar foto
+                    <span id="foto-upload-texto">Agregar foto</span>
                 </label>
                 {{-- accept="image/*" hace que en el celular aparezca la
-                     camara ademas de la galeria. --}}
-                <input type="file" id="foto" name="foto" accept="image/*" style="display:none;">
+                     camara ademas de la galeria. NO lleva `capture`: con
+                     capture el celular abre siempre la camara y no deja elegir
+                     de la galeria. --}}
+                <input type="file" id="foto" name="foto" accept="image/*" class="foto-input">
+
+                {{-- VISTA PREVIA: sin esto, al elegir o sacar la foto no se ve
+                     nada y hay que guardar a ciegas para enterarse de como
+                     quedo. El JS muestra esta imagen y el peso real que se va
+                     a subir (ver produccion.js). --}}
+                <div class="foto-preview" id="foto-preview" hidden>
+                    <img id="foto-preview-img" class="foto-preview-img" alt="Vista previa de la foto de la torta">
+                    <p class="foto-preview-datos" id="foto-preview-datos"></p>
+                    <div class="foto-preview-acciones">
+                        <button type="button" class="foto-preview-boton" id="foto-cambiar">
+                            <i class="material-symbols-rounded" aria-hidden="true">photo_camera</i>
+                            Cambiar
+                        </button>
+                        <button type="button" class="foto-preview-boton foto-preview-boton--quitar" id="foto-quitar">
+                            <i class="material-symbols-rounded" aria-hidden="true">close</i>
+                            Quitar
+                        </button>
+                    </div>
+                </div>
+
                 @error('foto')
                     <p class="campo-error">{{ $message }}</p>
                 @enderror
+                </div>
             </div>
 
         </div>
@@ -246,7 +273,16 @@
                     <span class="tarjeta-categoria">{{ $linea->categoria }}</span>
                     <span class="tarjeta-fecha">
                         {{ date('d M Y', strtotime($linea->fecha)) }}
-                        — Turno {{ $linea->turno ?? 'Único' }}
+                        {{-- El turno SOLO existe para el pan, que es lo unico
+                             que rota entre Mañana y Noche. Las tortas y los
+                             bocaditos hacen un turno fijo, asi que no tienen
+                             turno_id y antes caia el `?? 'Único'`, que parecia
+                             un turno real que no existe. --}}
+                        @if ($linea->turno)
+                            — Turno {{ $linea->turno }}
+                        @else
+                            — Turno fijo
+                        @endif
                     </span>
                 </div>
                 <div class="tarjeta-body">

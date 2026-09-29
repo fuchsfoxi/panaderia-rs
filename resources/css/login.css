@@ -32,9 +32,18 @@ body {
     overflow: hidden;
     z-index: -1;
 
-    /* Respaldo: si el video no carga o no se reproduce, el fondo se ve igual
-       con el crema de la paleta en vez de negro. */
+    /* FOTO DE RESPALDO del video, y no un color plano.
+       Es la misma imagen del video, sacada en un fotograma y bajada a 44 KB
+       (public/images/fondo-login.jpg). Hay dos motivos:
+         1) cuando el video NO se reproduce (celular, ahorro de datos, iOS
+            que no decodifica WebM, o simplemente todavia no descargó), el
+            fondo se ve igual de lindo en vez de quedar un verde liso;
+         2) en escritorio sirve de poster, asi que no hay un destello del
+            color de respaldo mientras baja el video. */
     background-color: var(--verde-oscuro);
+    background-image: url('/images/fondo-login.jpg');
+    background-size: cover;
+    background-position: center;
 }
 
 .video-fondo {
@@ -52,11 +61,18 @@ body {
 
 /* --- Brillos de fondo --- */
 .brillo-calido {
-    position: absolute;
+    /* fixed y no absolute: los brillos se salen 100px a cada lado (left/right
+       -100px). Con absolute son hijos del body, el ancho scrolleable del body
+       llegaba a 460px en una pantalla de 360 y el body terminaba desplazado
+       45px solo, con toda la tarjeta del login cortada por la izquierda
+       (medido: body.scrollLeft = 45). Un elemento fixed se posiciona contra
+       la ventana y NO genera scroll horizontal. */
+    position: fixed;
     border-radius: 50%;
     filter: blur(60px);
     opacity: 0.3;
     z-index: 0;
+    pointer-events: none;
 }
 
 .brillo-calido-izquierdo {
@@ -200,6 +216,13 @@ body {
 
 .caja-input input {
     flex: 1;
+    /* min-width: 0 es lo que hace que el input SE ENCOJA. Un <input> es un
+       flex item con min-width:auto, y su ancho minimo es el que el navegador
+       le da por defecto (medido: 320px a 16px de fuente). Sin esto el renglon
+       no entra en la caja de 288px del celular, se desborda a la derecha y
+       EMPUJA EL ICONO DEL OJO FUERA DE LA PANTALLA (medido en x=372 con una
+       pantalla de 360: por eso el boton no se veia en el celular). */
+    min-width: 0;
     border: none;
     background: transparent;
     outline: none;
@@ -353,19 +376,16 @@ body {
     .video-fondo {
         display: none;
     }
-
-    .contenedor-video-fondo {
-        background-color: var(--verde-oscuro);
-    }
+    /* No hace falta tocar .contenedor-video-fondo: su fondo ya es la foto. */
 }
 
 /* ==========================================================================
    CELULAR
    --------------------------------------------------------------------------
-   En menos de 768px el video de fondo se apaga: en un celular descarga datos
-   y, si hay poca bateria, el navegador lo frena. El fondo queda con el color
-   de la paleta, que es justo el color de respaldo de arriba, asi que el login
-   se ve igual de bien sin el video.
+   En menos de 768px el video de fondo se apaga: pesa 2 MB y en el celular
+   descarga datos. El fondo NO queda en un verde plano sino en la FOTO
+   (background-image de arriba), que pesa 44 KB: el login se ve igual que en
+   la laptop y sin gastar los 2 MB del video.
    ========================================================================== */
 
 @media (max-width: 768px) {
@@ -377,7 +397,7 @@ body {
     }
 
     .video-fondo {
-        /* Oculto en celular: el fondo queda en --verde-oscuro. */
+        /* Apagado en celular (ahorra los 2 MB). La foto de fondo queda. */
         display: none;
     }
 

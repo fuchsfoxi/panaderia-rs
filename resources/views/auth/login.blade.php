@@ -14,7 +14,12 @@
 
     <!-- Contenedor del video de fondo -->
     <div class="contenedor-video-fondo">
-        <video autoplay muted loop playsinline class="video-fondo">
+        {{-- El poster es la MISMA foto que el background del contenedor (44 KB).
+             Es lo que se ve mientras el video baja y lo que queda si el video
+             no se reproduce (celular, ahorro de datos, iOS sin WebM): sin esto
+             el fondo se caia al verde plano de la paleta. --}}
+        <video autoplay muted loop playsinline class="video-fondo"
+               poster="{{ asset('images/fondo-login.jpg') }}">
             <source src="{{ asset('videos/public_videos_fondo_animado.webm') }}" type="video/webm">
             Tu navegador no soporta videos en HTML5.
         </video>
