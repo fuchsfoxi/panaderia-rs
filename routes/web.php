@@ -1,15 +1,24 @@
 <?php
 
-use App\Http\Controllers\HistorialController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HistorialController;
+use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProduccionController;
+use Illuminate\Support\Facades\Route;
 
-Route::get('/login', [LoginController::class, 'index'])->name('login');
-Route::post('/login', [LoginController::class, 'authenticate']);
+// al entrar solo con el dominio, manda al login
+Route::redirect('/', '/login');
 
-Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion.index');
-Route::post('/produccion', [ProduccionController::class, 'store'])->name('produccion.store');
-Route::get('/history', [HistorialController::class, 'index'])->name('history.index');
+// rutas públicas: solo para quien NO ha iniciado sesión
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'index'])->name('login');
+    Route::post('/login', [LoginController::class, 'authenticate']);
+});
+
+// rutas protegidas: solo para quien ya inició sesión
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion.index');
+    Route::post('/produccion', [ProduccionController::class, 'store'])->name('produccion.store');
+    Route::get('/history', [HistorialController::class, 'index'])->name('history.index');
+});
