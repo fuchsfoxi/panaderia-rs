@@ -3,22 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Turno extends Model
 {
-protected $table = 'turnos';
+    protected $table = 'turnos';
 
-// esta tabla no tiene created_at/updated_at en la migración
-public $timestamps = false;
+    // esta tabla no tiene created_at/updated_at en la migración
+    public $timestamps = false;
 
-protected $fillable =[
-'nombre_turnos'
+    protected $fillable = [
+        'nombre_turnos',
     ];
 
-// hasMany: un turno (ej. "Mañana") se repite en varios registros de detalle_pan
-public function detallesPan()
+    // hasMany: un turno (ej. "Mañana") se repite en varios registros de detalle_pan
+    public function detallesPan()
     {
-return $this->hasMany(DetallePan::class, 'turno_id');
+        return $this->hasMany(DetallePan::class, 'turno_id');
     }
 
+    public function producciones(): HasMany
+    {
+        return $this->hasMany(Produccion::class, 'turno_id');
+    }
 }

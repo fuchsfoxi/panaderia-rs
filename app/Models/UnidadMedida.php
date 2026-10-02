@@ -6,25 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class UnidadMedida extends Model
 {
-protected $table = 'unidades_medida';
+    protected $table = 'unidades_medida';
 
-public $timestamps = false;
+    public $timestamps = false;
 
-protected $fillable =[
-'nombre_unidades_medida',
-'equivalencia_unidades'
+    protected $fillable = [
+        'nombre_unidades_medida',
+        'equivalencia_unidades',
     ];
 
-// hasMany: una unidad de medida se repite en varios productos
-public function productos()
+    protected function casts(): array
     {
-return $this->hasMany(Producto::class, 'unidad_medida_id');
+        return [
+            'equivalencia_unidades' => 'decimal:2',
+        ];
     }
 
-// hasMany: una unidad de medida se repite en varios registros de detalle_pan
-public function detallesPan()
+    // hasMany: una unidad de medida se repite en varios productos
+    public function productos()
     {
-return $this->hasMany(DetallePan::class, 'unidad_medida_id');
+        return $this->hasMany(Producto::class, 'unidad_medida_id');
     }
 
+    // hasMany: una unidad de medida se repite en varios registros de detalle_pan
+    public function detallesPan()
+    {
+        return $this->hasMany(DetallePan::class, 'unidad_medida_id');
+    }
 }

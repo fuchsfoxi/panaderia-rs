@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Usuario extends Authenticatable{
+class Usuario extends Authenticatable
+{
     // por defecto, Eloquent asume que el nombre de la tabla es el plural del nombre del modelo
     // pero la tabla se llama diferente, por lo que debemos especificarlo manualmente
     protected $table = 'usuarios_sistema';
@@ -42,5 +43,8 @@ class Usuario extends Authenticatable{
         return $this->password_hash;
     }
 
-
+    public function getAuthPasswordName(): string
+    {
+        return 'password_hash';
+    }
 }

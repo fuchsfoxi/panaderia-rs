@@ -785,3 +785,77 @@ Las reglas permanentes de actualización y seguridad del Vault se registran en `
 
 Referencias: [MDN pageshow](https://developer.mozilla.org/en-US/docs/Web/API/Window/pageshow_event)
 y [Chrome BFCache/no-store](https://developer.chrome.com/docs/web-platform/bfcache-ccns).
+
+## Contrato de contraseña cerrado en Sprint 4 — 2026-10-02
+
+Estado: IMPLEMENTADO Y COMPROBADO en MariaDB aislada. Usuario::getAuthPasswordName()
+ahora devuelve password_hash, coherente con getAuthPassword(), sin cambiar modelo,
+tabla, columna, guard, provider o controller. Las menciones anteriores de este contrato
+pendiente pertenecen a las auditorías originales; este es su estado vigente.
+
+El test usa cuenta ficticia y provider Eloquent real: login con hash de menor costo,
+rehash mediante UPDATE sobre password_hash, nueva lectura, segundo login válido,
+intended, logout y rechazo de las tres páginas protegidas. No crea columna password.
+
+`php tests/run-mariadb.php --do-not-cache-result` ejecutó php artisan test:
+39 pruebas/425 aserciones aprobadas, incluidas las 22 regresiones anteriores.
+El servidor es desechable y sin red; no hubo migraciones o escrituras en la BD de trabajo.
+Sesiones database, rate limiting, errores de login y permisos conservan sus pendientes.
+Los cambios de modelos/datos y decisiones de negocio se detallan en
+[sprint4_modelos_relaciones.md](sprint4_modelos_relaciones.md); no se duplican aquí.
+
+## Catálogo y sesión de Producción — Sprint 4, 2026-10-02
+
+CONFIRMADO: categorias identifica las familias actuales Pan, Torta y Bocadito.
+IMPLEMENTADO Y COMPROBADO en MariaDB aislada: CategoriaSeeder por nombre sin IDs
+fijos, nueva migración aditiva 2026_10_02_180000_add_categoria_and_turno_to_produccion.php,
+FK nullable de categoria_id/turno_id y relaciones de Produccion/Categoria/Turno.
+DetallePan conserva turno_id obligatorio y su vínculo legacy. No se hace backfill.
+
+El runner php tests/run-mariadb.php --do-not-cache-result pasó 45 pruebas y
+511 aserciones, incluidas regresiones de observaciones/pivots/auth/rehash.
+Las reglas HTTP de una familia por cabecera y turno obligatorio solo Pan siguen
+PENDIENTES del escritor futuro; UNIQUE de sesiones sigue sin decisión.
+
+PENDIENTE DE APLICACIÓN EN BD DE TRABAJO: ambas migraciones aditivas y CategoriaSeeder.
+Lecturas reales: categorias/productos/turnos/produccion y tres detalles vacíos;
+turnos Mañana/Noche requieren carga posteriormente autorizada. No hubo escrituras
+ni migraciones/seeders sobre esa base. Café es PROPUESTA FUTURA / PENDIENTE DE
+VALIDACIÓN DEL CLIENTE. Detalle y comandos posteriores en sprint4_modelos_relaciones.md.
+
+## Turnos exclusivos de Producción de Pan — Sprint 4, 2026-10-02
+
+CONFIRMADO: turnos solo representa Mañana/Noche de Producción de Pan. Tarde,
+horarios laborales, asistencia y relevos no se administran ni se persisten.
+produccion.registrado_por_usuario_id conserva quién anotó la producción.
+
+IMPLEMENTADO Y COMPROBADO en MariaDB aislada: TurnoSeeder firstOrCreate por
+nombre_turnos sin IDs fijos y llamada en DatabaseSeeder; seis nuevos casos
+de idempotencia, IDs arbitrarios, relaciones actuales/legacy y otras familias
+con turno NULL. Runner completo: 51 pruebas/553 aserciones aprobadas.
+Migraciones/modelos/tests anteriores conservados; sin UNIQUE nuevo.
+
+PENDIENTE DE APLICACIÓN EN BD DE TRABAJO: php artisan db:seed --class=TurnoSeeder.
+No ejecutado allí, tampoco DatabaseSeeder completo ni migraciones. Ver el
+seguimiento y límites en sprint4_modelos_relaciones.md.
+
+
+## Unidades de Pan y parámetro histórico — Sprint 4, 2026-10-02
+
+CONFIRMADO: cantidad Pan es total de latas INTEGER; coche = 18 latas como
+representación futura de entrada/salida. Bocadito por unidades y Torta por
+fila física permanecen intactos. Panes por lata depende del Producto.
+
+IMPLEMENTADO Y COMPROBADO exclusivamente en MariaDB aislada: nueva migración
+aditiva de productos.panes_por_lata y detalle_pan.panes_por_lata_usado,
+INTEGER nullable sin backfill/default inventado, y fillable mínimos.
+Snapshot histórico conservado al editar Producto, enteros, preservación de
+filas y rollback protegido/up/down/up: 59 pruebas/672 aserciones aprobadas,
+incluidas las 51 anteriores de modelos, observaciones, pivots y autenticación.
+
+PENDIENTE DE APLICACIÓN EN BD DE TRABAJO: la nueva migración y aplicaciones
+anteriores. No hubo consultas ni escrituras contra esa base en esta tarea.
+Los valores reales, máximo operativo, unidad_medida_id y temporada_fe siguen
+pendientes; frontend/coches+latas, copia en store y CRUD Productos no se
+implementaron. Detalle, contrato futuro y comando selectivo en
+sprint4_modelos_relaciones.md. Se detiene para revisión sin continuar Sprint 5.

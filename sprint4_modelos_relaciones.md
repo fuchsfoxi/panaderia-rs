@@ -1,5 +1,7 @@
 # Sprint 4 — Modelos y Relaciones
 
+> Actualización posterior, 2026-10-02: las secciones 1–21 se conservan como la auditoría original. El estado vigente de la implementación autorizada, las decisiones resueltas y sus pruebas están en **Decisiones de negocio confirmadas después de la auditoría**, al final. Las propuestas y pendientes originales no sustituyen ese seguimiento.
+
 Fecha de auditoría: **2026-10-02**. Duración planificada: **2 semanas**. Etapa: **ANÁLISIS**; toda corrección propuesta permanece **PENDIENTE de revisión y autorización expresa**.
 
 Cronología oficial indicada por el usuario: Sprint 1, evaluación/análisis de datos; Sprint 2, migraciones y estructura; Sprint 3, Figma y vistas; Sprint 4, modelos y relaciones.
@@ -951,3 +953,254 @@ Rutas relativas a `/home/lukagfv/Documentos/Obsidian Vault/PROYECTO_LARAVEL/`:
 Las correcciones y módulos descritos en el checklist permanecen PENDIENTES. No se modificaron modelos, migraciones, controllers, vistas, seeds, factories, tests, paquetes ni datos de negocio durante esta fase.
 
 Referencias oficiales usadas para contrastar comportamiento del framework: [Eloquent y claves](https://laravel.com/framework/docs/13.x/eloquent), [relaciones](https://laravel.com/framework/docs/13.x/eloquent-relationships) y [casts](https://laravel.com/framework/docs/13.x/eloquent-mutators). Las conclusiones sobre este proyecto proceden de sus archivos y metadatos activos, no de adoptar esquemas de ejemplo.
+
+## Decisiones de negocio confirmadas después de la auditoría
+
+Fecha: 2026-10-02. Continuación autorizada del Sprint 4; no implica autorización de módulos HTTP ni aplicación de migraciones en la BD de trabajo.
+
+Estados: **CONFIRMADO** describe una decisión del usuario; **PENDIENTE** trabajo/decisión aún abierta; **IMPLEMENTADO** código existente; **IMPLEMENTADO Y PROBADO** código comprobado con datos ficticios en MariaDB aislada (equivale a IMPLEMENTADO Y COMPROBADO en el Vault). Una decisión confirmada no acredita implementación.
+
+### Decisiones y alcance real
+
+| Decisión | Estado funcional | Estado de soporte actual |
+|---|---|---|
+| Pan por fecha y sesión Mañana/Noche; no Tarde | CONFIRMADO | produccion.turno_id nullable y relaciones IMPLEMENTADOS Y PROBADOS aisladamente; aplicación real PENDIENTE. detalle_pan.turno_id legacy conservado |
+| Una sesión Pan admite varios productos y cantidades diferentes | CONFIRMADO | Produccion::detallesPan hasMany IMPLEMENTADO Y PROBADO |
+| Pan: cantidad = total de latas; 1 coche = 18 latas | CONFIRMADO | INTEGER conservado y probado; coches/latas son entrada/salida futura, sin persistencia redundante |
+| Panes por lata configurables en Producto y snapshot histórico por DetallePan | CONFIRMADO | Nueva migración nullable y fillable IMPLEMENTADOS Y PROBADOS aisladamente; aplicación real y escritor PENDIENTES |
+| Torta diaria, sin turno; varias tortas por producción | CONFIRMADO | Produccion::detallesTorta hasMany IMPLEMENTADO Y PROBADO |
+| Un DetalleTorta representa una torta física | CONFIRMADO | Filas independientes con mismo producto, distinta forma/foto/observación: IMPLEMENTADO Y PROBADO en BD aislada; sin columna cantidad |
+| Foto QC obligatoria solo Torta; Circular/Rectangular por torta | CONFIRMADO | Campos conservados; validación y subida PENDIENTES de flujo funcional |
+| Bocadito diario, sin turno; varios tipos y cantidad entera de unidades por detalle | CONFIRMADO | Produccion::detallesBocadito hasMany IMPLEMENTADO Y PROBADO |
+| Observación nullable por cada detalle, nunca en cabecera | CONFIRMADO | Migración nueva y fillable IMPLEMENTADOS Y PROBADOS en aislamiento; aplicación en BD de trabajo PENDIENTE |
+| Muchos participantes; un rol por empleado/detalle; varios empleados con mismo rol | CONFIRMADO | Pivots y PK existente IMPLEMENTADOS Y PROBADOS |
+| Roles operativos conceptuales Maestro/Ayudante/Practicante, sin IDs fijos | CONFIRMADO | No se alteró catálogo real ni se añadieron seeders; fixtures solo en BD ficticia |
+| Una producción contiene una sola familia | CONFIRMADO | categorias y produccion.categoria_id FK nullable IMPLEMENTADOS Y PROBADOS aisladamente; aplicación real PENDIENTE. Enforcement en escritor futuro PENDIENTE |
+| Historial: tarjeta resumida más acceso Detalles a toda la información | CONFIRMADO | Requisito documentado; interfaz/consulta de detalles PENDIENTE, sin cambios de UI |
+| Hora de agotamiento de Pan pertenece a Stock/disponibilidad | PROPUESTA FUTURA | PENDIENTE DE VALIDACIÓN DEL CLIENTE; NO IMPLEMENTADO |
+
+### Dudas de la sección 15 que quedaron resueltas
+
+| Punto original | Resolución |
+|---|---|
+| 1. Cabecera, líneas y categorías | CONFIRMADO: muchos detalles de una sola familia; categorias será el catálogo de familias y produccion.categoria_id será la FK |
+| 2. Torta individual o lote | RESUELTO: una fila por torta física; no cantidad |
+| 3. Fracciones/unidad/equivalencias | CONFIRMADO: cantidad Pan = total de latas INTEGER; 1 coche = 18 latas; panes por lata por Producto y snapshot por DetallePan IMPLEMENTADOS Y PROBADOS aisladamente. Valores reales, máximo operativo y papel de unidad_medida_id PENDIENTES |
+| 4. Observaciones/hora/trazabilidad | Observación por detalle RESUELTA; hora y trazabilidad técnica siguen PENDIENTES |
+| 5. Estados y métricas | PENDIENTE |
+| 6. Turnos y alcance | CONFIRMADO: solo sesión Pan, Mañana/Noche; produccion.turno_id IMPLEMENTADO Y PROBADO aisladamente, PENDIENTE DE APLICACIÓN EN BD DE TRABAJO |
+| 7. Roles por participante | RESUELTO: uno por empleado/detalle, varios trabajadores con el mismo rol; elegibilidad/permisos fuera de alcance |
+| 8. Temporada/categoría estable | categorias como familias CONFIRMADO e IMPLEMENTADO Y PROBADO en aislamiento; temporada_fe PENDIENTE |
+| 9. Pedidos/Stock | PENDIENTE; hora de agotamiento solo propuesta a validar |
+
+### Estrategia de asociaciones elegida e implementada
+
+Se reutilizaron DetallePanEmpleado, DetalleTortaEmpleado y DetalleBocaditoEmpleado como **custom Pivot** nativos. No hay modelos duplicados, nueva PK, paquete de claves compuestas ni array en primaryKey.
+
+Cada Detalle*::empleados() declara belongsToMany con tabla, foreignPivotKey y relatedPivotKey explícitos, using de su clase existente y withPivot('rol_produccion_id'). No requiere timestamps en la asociación.
+
+Contrato de operaciones:
+
+```php
+$detalle->empleados()->attach($empleadoId, ['rol_produccion_id' => $rolId]);
+$participantes = $detalle->empleados; // $empleado->pivot->rolProduccion
+$detalle->empleados()->updateExistingPivot($empleadoId, ['rol_produccion_id' => $otroRolId]);
+$detalle->empleados()->detach($empleadoId);
+```
+
+Las claves del pivot también se declaran en cada clase para mantener actualizaciones/eliminaciones/refresh coherentes al leerla por consultas existentes (p. ej. RolProduccion::detallePanEmpleados). AsPivot usa las dos claves originales. Se comprobaron SQL de update/delete sin referencia a id, cambios de rol y aislamiento respecto a otros empleados/detalles.
+
+Las pertenencias propias y accesos de RolProduccion se conservaron. Las lecturas directas deben filtrar ambas claves; no usar find($id), destroy($id) ni route binding de una supuesta PK individual. Pivot no incorpora soporte genérico de PK compuestas. La PK real sigue impidiendo repetir al empleado, independientemente del rol.
+
+La búsqueda de consumidores encontró los tres hasOne de Produccion solo en ese modelo; ninguna llamada operativa en controller/Blade/tests. Se sustituyeron por detallesPan/detallesTorta/detallesBocadito. Los métodos singulares de los pivots son belongsTo a su detalle y se conservaron: representan otra dirección.
+
+### Migración creada y transición de observaciones
+
+`database/migrations/2026_10_02_162600_add_observacion_to_production_details.php` añade TEXT nullable observacion a detalle_pan, detalle_torta y detalle_bocadito. TEXT permite notas libres razonables sin imponer aún un límite de formulario no aprobado. Los registros anteriores reciben NULL; no se cambia cantidad, turno, PK, FK o cabecera.
+
+El rollback comprueba las tres tablas antes del primer DROP. Si cualquier observacion no es NULL, lanza una excepción y conserva las columnas; necesita estrategia de conservación aprobada antes de revertir. El test sitúa el texto en la segunda tabla para detectar una eventual reversión parcial. El down y la reaplicación se probaron únicamente en BD ficticia después de retirar explícitamente textos de prueba.
+
+Estado: **IMPLEMENTADO Y PROBADO en MariaDB aislada**. **PENDIENTE de aplicación en BD de trabajo**; no se ejecutó allí. Las 21 migraciones anteriores permanecen idénticas. En esa fase el repositorio tenía 22 migraciones; la continuación actual añade la número 23 de familia/turno, sin tablas adicionales. Los writers futuros que envíen observacion requieren primero desplegar/aplicar esta migración con autorización.
+
+### Familia: decisión estructural confirmada e implementada
+
+**CONFIRMADO, 2026-10-02:** categorias será el catálogo oficial de familias actuales: **Pan, Torta y Bocadito**, exactamente. produccion.categoria_id será la FK a categorias.id; productos.categoria_id ya referencia ese mismo catálogo. No existe otra clasificación paralela.
+
+Antecedente conservado: en la fase anterior esta elección estaba detenida. Se evaluaron reutilizar categoria_id, una familia textual y derivar familia de los detalles. El usuario eligió el catálogo existente; las otras opciones se descartan en esta fase. La FK identifica una cabecera incluso sin detalles; no garantiza por sí sola coherencia de familia entre todas las tablas.
+
+**IMPLEMENTADO:** CategoriaSeeder usa Categoria::firstOrCreate por nombre_categorias para Pan/Torta/Bocadito, sin IDs impuestos ni cambios a registros encontrados. DatabaseSeeder lo incorpora antes de los seeders anteriores; no se cambian sus reglas. No se ejecutó DatabaseSeeder ni CategoriaSeeder en la BD de trabajo. Idempotencia secuencial comprobada; sin UNIQUE en nombre_categorias no se promete unicidad ante ejecuciones concurrentes.
+
+**IMPLEMENTADO:** 2026_10_02_180000_add_categoria_and_turno_to_produccion.php añade categoria_id nullable FK a categorias y turno_id nullable FK a turnos. Una sola migración agrupa ambas columnas del contrato de sesión aprobado. ON DELETE/UPDATE RESTRICT, sin cascadas, backfill ni UNIQUE. En esta fase se llegó a **23 migraciones en código**: 21 originales conservadas, observaciones conservada y familia/turno. El bloque posterior de unidades eleva el total a 24, sin reescribirlas.
+
+**IMPLEMENTADO Y PROBADO:** ambas FK, conservación de filas anteriores con NULL, rechazo de referencias inexistentes, down/up y relaciones verificadas en MariaDB aislada. El down bloquea antes de eliminar columnas si alguna cabecera tiene categoría o turno asignados; una reversión con datos requiere estrategia de conservación aprobada. Se ensayó cada campo por separado y la reaplicación solo con asignaciones ficticias retiradas.
+
+**PENDIENTE DE APLICACIÓN EN BD DE TRABAJO:** las dos migraciones aditivas y CategoriaSeeder. No se aplicó ninguna. categoria_id permanecerá nullable durante transición; NOT NULL se decidirá después de revisar datos, implementar escritores, migrar registros y verificar consumidores.
+
+Relaciones nuevas: Produccion::categoria belongsTo Categoria y Produccion::turno belongsTo Turno; Categoria::producciones y Turno::producciones hasMany. Fillable de Produccion conserva fecha/registrado_por_usuario_id y añade solamente categoria_id/turno_id. Se conservan usuario y los tres hasMany de detalle, así como Turno::detallesPan y DetallePan::turno.
+
+El escritor futuro debe comprobar **produccion.categoria_id == producto.categoria_id** para cada detalle y utilizar únicamente la tabla correspondiente a la familia. No se añadieron eventos, Observers, Triggers, Services ni controllers para impedir mezclas. ProduccionController::store sigue fuera de alcance. La prueba estructural no acredita esas reglas HTTP.
+
+**PENDIENTE:** decidir si se permite más de una cabecera para fecha + categoría o fecha + categoría + turno. No hay UNIQUE para estas combinaciones ni se añade UNIQUE incidental a nombre_categorias.
+
+**PROPUESTA FUTURA / PENDIENTE DE VALIDACIÓN DEL CLIENTE:** otras familias, por ejemplo Café. El catálogo permitiría identificar nuevas familias sin otra columna de tipo, pero primero deben aprobarse sus reglas de negocio. No se creó Café, productos/reglas/tablas ni módulo para esa idea.
+
+### Turno de sesión Pan: transición aditiva implementada
+
+**CONFIRMADO:** Pan por fecha + Mañana/Noche; Torta/Bocadito por fecha, sin turno. produccion.turno_id es la ubicación aprobada del turno de sesión de Pan y permanece nullable para las otras familias. La obligación de turno en Pan se validará con el flujo funcional futuro, no mediante NOT NULL global.
+
+**IMPLEMENTADO Y PROBADO en aislamiento:** Pan persiste con un turno localizado en catálogo, Torta/Bocadito con turno NULL y las cabeceras de transición con categoría/turno NULL. Las relaciones inversas y varios detalles funcionan. detalle_pan.turno_id sigue NOT NULL, con su FK original y relación legacy; no se retiró ni se hizo nullable. La migración no copia turnos automáticamente.
+
+**PENDIENTE DE APLICACIÓN EN BD DE TRABAJO** y PENDIENTE de migración de escritores/consumidores. Tras autorización del flujo, mantener coherencia entre ambos turnos durante la transición. Un backfill necesita revisión específica: no inventar familia/turno para cabeceras vacías, mixtas o ambiguas, ni dividir, fusionar o borrar datos. Retirar detalle_pan.turno_id requerirá otra migración aprobada después de migrar datos y consumidores.
+
+### Datos reales consultados exclusivamente en lectura
+
+2026-10-02, conexión configurada del proyecto por PDO directo, sin arrancar escritores de Laravel. SELECT y metadatos dentro de START TRANSACTION READ ONLY, finalizado con ROLLBACK. El sandbox bloqueó la conexión (2002); la ejecución autorizada fuera de él permitió la lectura sin escrituras.
+
+| Comprobación | Resultado real |
+|---|---|
+| Cantidad de categorias / valores id,nombre_categorias ordenados por id | 0 / ningún valor |
+| Cantidad de productos / relación real producto → categoria por LEFT JOIN | 0 / ninguna relación poblada |
+| Valores id,nombre_turnos ordenados por id | Catálogo vacío; Mañana/Noche no existen hoy. No se cargaron ni corrigieron automáticamente |
+| Cantidad de producciones | 0 |
+| Existencia y cantidad de detalle_pan / detalle_torta / detalle_bocadito | Las tres tablas existen; 0 filas en cada una |
+| Producciones con varios turno_id en detalle_pan | Ninguna; no hay datos con los que evaluar sesiones existentes |
+| Cabeceras con distintas tablas de detalle o categorías de producto | Ninguna; no hay datos. No acredita enforcement |
+| Producto de familia incompatible con tabla de detalle | Ningún caso; conjuntos vacíos |
+| Estructura de transición en BD de trabajo | Solo detalle_pan.turno_id NOT NULL; categoria_id/turno_id de cabecera y observaciones todavía ausentes |
+| Migraciones 2026_10_02 registradas | Ninguna |
+
+El catálogo de turnos vacío se documenta como **PENDIENTE de carga autorizada** antes de operar Pan. En la fase de familia/turno aún no había TurnoSeeder; la continuación posterior lo implementa y prueba, sin cargarlo en la BD de trabajo ni asumir IDs. Mañana/Noche se usan únicamente como fixtures en MariaDB aislada. No se encontraron otros datos inesperados o inconsistencias en los conjuntos consultados.
+
+### Comandos para una autorización posterior
+
+No ejecutados contra la BD de trabajo. Aplicación selectiva de lo revisado, después de autorizar y comprobar entorno/datos:
+
+```bash
+php artisan migrate --path=database/migrations/2026_10_02_162600_add_observacion_to_production_details.php
+php artisan migrate --path=database/migrations/2026_10_02_180000_add_categoria_and_turno_to_produccion.php
+php artisan db:seed --class=CategoriaSeeder
+```
+
+No ejecutar DatabaseSeeder completo para esta carga: contiene seeders previos no idempotentes. Cargar Mañana/Noche requiere autorización posterior específica: TurnoSeeder está IMPLEMENTADO Y PROBADO aisladamente en la continuación descrita abajo. No se ejecutó sobre la BD de trabajo.
+
+### Contrato de Usuario y casts
+
+Usuario::getAuthPasswordName() devuelve password_hash. Se preservaron Usuario, usuarios_sistema, getAuthPassword, hidden, web/provider y controllers. El test realiza login con provider Eloquent real y hash ficticio de menor costo, comprueba el UPDATE sobre password_hash, lectura posterior, segundo login sin rehash innecesario, intended, logout y rechazo de páginas protegidas. No hay columna password.
+
+Casts implementados y probados sobre lecturas/serialización reales en BD ficticia:
+
+- Producto.activo boolean: flags PHP coherentes; no se cambió temporada_fe porque carece de consumidor/regla actual definida.
+- Produccion.fecha date: día de la sesión como fecha, sin introducir hora técnica.
+- Pedido.entregado boolean y sus dos fechas datetime: flag y fechas con hora, sin inventar estados nuevos.
+- UnidadMedida.equivalencia_unidades y DetallePedido.cantidad decimal:2: cadenas decimales exactas, sin conversiones a float. Un cast no define equivalencias de negocio.
+
+La revisión de consumidores no encontró lectores HTTP operativos de esos campos que exigieran conservar otra interfaz; auth y sidebar mantienen sus relaciones. No se añadió cast de cantidad Pan ni se convirtió INTEGER a DECIMAL. No se aplicaron hashed/encrypted/temporada ni casts de FK por estética.
+
+### Pruebas y reproducibilidad
+
+- Baseline anterior: 22 pruebas, 222 aserciones aprobadas.
+- Resultado de la fase anterior: **39 pruebas, 425 aserciones, todas aprobadas**. Resultado de catálogo/familia/turno: **45 pruebas, 511 aserciones**, seis casos nuevos y ampliación del test DDL. Resultado de TurnoSeeder: **51 pruebas, 553 aserciones, todas aprobadas**, seis casos adicionales. Resultado vigente tras unidades de Pan: **59 pruebas, 672 aserciones, todas aprobadas**, ocho casos adicionales y ampliación de evolución DDL.
+- `php tests/run-mariadb.php --do-not-cache-result` ejecuta **php artisan test** con un servidor MariaDB propio sin red, socket/directorio aleatorios bajo /tmp y dos bases ficticias. Requiere binarios MariaDB y PDO MySQL ya instalados; no instala paquetes ni lee .env para conectar al servidor.
+- El helper exige socket bajo /tmp/sprint4-*, nombres de bases de prueba y verifica @@datadir/DATABASE antes de cualquier migración. Nunca hace fallback a la BD del proyecto.
+- Fixtures ficticias; pruebas de modelos con transacciones revertidas. La prueba DDL usa otra base aislada para que el autocommit de MariaDB no afecte esos tests. CategoriaSeeder y TurnoSeeder se ejecutaron solo contra esa instancia aislada; nunca DatabaseSeeder completo, migrate:fresh ni db:wipe.
+- Sin SPRINT4_TEST_SOCKET, los 37 casos de persistencia/evolución se omiten explícitamente: un `php artisan test` convencional no acredita esa cobertura. Utilizar el runner para ejecutarla completa.
+- Primera pasada de la fase anterior: 38/39; una aserción del segundo login esperaba Dashboard tras visitar Historial como invitado. Se corrigió el test para respetar intended('/history'); no se alteró el comportamiento del controller. Pasadas posteriores completas aprobadas.
+- En la fase anterior Pint pasó sobre 17 PHP afectados; en esta continuación pasó sobre los ocho PHP afectados. Sintaxis/diff y conservación de fuentes ajenas a la tarea comprobados al cierre. No se repitió build de frontend porque no cambió ningún asset/vista.
+
+Cobertura: múltiples productos/cantidades por cabecera, tortas individuales, notas nullable/independientes, mismo rol para varios empleados, duplicado rechazado por PK, attach/lectura/update/refresh/delete/detach por ambas claves, casts sin pérdida decimal, Usuario/Empleado/Rol/Cargo y rehash/login/logout/navegación. No certifica enforcement de familia/turno, validación foto/forma, CRUD HTTP, sesiones database, navegador nuevo ni despliegue.
+
+### Seguimiento de pendientes y límites
+
+- [x] Tres hasMany plurales y accesos de participantes probados.
+- [x] Custom pivots con rol y conservación de PK compuestas probados.
+- [x] Contrato password_hash y rehash comprobados.
+- [x] Observación por detalle en nueva migración, con pruebas de conservación/rollback protegido.
+- [x] Casts justificados y tests aislados reproducibles.
+- [x] CONFIRMADO: categorias será el catálogo de familias y produccion.categoria_id será la FK; turno nullable en cabecera aprobado. IMPLEMENTADO Y PROBADO en aislamiento.
+- [ ] PENDIENTE DE APLICACIÓN EN BD DE TRABAJO: migración de familia/turno, CategoriaSeeder y TurnoSeeder; migración de consumidores.
+- [x] TurnoSeeder Mañana/Noche idempotente por nombre, IMPLEMENTADO Y PROBADO en MariaDB aislada; turnos laborales y relevos fuera de alcance.
+- [ ] Nuevas familias como Café: PROPUESTA FUTURA / PENDIENTE DE VALIDACIÓN DEL CLIENTE.
+- [x] CONFIRMADO cantidad Pan en latas INTEGER, coche = 18 latas y panes por lata por producto con snapshot histórico; estructura IMPLEMENTADA Y PROBADA en aislamiento.
+- [ ] Aplicación real autorizada de panes por lata, valores reales por producto, máximo operativo y papel definitivo de unidad_medida_id.
+- [ ] Definir unicidad de sesiones si procede, estados/métricas/hora, temporada_fe y categoría/reglas de Panetón/Turrón.
+- [ ] Autorizar y aplicar migración de observaciones en la BD de trabajo, con respaldo y revisión; no se aplicó durante esta tarea.
+- [ ] Implementar ProduccionController y validación backend de foto/forma solo en etapa posteriormente autorizada.
+- [ ] Historial resumido + Detalles, Dashboard, Stock, Pedidos HTTP y permisos siguen fuera de esta fase.
+- [ ] Hora de agotamiento: PROPUESTA / PENDIENTE DE VALIDACIÓN DEL CLIENTE, sin columna de Producción ni diseño de Stock.
+
+En la fase anterior se actualizaron 16 notas existentes del Vault original, preservando historia y distinguiendo pruebas aisladas de estado de BD de trabajo. No se creó ni movió documentación:
+
+| Área del Vault | Notas actualizadas y propósito |
+|---|---|
+| PRODUCCION | Logica de negocio.md.md, Requerimientos.md.md y Pantallas.md.md: reglas confirmadas, soporte actual e Historial resumen/Detalles pendiente |
+| BASE DE DATOS | Migraciones.md y Relaciones.md: migración aditiva de observaciones y cardinalidad/turno transitorio |
+| LARAVEL | Models.md: hasMany, custom pivots, casts, rehash y límites probados |
+| PERSONAL Y USUARIOS | Turnos.md.md, Empleados.md.md, Usuarios.md.md y Pendientes.md: reglas funcionales y cierre de rehash sin certificar sesiones database |
+| DECISIONES | Decisiones de diseño.md.md, Decisiones de base de datos.md.md y Decisiones Laravel.md.md: reglas aprobadas, elección de familia/turno pendiente y estrategia Pivot |
+| STOCK | Requerimientos.md.md: hora de agotamiento como PROPUESTA pendiente de validación, NO IMPLEMENTADO |
+| INICIO | Estado de proyecto.md y Roadmap.md: resultados reales y pendientes antes de cerrar Sprint 4 |
+
+En la fase anterior mejora_asignado.md registró solo el cierre del contrato de contraseña; ahora añade el seguimiento de catálogo/sesión. Este informe sigue siendo el documento técnico del Sprint 4. No se ejecutó ninguna migración contra la BD real. El trabajo se detiene para revisión; no se continúa con store.
+
+### Cierre de esta continuación — 2026-10-02
+
+Código modificado en esta fase: Categoria/Produccion/Turno, CategoriaSeeder, incorporación en DatabaseSeeder, nueva migración de familia/turno, ProductionFamilyRelationshipsTest y ampliación de ProductionObservationsMigrationTest. Pint solo en los ocho PHP afectados (también retiró el import User sin uso de DatabaseSeeder). Modelos previos, las 21 migraciones originales y la migración de observaciones se conservaron. Tests previos de modelos/auth siguen pasando.
+
+Documentación: este informe, mejora_asignado.md y las notas originales necesarias de BASE DE DATOS (Relaciones, Migraciones, TABLAS/Categorias, ERD General), LARAVEL/Models, PRODUCCION (Logica de negocio y Requerimientos), PERSONAL Y USUARIOS/Turnos, DECISIONES (base de datos y diseño) e INICIO (Estado de proyecto y Roadmap). Las 12 notas originales fueron actualizadas con autorización de escritura fuera del sandbox y verificadas por relectura/hash. Se mantienen nombres reales .md.md e historia, sin copias en el repositorio.
+
+Detención al terminar esta fase: sin migraciones/seeders/escrituras en la BD de trabajo; sin continuar store, Historial, Dashboard, fotos, Stock, Pedidos, permisos, Café o frontend. Observaciones permanecen por detalle y hora de agotamiento como propuesta futura de Stock pendiente de validación del cliente.
+
+### TurnoSeeder y alcance del catálogo — 2026-10-02
+
+**CONFIRMADO:** turnos representa exclusivamente los turnos de PRODUCCIÓN DE PAN, exactamente **Mañana y Noche**. Tarde no pertenece a este catálogo. La persona que anota puede trabajar otro horario o cubrir un relevo temporal, incluso por la tarde: el sistema conserva quién registró mediante produccion.registrado_por_usuario_id. No administra asistencia, horarios laborales, relevos, calendarios ni quién reemplaza a quién; no se persisten turnos laborales ni se crean empleado.turno_id, empleado_turnos o historiales de personal. Esto precisa el alcance funcional sin cambiar estructuras existentes.
+
+**IMPLEMENTADO:** database/seeders/TurnoSeeder.php usa Turno::firstOrCreate por nombre_turnos para Mañana/Noche. DatabaseSeeder lo registra después de CategoriaSeeder y antes de los seeders anteriores; turnos es un catálogo sin dependencias de personal. No se modifica la migración original ni se añade UNIQUE. Idempotencia secuencial; sin restricción UNIQUE no se garantiza unicidad ante ejecuciones concurrentes. No elimina ni renombra registros existentes.
+
+**IMPLEMENTADO Y PROBADO** exclusivamente en MariaDB aislada: tests/Feature/TurnoSeederTest.php añade seis casos: creación exacta y doble ejecución; conservación con IDs arbitrarios Mañana=431/Noche=97 (solo fixtures, sin significado funcional); cabecera Pan por cada nombre y filtrado de sus producciones/detalles legacy respecto al otro turno; Torta/Bocadito con turno NULL tras sembrar el catálogo. Registrado_por_usuario_id y usuario conservados. **51 pruebas/553 aserciones aprobadas**, incluidas las 45 anteriores de relaciones, FK/migraciones, observaciones, pivots y auth/login/logout/rehash. No certifica validación HTTP ni gestión laboral inexistentes. Pint/sintaxis solo sobre tres PHP afectados; git status/diff/diff --check y conservación de cambios previos revisados.
+
+**PENDIENTE DE APLICACIÓN EN BD DE TRABAJO:** TurnoSeeder. La tabla vacía procede de la consulta anterior en READ ONLY; no se volvió a consultar ni escribir la BD de trabajo en esta tarea. El runner creó un servidor desechable sin red bajo /tmp y lo detuvo al finalizar. El primer intento estuvo bloqueado por el sandbox; la ejecución autorizada fuera de él aprobó toda la suite. No se ejecutó DatabaseSeeder completo ni se aplicaron migraciones reales.
+
+Comando selectivo para autorización posterior, **NO ejecutado en BD de trabajo**:
+
+```bash
+php artisan db:seed --class=TurnoSeeder
+```
+
+Documentación de esta tarea: este informe, mejora_asignado.md y siete notas existentes del Vault: PERSONAL Y USUARIOS/Turnos.md.md, PRODUCCION/Logica de negocio.md.md, PRODUCCION/Requerimientos.md.md, DECISIONES/Decisiones de base de datos.md.md, INICIO/Estado de proyecto.md, INICIO/Roadmap.md y BASE DE DATOS/Migraciones.md. Roadmap/Migraciones se ajustan porque todavía indicaban ausencia de TurnoSeeder. Se conserva la historia.
+
+Pendientes del Sprint 4 permanecen: aplicación autorizada de ambas migraciones aditivas y seeders selectivos, transición de escritores/datos/consumidores antes de retirar turno legacy o exigir categoría, unicidad de sesiones, fracciones/unidades/equivalencias, estados/métricas y temporada_fe. Figma/sesiones database siguen sin certificar; flujo HTTP requiere autorización posterior. Se detiene aquí, sin ampliar alcance.
+
+
+### Unidades de Pan y configuración por producto — 2026-10-02
+
+**CONFIRMADO:** Bocadito se contabiliza por unidades enteras; Torta también por unidad, una fila DetalleTorta por torta física, con forma/foto/observación/participantes propios y sin columna cantidad. Para Pan, **detalle_pan.cantidad = total de latas producidas**, siempre INTEGER positivo, sin renombrar la columna. Ejemplos válidos: 1, 8, 17, 18, 23 y 36 latas. **1 coche = 18 latas**, capacidad general independiente del producto. No se almacenan coches, latas extra, medios coches ni floats/decimales redundantes.
+
+**CONFIRMADO:** panes por lata depende del producto y debe poder editarse en el futuro. Pan Yema tiene equivalencia confirmada de 12 panes por lata; los valores reales de Francés, Árabe, Hamburguesa y demás productos siguen PENDIENTES. No se cargó Yema ni se hardcodeó por nombre, ni se trasladó esta configuración a unidades_medida.
+
+**IMPLEMENTADO:** migración aditiva única y cohesiva `database/migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php` agrega productos.panes_por_lata y detalle_pan.panes_por_lata_usado como INTEGER nullable, sin default inventado, CHECK nuevo, FK nueva, backfill o modificación de cantidad/unidad_medida_id. Son **24 migraciones en código**: las 21 originales y las dos anteriores de Sprint 4 se conservan byte a byte. Producto añade únicamente panes_por_lata a fillable; DetallePan añade panes_por_lata_usado a fillable y comentarios sobre cantidad/snapshot. No hay casts nuevos ni relaciones alteradas.
+
+El snapshot conserva el factor utilizado en esa producción. Ejemplo conceptual: cantidad = 23 y panes_por_lata_usado = 12 representan 276 panes aunque Producto.panes_por_lata cambie a 14. Las columnas permiten NULL durante transición y para productos sin factor operativo. Los registros antiguos reciben NULL, sin inventar su equivalencia; con snapshot desconocido no se puede acreditar un total histórico de panes. Los modelos no copian automáticamente el parámetro. Sprint 5 deberá copiar el valor vigente al crear el detalle mediante el escritor autorizado. Validación positiva del parámetro corresponde al futuro flujo de Productos; no existe validación HTTP implementada por este bloque.
+
+Down comprueba ambos campos antes del primer DROP y se bloquea si cualquiera contiene un valor no NULL, incluso cero. Revertir con datos requiere una estrategia de conservación aprobada; no elimina silenciosamente parámetros o snapshots. El preflight evita la reversión parcial por datos encontrados; no promete atomicidad de DDL ante fallos del servidor ni protección frente a escritores concurrentes. Aplicación/rollback deberán planificarse sin escritores concurrentes.
+
+**IMPLEMENTADO Y PROBADO exclusivamente en MariaDB aislada:** `tests/Feature/PanUnitsTest.php` añade ocho casos: parámetros desconocidos NULL sin copia automática; creación/edición de producto ficticio con snapshots explícitos 12/14 e historial intacto; seis cantidades enteras 1/8/17/18/23/36 sin conversión a coches. `ProductionObservationsMigrationTest.php` excluye las tres aditivas para iniciar con las 21 originales, y ensaya up/down/up, metadatos INTEGER/nullable/default NULL, registros anteriores de productos/detalles/cabeceras/pivot, conservación de cantidad/FK legacy y bloqueo de rollback con cada campo por separado antes de cualquier DROP.
+
+Resultado completo: **59 pruebas, 672 aserciones, 59 aprobadas, ninguna omitida**, mediante `php tests/run-mariadb.php --do-not-cache-result`. Incluye las 51 anteriores de hasMany, observaciones, custom pivots, categoría/turno, seeders selectivos y auth/login/logout/rehash. Primera pasada: 58/59 por una aserción que esperaba NULL PHP en metadatos; MariaDB informa el default SQL como texto `NULL`. Se corrigió solo la aserción para reconocer esa representación y pasó la suite completa. El sandbox bloqueó inicialmente el servidor temporal; el runner autorizado usó un servidor sin red bajo /tmp/sprint4-* y lo detuvo al finalizar. Pint únicamente en cinco PHP afectados, sintaxis PHP y diff revisados. No acredita conversiones operativas, copia HTTP del snapshot ni reglas HTTP todavía inexistentes.
+
+**PENDIENTE DE APLICACIÓN EN BD DE TRABAJO:** esta migración y las aplicaciones anteriores de Sprint 4. No se consultó ni modificó la BD de trabajo en esta tarea; la evidencia previa de productos vacíos sigue siendo histórica, sin revalidación actual. No hubo migraciones/seeders reales ni modificaciones de datos reales.
+
+Comando selectivo para una autorización posterior, **NO EJECUTADO en BD de trabajo**:
+
+```bash
+php artisan migrate --path=database/migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php
+```
+
+**Contrato futuro de Sprint 5, NO IMPLEMENTADO:** entrada entera coches + latas adicionales; total_latas = coches * 18 + latas. Representación normal de latas adicionales: 0–17. Ejemplos: 18 → 1 coche; 19 → 1 coche + 1 lata; 23 → 1 coche + 5 latas; 36 → 2 coches; 41 → 2 coches + 5 latas. No se implementó conversión automática. Máximo operativo de coches/cantidad PENDIENTE DE VALIDACIÓN DEL CLIENTE, sin límites arbitrarios. Recomendación pequeña: en Sprint 5 centralizar la capacidad aprobada en una sola configuración de dominio (por ejemplo config/produccion.php, latas_por_coche = 18) y suministrar esa misma regla a la interfaz; no crear arquitectura o archivo de configuración ahora.
+
+**PENDIENTES DE NEGOCIO:** valores reales panes_por_lata de cada producto, máximo operativo, papel definitivo de detalle_pan.unidad_medida_id, semántica de temporada_fe y categoría/reglas de Panetón/Turrón. Se conservan unidad_medida_id y sus FK sin cambiar registros ni crear Seeder de Lata. temporada_fe permanece intacta y no se añaden fechas de temporada.
+
+**PROPUESTA FUTURA / IMPLEMENTACIÓN PENDIENTE:** administración de Productos para crear/editar, modificar panes_por_lata, activar/desactivar y manejar productos temporales. Recomendación: preferir activo = false si existe historial antes que borrar físicamente, sin implementar lógica de eliminación. Interfaz coches + latas, equivalencia visual y manejo de temporada se documentan para etapas posteriores.
+
+Documentación original actualizada en ocho notas existentes: PRODUCCION/Logica de negocio.md.md, PRODUCCION/Requerimientos.md.md, BASE DE DATOS/Migraciones.md, BASE DE DATOS/Relaciones.md, LARAVEL/Models.md, DECISIONES/Decisiones de base de datos.md.md, INICIO/Estado de proyecto.md e INICIO/Roadmap.md. No existen notas propias de Productos/Unidades en el árbol inspeccionado; el contenido queda en las notas actuales, sin duplicados. Este informe y mejora_asignado.md registran el seguimiento del checkout.
+
+El bloque estructural autorizado queda implementado y probado en aislamiento, sin declarar todo Sprint 4 cerrado. Quedan revisión del usuario, aplicación real autorizada y pendientes de negocio descritos, además de las decisiones anteriores de unicidad/estados/métricas/trazabilidad. El flujo funcional, migración de escritores/consumidores y remoción del turno legacy pertenecen a fases posteriormente autorizadas. No se continúan store/update/destroy, Requests, frontend/JavaScript, Historial, Dashboard, fotos, CRUD/eliminación/temporada funcional, Stock/Pedidos, permisos, asistencia/horarios o Café. Se detiene aquí para revisión, sin continuar Sprint 5.

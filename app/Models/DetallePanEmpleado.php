@@ -2,14 +2,20 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
-class DetallePanEmpleado extends Model
+class DetallePanEmpleado extends Pivot
 {
     protected $table = 'detalle_pan_empleado';
 
     public $timestamps = false;
+
     public $incrementing = false;
+
+    // Claves usadas también al leer la asociación fuera de belongsToMany.
+    protected $foreignKey = 'detalle_pan_id';
+
+    protected $relatedKey = 'empleado_id';
 
     protected $fillable = [
         'detalle_pan_id',

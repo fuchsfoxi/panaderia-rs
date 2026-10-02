@@ -18,6 +18,15 @@ class Pedido extends Model
         'registrado_por_usuario_id',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'entregado' => 'boolean',
+            'fecha_registro' => 'datetime',
+            'fecha_entrega_prometida' => 'datetime',
+        ];
+    }
+
     public function usuario()
     {
         return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');

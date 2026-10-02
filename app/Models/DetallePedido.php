@@ -19,6 +19,13 @@ class DetallePedido extends Model
         'foto_referencia',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'cantidad' => 'decimal:2',
+        ];
+    }
+
     public function pedido()
     {
         return $this->belongsTo(Pedido::class);

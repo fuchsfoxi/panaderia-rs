@@ -3,42 +3,57 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Produccion extends Model
 {
-protected $table = 'produccion';
+    protected $table = 'produccion';
 
-// esta tabla no tiene created_at/updated_at en la migración
-public $timestamps = false;
+    // esta tabla no tiene created_at/updated_at en la migración
+    public $timestamps = false;
 
-protected $fillable = [
-'fecha',
-'registrado_por_usuario_id',
+    protected $fillable = [
+        'fecha',
+        'registrado_por_usuario_id',
+        'categoria_id',
+        'turno_id',
     ];
 
-// belongsTo: produccion tiene la FK hacia usuarios_sistema
-public function usuario()
+    protected function casts(): array
     {
-return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
+        return ['fecha' => 'date'];
     }
 
-// hasOne: la FK vive en detalle_pan, pero por diseño cada producción
-// tiene como máximo un detalle de pan asociado (nunca varios)
-public function detallePan()
+    // belongsTo: produccion tiene la FK hacia usuarios_sistema
+    public function usuario()
     {
-return $this->hasOne(DetallePan::class, 'produccion_id');
+        return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
     }
 
-// hasOne: mismo caso, cada producción tiene como máximo un detalle de torta
-public function detalleTorta()
+    public function categoria(): BelongsTo
     {
-return $this->hasOne(DetalleTorta::class, 'produccion_id');
+        return $this->belongsTo(Categoria::class, 'categoria_id');
     }
 
-// hasOne: mismo caso, cada producción tiene como máximo un detalle de bocadito
-public function detalleBocadito()
+    public function turno(): BelongsTo
     {
-return $this->hasOne(DetalleBocadito::class, 'produccion_id');
+        return $this->belongsTo(Turno::class, 'turno_id');
     }
 
+    // Una sesión admite varios productos/detalles de su familia.
+    public function detallesPan(): HasMany
+    {
+        return $this->hasMany(DetallePan::class, 'produccion_id');
+    }
+
+    public function detallesTorta(): HasMany
+    {
+        return $this->hasMany(DetalleTorta::class, 'produccion_id');
+    }
+
+    public function detallesBocadito(): HasMany
+    {
+        return $this->hasMany(DetalleBocadito::class, 'produccion_id');
+    }
 }
