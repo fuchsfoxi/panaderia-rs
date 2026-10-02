@@ -17,6 +17,7 @@ Route::middleware('guest')->group(function () {
 
 // rutas protegidas: solo para quien ya inició sesión
 Route::middleware('auth')->group(function () {
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion.index');
     Route::post('/produccion', [ProduccionController::class, 'store'])->name('produccion.store');

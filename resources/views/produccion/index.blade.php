@@ -7,6 +7,7 @@
     @vite(['resources/css/produccion.css', 'resources/js/produccion.js'])
     </head>
     <body>
+    <x-sidebar />
 
     <div class="pagina-produccion">
 
@@ -21,7 +22,7 @@
             <button type="button" class="btn-categoria" data-categoria="bocadito">Bocadito</button>
         </div>
 
-        <form action="{{ route('produccion.store') }}" method="POST" enctype="multipart/form-data">
+        <form id="formulario-produccion" action="{{ route('produccion.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="categoria" id="categoria-seleccionada" value="pan">
 

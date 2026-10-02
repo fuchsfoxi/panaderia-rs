@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // --- Botón "Cancelar" ---
     const btnCancelar = document.getElementById('btn-cancelar-form');
-    const formulario = document.querySelector('form');
+    const formulario = document.getElementById('formulario-produccion');
 
     btnCancelar.addEventListener('click', function () {
         formulario.reset();

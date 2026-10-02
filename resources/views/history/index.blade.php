@@ -7,6 +7,7 @@
     @vite(['resources/css/historial.css', 'resources/js/historial.js'])
 </head>
     <body>
+    <x-sidebar />
             <div class="pagina-historial">
 
             <div class="titulo-historal">

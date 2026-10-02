@@ -4,6 +4,8 @@
 
 **Objetivo:** documentar mejoras pendientes, su evidencia, archivos afectados, orden de trabajo y criterios de aceptación. Este documento no autoriza ni implementa cambios en el sistema.
 
+**Actualización de implementación (2026-10-01):** se implementaron y comprobaron la navegación básica y logout por solicitud del usuario. La auditoría original se conserva como referencia del estado inicial; las casillas actualizadas y la sección «Navegación básica» indican el trabajo realizado. Las demás mejoras de autenticación continúan pendientes.
+
 **Alcance y límites:** se inspeccionaron las rutas registradas, código propio, configuración efectiva, dependencias instaladas, implementación del framework y referencias globales. Laravel instalado: **13.25.0**; Composer exige `^13.17`; PHP CLI: **8.5.10**. La conexión MariaDB no estuvo disponible: la inspección de esquema obtuvo `PDOException`, código `2002`. La estructura de tablas aquí descrita procede de las migraciones; no se confirmó el esquema activo, los usuarios existentes ni la configuración de producción. No se ejecutaron migraciones, seeders ni intentos de autenticación. Las líneas son aproximadas y corresponden a la revisión indicada.
 
 Las prioridades expresan urgencia; las etiquetas de la sección 19 expresan estado o necesidad. Una condición de despliegue no debe presentarse como una vulnerabilidad explotada. No se confirmó ningún problema de prioridad Crítica.
@@ -475,7 +477,7 @@ No se recomiendan Services, Repositories, Actions, DTOs, otro controlador, middl
 
 ## 14. Plan de implementación
 
-Todas las tareas están pendientes de autorización. Las pruebas se preparan desde el principio y se ejecutan por cada cambio; la fase 5 es la validación integrada, no el primer momento para probar.
+Las casillas marcadas reflejan únicamente tareas implementadas y comprobadas. Las pruebas se preparan desde el principio y se ejecutan por cada cambio; la fase 5 es la validación integrada, no el primer momento para probar.
 
 ### Fase 1 - Correcciones críticas
 
@@ -491,8 +493,8 @@ El título indica urgencia de revisión; no hay vulnerabilidad Crítica confirma
 ### Fase 2 - Autenticación
 
 - [ ] Reforzar validación de tipos y longitud de username.
-- [ ] Implementar logout completo por POST protegido.
-- [ ] Integrar una salida visible sin enviar al endpoint de producción ni anidar forms.
+- [x] Implementar logout completo por POST protegido.
+- [x] Integrar una salida visible sin enviar al endpoint de producción ni anidar forms.
 - [ ] Mostrar errores y recuperar username con salida escapada.
 - [ ] Añadir autocomplete y asociación accesible de errores.
 - [ ] Definir el comportamiento real del botón de recuperación.
@@ -520,10 +522,11 @@ El título indica urgencia de revisión; no hay vulnerabilidad Crítica confirma
 - [ ] Ejecutar pruebas de login, logout y limitador en base aislada.
 - [ ] Validar cookies y CSRF con middleware real, no solo tests que lo omiten.
 - [ ] Verificar persistencia con driver database en entorno desechable equivalente.
-- [ ] Probar navegación hacia dashboard/produccion/history y sesión expirada.
+- [x] Probar navegación hacia dashboard/produccion/history y acceso denegado tras logout.
+- [ ] Probar expiración de sesión con el driver database.
 - [ ] Comprobar permisos solo para la matriz aprobada.
-- [ ] Ejecutar build si cambian assets y revisar interfaz con teclado.
-- [ ] Revisar diff, rutas efectivas y ausencia de cambios fuera del alcance.
+- [x] Ejecutar build si cambian assets y revisar interfaz con teclado.
+- [x] Revisar diff, rutas efectivas y ausencia de cambios fuera del alcance.
 
 ## 15. Orden exacto recomendado
 
@@ -635,7 +638,7 @@ Esta sección corresponde al punto 18 del plan.
 | Contrato de rehash | `IMPORTANTE` | Nombre heredado password; mapear a password_hash |
 | Admin inicial | `IMPORTANTE` | Credencial conocida; comprobar uso y aprovisionar/rotar si corresponde |
 | Validación de tipos | `IMPORTANTE` | Arrays superan required; strings y límite username |
-| Logout | `PENDIENTE` | No existe; POST, invalidación, CSRF e interfaz activa |
+| Logout | `IMPLEMENTADO Y COMPROBADO` | POST protegido, invalidación, nuevo token CSRF y salida en las tres páginas; ver Navegación básica |
 | Errores/old username | `PENDIENTE` | Datos flash invisibles; renderizado escapado |
 | Autocomplete/accesibilidad | `RECOMENDADO` | Faltan ayudas de credenciales y errores asociados |
 | Configuración producción | `IMPORTANTE` | Despliegue no verificado; HTTPS/debug/Secure |
@@ -655,4 +658,77 @@ Esta sección corresponde al punto 18 del plan.
 
 **Condiciones críticas confirmadas:** ninguna. Si una verificación posterior demuestra exposición de la credencial administrativa o del entorno debug, reevaluar prioridad y registrar evidencia sin introducir secretos en este documento.
 
-**Entrega de esta etapa:** únicamente documentación. Ninguna casilla representa trabajo implementado; no se ha modificado el comportamiento de autenticación.
+**Entrega de la auditoría original:** únicamente documentación. La implementación posterior de navegación y logout se detalla a continuación.
+
+## Navegación básica
+
+Implementada y comprobada el 2026-10-01. Es una navegación provisional; no representa el diseño visual definitivo.
+
+### Componente reutilizado y funcionamiento
+
+Se reutilizó `resources/views/components/sidebar.blade.php` mediante `<x-sidebar />` al inicio del body de Dashboard, Producción e Historial. Laravel resuelve el componente Blade anónimo correctamente, comprobado al renderizar las tres vistas y abrirlas en Chrome. El componente es la única fuente del menú; no se crearon otros componentes ni layouts.
+
+Muestra Dashboard (`route('dashboard')`), Producción (`route('produccion.index')`), Historial (`route('history.index')`) y Cerrar sesión. Pedidos se oculta temporalmente porque no tiene una ruta funcional; no se creó ninguna ruta, módulo ni controller de pedidos. Los enlaces usan texto y no dependen de Font Awesome.
+
+La sección activa se determina en Blade con `request()->routeIs('dashboard')`, `request()->routeIs('produccion.*')` y `request()->routeIs('history.*')`. Se aplica la clase `activo` y `aria-current="page"`. La navegación tiene `<nav aria-label="Navegación principal">`, enlaces reales y foco visible de teclado.
+
+Se confirmó que `App\Models\Usuario::empleado()` es una relación `belongsTo` válida. Se muestra `nombre_empleados`, con acceso null-safe y fallback a `username` y después «Usuario». No se añadieron consultas explícitas ni cambios al modelo; se conserva el acceso a la relación existente.
+
+### CSS y ajustes mínimos necesarios
+
+El CSS antiguo de Dashboard usa `.barra-lateral`, `.avatar`, `.nav-iconos` y `.cerrar-sesion`, mientras el componente usa `.sidebar` y clases `sidebar-*`. Esa CSS antigua no coincide con el componente y tampoco está compartida con Producción/Historial. Se conservó sin cambios y se añadió `resources/css/sidebar.css`, importado por los tres CSS existentes. Sus reglas se limitan al menú y lo colocan en el flujo normal, sin posición fija ni superposición. No se cambiaron las reglas de tarjetas, gráficos, filtros, modales, tipografía, colores generales ni distribución del contenido.
+
+Al añadir logout, `document.querySelector('form')` de Producción seleccionaría el nuevo primer formulario. Se asignó `id="formulario-produccion"` al formulario existente y se cambió únicamente el selector de Cancelar en `resources/js/produccion.js`. Se comprobó en Chrome que Cancelar limpia el formulario y restablece Pan, y que Guardar sigue enviando POST multipart con CSRF a `route('produccion.store')`. Su controller `store()` sigue pendiente de implementación, como antes; esta comprobación verifica el envío, no el almacenamiento de producción.
+
+La compilación inicial falló porque Vite registraba `resources/css/produccion-index.css`, un archivo inexistente y sin referencias en las vistas. Se retiró solo esa entrada de `vite.config.js`; después `npm run build` terminó correctamente. No se instalaron dependencias.
+
+### Logout y protección backend
+
+Se añadió `POST /logout`, nombre `logout`, dentro del grupo `auth`, usando el controller existente. `LoginController::logout()` ejecuta `Auth::logout()`, invalida la sesión, regenera el token CSRF y redirige a `route('login')`. El componente usa `route('logout')`, `method="POST"`, `@csrf` y `<button type="submit">`. GET `/logout` devuelve 405 y no cierra la sesión.
+
+El formulario de logout se cierra dentro del componente antes del contenido. En Producción el formulario de producción aparece después, separado. Se comprobó tanto el HTML original como el DOM del navegador: no hay formularios anidados. Dashboard, Producción (GET/POST), Historial y logout siguen protegidos mediante `auth`; no se añadieron condiciones por rol.
+
+### Todos los archivos cambiados
+
+| Archivo | Cambio |
+|---|---|
+| `resources/views/components/sidebar.blade.php` | Menú reutilizado, texto, usuario con fallback, activo accesible y logout real |
+| `resources/views/dashboard/index.blade.php` | Inclusión de `<x-sidebar />` |
+| `resources/views/produccion/index.blade.php` | Inclusión y ID del formulario de producción |
+| `resources/views/history/index.blade.php` | Inclusión de `<x-sidebar />` |
+| `resources/css/sidebar.css` (nuevo) | Estilos mínimos compartidos del menú |
+| `resources/css/dashboard.css` | Import del CSS compartido |
+| `resources/css/produccion.css` | Import del CSS compartido |
+| `resources/css/historial.css` | Import del CSS compartido |
+| `resources/js/produccion.js` | Cancelar selecciona el formulario de producción por ID |
+| `app/Http/Controllers/LoginController.php` | Método logout |
+| `routes/web.php` | POST logout protegido |
+| `vite.config.js` | Retirada de entrada a CSS inexistente |
+| `tests/Feature/NavigationTest.php` (nuevo) | Cobertura de navegación, sesión, login y logout |
+| `tests/Feature/ExampleTest.php` | Expectativa de redirección de la raíz al login |
+| `mejora_asignado.md` | Resultados, decisiones y casillas comprobadas |
+
+### Comprobaciones realizadas
+
+- [x] `php artisan test`: 18 pruebas aprobadas, 181 aserciones.
+- [x] Autenticado puede abrir las tres páginas y ve los tres enlaces y una única sección activa.
+- [x] Invitados redirigidos al login; `auth` sigue presente en páginas y operaciones.
+- [x] Logout elimina datos de sesión, cambia ID/token y vuelve inaccesibles las páginas protegidas.
+- [x] Logout GET rechazado; POST sin token o con token incorrecto devuelve 419 al activar la comprobación CSRF real en tests, sin un origen aceptado que omita el fallback de token.
+- [x] Login conserva fallback Dashboard, intended Producción/Historial y regeneración de sesión.
+- [x] Navegador Chrome: nueve recorridos entre las tres páginas, incluyendo el enlace a la página actual; activo, foco visible y revisión visual de capturas.
+- [x] Navegador Chrome: logout por POST desde cada página y nueve redirecciones posteriores al login al intentar acceder a destinos protegidos.
+- [x] Navegador Chrome: formularios separados, Cancelar y envío de Guardar a POST `/produccion`, sin errores JavaScript.
+- [x] `npm run build`, sintaxis PHP y Pint de los tests modificados/nuevos correctos.
+- [x] `php artisan route:list` y variante `-v`: GET/POST login, GET dashboard, GET/POST produccion, GET history, POST logout; sin rutas ficticias.
+- [x] `git status`, `git diff` y `git diff --check` revisados.
+
+**Aislamiento y límites de las pruebas:** PHP de este entorno no tiene PDO SQLite disponible. Los tests usan `Usuario` y `Empleado` en memoria; en los casos de login se simula solo la recuperación de la cuenta y se ejecutan la validación real del hash, guard, controller y sesión. La verificación en navegador utilizó un servidor desechable con cuenta ficticia, sesiones `file`, middleware y endpoints reales; scripts, capturas y sesiones quedaron en `/tmp/panaderia-navigation-check`, fuera del repositorio. No se ejecutaron migraciones ni seeders ni se modificó la base de trabajo. Esto no certifica consultas/persistencia en MariaDB ni el driver de sesiones `database`.
+
+### Pendiente
+
+- [ ] Diseño visual definitivo del menú y su adaptación a pantallas pequeñas; decidir orientación, iconos y distribución en esa etapa.
+- [ ] Revisar la CSS antigua de `.barra-lateral` y valorar un layout general cuando se aborde el diseño.
+- [ ] Definir y aprobar una matriz de permisos para Administrador, Encargado y Operador antes de implementar autorización backend y visibilidad por rol.
+- [ ] Validar autenticación y persistencia/expiración de sesiones con MariaDB y driver `database` en un entorno aislado equivalente.
+- [ ] Completar las demás mejoras de autenticación identificadas en la auditoría; no se consideran terminadas por implementar el menú.

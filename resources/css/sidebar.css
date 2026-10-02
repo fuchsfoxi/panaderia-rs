@@ -1,0 +1,56 @@
+/* Menú provisional en el flujo normal: no se superpone al contenido. */
+.sidebar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    margin-bottom: 24px;
+    background-color: #33403a;
+    color: #f6f2ef;
+}
+
+.sidebar-perfil {
+    overflow-wrap: anywhere;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sidebar .sidebar-link {
+    display: inline-block;
+    padding: 10px 12px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.sidebar .sidebar-link.activo {
+    background-color: #f6f2ef;
+    color: #33403a;
+    font-weight: bold;
+}
+
+.sidebar .sidebar-link:hover {
+    text-decoration: underline;
+}
+
+.sidebar .sidebar-link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+}
+
+.sidebar-salir {
+    margin: 0 0 0 auto;
+}
+
+.sidebar-salir .sidebar-link {
+    border-color: currentColor;
+}
