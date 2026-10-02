@@ -732,3 +732,56 @@ El formulario de logout se cierra dentro del componente antes del contenido. En 
 - [ ] Definir y aprobar una matriz de permisos para Administrador, Encargado y Operador antes de implementar autorización backend y visibilidad por rol.
 - [ ] Validar autenticación y persistencia/expiración de sesiones con MariaDB y driver `database` en un entorno aislado equivalente.
 - [ ] Completar las demás mejoras de autenticación identificadas en la auditoría; no se consideran terminadas por implementar el menú.
+
+## Página protegida al volver atrás después del logout — 2026-10-02
+
+**Estado: IMPLEMENTADO Y COMPROBADO en tests y Chrome aislado.**
+
+Se reprodujo el recorrido Login → página protegida → Logout → pantalla Login → Atrás
+en `/dashboard`, `/produccion` y `/history`. Antes de cambiar código, Chrome restauró
+las tres páginas desde BFCache: `pageshow.persisted = true`, sidebar visible y ninguna
+nueva respuesta HTTP de documento. Al pulsar F5 se volvió a login; los nueve accesos
+directos posteriores al logout también terminaron en login. La sesión ya se invalidaba:
+el problema confirmado era la restauración visual del navegador (caso B).
+
+Se añadió `app/Http/Middleware/PreventPageCaching.php`, registrado como middleware global
+en `bootstrap/app.php`. Solo aplica cabeceras de no almacenamiento a rutas con `auth`
+o `guest`, incluyendo las redirecciones de rechazo. Se añadió un manejador de `pageshow`
+en `resources/js/app.js`, cargado mediante `@vite` desde el sidebar compartido. Si se
+restaura desde BFCache, oculta el body antiguo y recarga para revalidar la sesión en
+Laravel. No recarga en una carga normal. El controller de logout permanece como estaba.
+
+**Verificación final:**
+
+- `php artisan test --compact`: 22 pruebas, 222 aserciones, aprobadas.
+- Chrome: Atrás y F5 terminan en login desde las tres pantallas; nueve accesos directos
+  posteriores al logout también terminan en login, sin sidebar protegido.
+- Manejador compilado en Chrome: `pageshow` sintético con `persisted=false` no recarga;
+  con `persisted=true` recarga exactamente una vez por pantalla y conserva acceso con
+  sesión válida. Tras logout, Chrome no restauró naturalmente el documento protegido.
+- `npm run build`, Pint de los tres PHP afectados, sintaxis JavaScript y revisión de
+  `git diff`/`git diff --check`: correctos. El aviso de fontaine opcional no impidió build.
+
+Una prueba nueva detectó inicialmente que las redirecciones de `auth` carecían de las
+cabeceras cuando el middleware era de ruta. Se corrigió su posición global y pasó el
+conjunto final. Se intentó preparar SQLite, pero PHP carece de PDO SQLite: el navegador
+utilizó cuenta ficticia, lectura del provider sustituida, comprobación real del hash,
+guard/controllers y sesiones `file`. Los artefactos están en `/tmp/panaderia-cache-check`;
+no se modificaron datos ni se ejecutaron migraciones/seeders en la BD de trabajo.
+
+**Consecuencia funcional:** volver a una página protegida desde BFCache exige recargar
+también con sesión activa, lo que puede perder cambios de formulario sin guardar.
+
+**PENDIENTE:** Firefox/Safari, MariaDB con sesiones `database`, contrato
+`getAuthPasswordName()`, rate limiting, errores de login y matriz de permisos.
+
+La investigación y la solución se mantienen en una sola entrada del Vault original,
+`PENDIENTES/Bugs.md`, entrada 10; las decisiones se centralizan en
+`DECISIONES/Decisiones Laravel.md.md`. La documentación de 2026-09-26 describe funciones
+ausentes en este checkout (layout base, clases de consultas y store funcional); debe
+preservarse como historia y distinguirse de la revisión vigente, sin inferir la causa.
+
+Las reglas permanentes de actualización y seguridad del Vault se registran en `AGENTS.md`.
+
+Referencias: [MDN pageshow](https://developer.mozilla.org/en-US/docs/Web/API/Window/pageshow_event)
+y [Chrome BFCache/no-store](https://developer.chrome.com/docs/web-platform/bfcache-ccns).

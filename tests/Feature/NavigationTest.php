@@ -76,6 +76,27 @@ test('un invitado es redirigido al login desde cada página', function (string $
     $this->assertGuest();
 })->with('paginas protegidas');
 
+test('las páginas autenticadas no se almacenan en la caché HTTP', function (string $ruta) {
+    $response = $this->actingAs($this->usuario)->get(route($ruta));
+    $response->assertOk()->assertHeader('Pragma', 'no-cache')->assertHeader('Expires', '0');
+
+    foreach (['private', 'no-store', 'no-cache', 'must-revalidate'] as $directive) {
+        expect($response->headers->hasCacheControlDirective($directive))->toBeTrue();
+    }
+})->with('paginas protegidas');
+
+test('login y las redirecciones de invitados tampoco se almacenan', function () {
+    $this->get(route('login'))->assertOk()->assertHeader('Pragma', 'no-cache');
+
+    foreach (['login', 'dashboard', 'produccion.index', 'history.index'] as $ruta) {
+        $response = $this->get(route($ruta));
+        expect($response->headers->hasCacheControlDirective('no-store'))->toBeTrue();
+        if ($ruta !== 'login') {
+            $response->assertRedirect(route('login'));
+        }
+    }
+});
+
 test('las páginas y las operaciones siguen protegidas por auth', function () {
     foreach (['dashboard', 'produccion.index', 'produccion.store', 'history.index', 'logout'] as $nombre) {
         expect(Route::getRoutes()->getByName($nombre)->gatherMiddleware())->toContain('auth');
@@ -91,7 +112,9 @@ test('logout invalida la sesión y hace inaccesibles las páginas protegidas', f
     $oldId = $session->getId();
     $oldToken = $session->token();
 
-    $this->post(route('logout'))->assertRedirect(route('login'))->assertSessionMissing('dato_privado');
+    $response = $this->post(route('logout'));
+    $response->assertRedirect(route('login'))->assertSessionMissing('dato_privado');
+    expect($response->headers->hasCacheControlDirective('no-store'))->toBeTrue();
     $this->assertGuest();
     expect($session->getId())->not->toBe($oldId);
     expect($session->token())->toBeString()->not->toBe($oldToken);

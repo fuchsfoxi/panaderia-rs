@@ -1,4 +1,5 @@
 {{-- Navegación provisional compartida por las páginas protegidas. --}}
+@vite('resources/js/app.js')
 <aside class="sidebar">
 
     <div class="sidebar-perfil">
