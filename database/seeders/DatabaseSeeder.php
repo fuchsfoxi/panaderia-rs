@@ -17,11 +17,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             CategoriaSeeder::class,
             TurnoSeeder::class,
+            RolProduccionSeeder::class,
             RolSeeder::class,
             CargoSeeder::class,
             EmpleadoSeeder::class,
             UsuarioSeeder::class,
-            // aquí van los demás seeders que ya tengas
+            // ProduccionDesarrolloSeeder es provisional y se ejecuta por separado.
         ]);
     }
 }

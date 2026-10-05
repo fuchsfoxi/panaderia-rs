@@ -1,17 +1,30 @@
 <?php
 
+use App\Models\Categoria;
 use App\Models\Empleado;
 use App\Models\Usuario;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Tests\Support\IsolatedMariaDb;
 
 beforeEach(function () {
+    if (! getenv('SPRINT4_TEST_SOCKET')) {
+        $this->markTestSkipped('Ejecutar php tests/run-mariadb.php para probar navegación en MariaDB aislada.');
+    }
+    IsolatedMariaDb::connect();
+    expect(Artisan::call('migrate', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
+    DB::beginTransaction();
+    // index() consulta catálogos reales; solo Pan debe existir para renderizar.
+    Categoria::create(['nombre_categorias' => 'Pan']);
+
     $this->withoutVite();
-    // Las vistas no consultan datos de negocio; el empleado precargado evita
-    // depender de la base de trabajo para verificar navegación y sesiones.
+    // La cuenta y el empleado precargados siguen siendo fixtures en memoria
+    // para verificar navegación y sesiones sin persistir datos de autenticación.
     $this->usuario = (new Usuario)->forceFill([
         'id' => 1,
         'username' => 'usuario.prueba',
@@ -19,6 +32,14 @@ beforeEach(function () {
     ])->setRelation('empleado', new Empleado([
         'nombre_empleados' => 'Juan Pérez',
     ]));
+});
+
+afterEach(function () {
+    if (config('database.default') === 'sprint4_test') {
+        while (DB::transactionLevel() > 0) {
+            DB::rollBack();
+        }
+    }
 });
 
 dataset('paginas protegidas', ['dashboard', 'produccion.index', 'history.index']);

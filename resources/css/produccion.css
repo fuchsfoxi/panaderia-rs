@@ -13,6 +13,39 @@ body {
     margin: 0 auto;
 }
 
+.feedback-produccion {
+    margin-bottom: 24px;
+    padding: 16px 24px;
+    border: 1px solid #AEC0AC;
+    border-radius: 16px;
+    background-color: #F6F2EF;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.feedback-produccion-exito {
+    background-color: #AEC0AC;
+    font-weight: 600;
+}
+
+.feedback-produccion-error {
+    border-color: #7A3325;
+}
+
+.error-campo {
+    margin: 0;
+    color: #7A3325;
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.feedback-produccion ul,
+.error-campo ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+}
+
 .titulo-produccion h2 {
     font-size: 12px;
     letter-spacing: 1px;
@@ -439,4 +472,32 @@ body {
     font-weight: 600;
     padding: 5px 10px;
     border-radius: 999px;
+}
+
+.detalle-pan {
+    margin: 16px 0 0;
+    padding: 20px;
+    border: 1px solid #AEC0AC;
+    border-radius: 16px;
+    min-width: 0;
+}
+
+.popover-empleado {
+    flex-wrap: wrap;
+    box-sizing: border-box;
+}
+
+.tarjeta-produccion {
+    flex-wrap: wrap;
+}
+
+.tarjeta-body {
+    flex-wrap: wrap;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.tarjeta-observacion {
+    flex-basis: 100%;
+    white-space: pre-line;
 }
