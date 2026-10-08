@@ -51,7 +51,10 @@
             <p class="error-campo" role="alert">{{ $message }}</p>
         @enderror
 
-        <form id="formulario-produccion" action="{{ route('produccion.store') }}" method="POST" enctype="multipart/form-data">
+        @php
+            $latasPorCoche = \App\Models\DetallePan::LATAS_POR_COCHE;
+        @endphp
+        <form id="formulario-produccion" data-latas-por-coche="{{ $latasPorCoche }}" action="{{ route('produccion.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="categoria" id="categoria-seleccionada" value="pan">
 
@@ -92,9 +95,23 @@
                                 <p class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                             <button type="button" id="consultar-produccion" data-url="{{ route('produccion.index') }}">Ver producción de esta fecha y turno</button>
-                            <p>1 coche = 18 latas. Cada producto tiene su propia observación y participantes.</p>
+                            <p>1 coche = {{ $latasPorCoche }} latas. Cada producto tiene su propia observación y participantes.</p>
                             @php
-                                $detalle = (array) old('detalles.0', []);
+                                // old() contiene también datos rechazados: no confiar en sus tipos.
+                                $anterior = old('detalles.0', []);
+                                $anterior = is_array($anterior) ? $anterior : [];
+                                $detalle = [];
+                                foreach (['producto_id', 'coches', 'latas_adicionales', 'observacion'] as $campo) {
+                                    $valor = $anterior[$campo] ?? null;
+                                    $detalle[$campo] = is_scalar($valor) ? (string) $valor : '';
+                                }
+                                $participantesAnteriores = $anterior['participantes'] ?? [];
+                                $detalle['participantes'] = is_array($participantesAnteriores)
+                                    ? array_values(array_filter($participantesAnteriores, static function ($participante) {
+                                        return is_array($participante)
+                                            && is_scalar($participante['empleado_id'] ?? null)
+                                            && is_scalar($participante['rol_produccion_id'] ?? null);
+                                    })) : [];
                                 $indice = 0;
                             @endphp
                             <fieldset class="detalle-pan" data-indice="0">
@@ -121,8 +138,8 @@
                                     </div>
                                     <div class="campo">
                                         <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas</label>
-                                        <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" min="0" max="17" step="1" value="{{ $detalle['latas_adicionales'] ?? '' }}" required>
-                                        <small>0 a 17 latas</small>
+                                        <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '' }}" required>
+                                        <small>0 a {{ $latasPorCoche - 1 }} latas</small>
                                         @error("detalles.$indice.latas_adicionales")
                                             <p class="error-campo" role="alert">{{ $message }}</p>
                                         @enderror
@@ -271,7 +288,7 @@
                             </div>
                             <div class="tarjeta-body">
                                 <h3>{{ $registro->producto->nombre_p }}</h3>
-                                <p>{{ intdiv($registro->cantidad, 18) }} coches + {{ $registro->cantidad % 18 }} latas ({{ $registro->cantidad }} latas en total)</p>
+                                <p>{{ intdiv($registro->cantidad, $latasPorCoche) }} coches + {{ $registro->cantidad % $latasPorCoche }} latas ({{ $registro->cantidad }} latas en total)</p>
                                 <div class="tarjeta-empleados">
                                     @foreach ($registro->empleados as $participanteRegistrado)
                                         @php

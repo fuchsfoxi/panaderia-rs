@@ -7,6 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DetallePan extends Model
 {
+    // La cantidad canónica se guarda en latas; un coche representa estas latas.
+    public const LATAS_POR_COCHE = 18;
+
+    // Capacidad positiva de cantidad (INT firmado) en el esquema existente.
+    public const MAX_CANTIDAD_LATAS = 2147483647;
+
     protected $table = 'detalle_pan';
 
     public $timestamps = false;

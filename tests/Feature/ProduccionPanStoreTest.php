@@ -287,8 +287,7 @@ test('rechaza entradas inválidas y conserva el formulario sin escrituras', func
     data_set($this->payload, $campo, $valor);
     $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
         ->post(route('produccion.store'), $this->payload)->assertRedirect(route('produccion.index'))
-        ->assertSessionHasErrors($campo)->assertSessionHas('_old_input', fn ($input) =>
-            array_key_exists('categoria', $input) && $input['categoria'] === $this->payload['categoria']);
+        ->assertSessionHasErrors($campo)->assertSessionHas('_old_input', fn ($input) => array_key_exists('categoria', $input) && $input['categoria'] === $this->payload['categoria']);
     assertNoPanStoreWrites();
 })->with([
     ['categoria', 'Pan'], ['categoria', 'otra'], ['categoria', null],
@@ -560,7 +559,6 @@ test('index sin turno o con consulta inválida no muestra tarjetas ajenas', func
     $response->assertSeeText($caso === 'sin turno' ? 'Selecciona una fecha y un turno' : 'La fecha o el turno de consulta no son válidos.');
 })->with(['sin turno', 'fecha inválida', 'turno inexistente', 'fecha como array', 'turno como array']);
 
-
 test('rechaza un único detalle enviado con un índice distinto de cero', function () {
     $this->payload['detalles'] = [1 => $this->payload['detalles'][0]];
     $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
@@ -569,9 +567,99 @@ test('rechaza un único detalle enviado con un índice distinto de cero', functi
     assertNoPanStoreWrites();
 });
 
-
 test('una tarjeta conserva la observación de texto cero', function () {
     $this->payload['detalles'][0]['observacion'] = '0';
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
     $this->get(panContextUrl($this->payload))->assertOk()->assertSeeText('Observación: 0');
+});
+
+test('recupera el formulario después de rechazar old input malformado sin HTTP 500', function (string $campo, mixed $valor) {
+    data_set($this->payload, $campo, $valor);
+    $this->actingAs($this->fixtures['usuario']);
+    $this->from(route('produccion.index'))->post(route('produccion.store'), $this->payload)
+        ->assertRedirect(route('produccion.index'))->assertSessionHasErrors($campo);
+    $mensaje = session('errors')->first($campo);
+    expect($mensaje)->not->toBeEmpty();
+
+    $formulario = $this->withCookie(config('session.cookie'), app('session.store')->getId())
+        ->get(route('produccion.index'))->assertOk()
+        ->assertSeeText('Revisa los campos indicados')->assertSeeText($mensaje)
+        ->assertDontSeeText('contenido-malformado')->assertDontSeeText('SQLSTATE');
+
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$formulario->getContent());
+    $xpath = new DOMXPath($document);
+    if (in_array($campo, ['detalles.0.coches', 'detalles.0.latas_adicionales'], true)) {
+        $nombre = str_replace('detalles.0.', '', $campo);
+        expect($xpath->query('//input[@name="detalles[0]['.$nombre.']"]')->item(0)->getAttribute('value'))->toBe('');
+    }
+    if ($campo === 'detalles.0.observacion') {
+        expect($xpath->query('//textarea[@name="detalles[0][observacion]"]')->item(0)->textContent)->toBe('');
+    }
+    // Los campos válidos no se pierden por sanear el campo rechazado.
+    if (str_starts_with($campo, 'detalles.')) {
+        expect($xpath->query('//input[@name="fecha"]')->item(0)->getAttribute('value'))->toBe($this->payload['fecha']);
+    }
+    assertNoPanStoreWrites();
+})->with([
+    ['detalles.0.producto_id', ['contenido-malformado']],
+    ['detalles.0.coches', ['contenido-malformado']],
+    ['detalles.0.latas_adicionales', ['contenido-malformado']],
+    ['detalles.0.observacion', ['contenido-malformado']],
+    ['detalles', 'contenido-malformado'],
+    ['detalles.0', 'contenido-malformado'],
+    ['detalles.0.participantes', 'contenido-malformado'],
+    ['detalles.0.participantes.0', 'contenido-malformado'],
+    ['detalles.0.participantes.0.empleado_id', ['contenido-malformado']],
+    ['detalles.0.participantes.0.rol_produccion_id', ['contenido-malformado']],
+    ['fecha', ['contenido-malformado']],
+    ['turno_id', ['contenido-malformado']],
+]);
+
+test('rechaza fechas POST fuera del contrato ISO sin escrituras', function (mixed $fecha) {
+    $this->payload['fecha'] = $fecha;
+    $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
+        ->post(route('produccion.store'), $this->payload)->assertRedirect(route('produccion.index'))
+        ->assertSessionHasErrors('fecha');
+    assertNoPanStoreWrites();
+})->with(['10/05/2026', '2026-10-05 12:00:00', '2026-1-5', [['2026-10-05']]]);
+
+test('rechaza observaciones que exceden TEXT antes de escribir con error de campo', function (string $observacion) {
+    $this->payload['detalles'][0]['observacion'] = $observacion;
+    $this->actingAs($this->fixtures['usuario']);
+    $this->from(route('produccion.index'))->post(route('produccion.store'), $this->payload)
+        ->assertRedirect(route('produccion.index'))->assertSessionHasErrors('detalles.0.observacion');
+    $this->withCookie(config('session.cookie'), app('session.store')->getId())
+        ->get(route('produccion.index'))->assertOk()
+        ->assertSeeText('La observación no puede superar 65535 bytes.')
+        ->assertDontSeeText('No se pudo guardar la producción de Pan.');
+    assertNoPanStoreWrites();
+})->with([
+    'ASCII' => fn () => str_repeat('a', 65536),
+    'Unicode de dos bytes' => fn () => str_repeat('á', 32768),
+    'Unicode de cuatro bytes' => fn () => str_repeat('🍞', 16384),
+]);
+
+test('conserva observaciones dentro de la capacidad TEXT sin truncarlas', function (string $observacion) {
+    $this->payload['detalles'][0]['observacion'] = $observacion;
+    $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
+        ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
+    expect(DetallePan::sole()->observacion)->toBe($observacion);
+})->with([
+    'ASCII máximo' => fn () => str_repeat('a', 65535),
+    'Unicode máximo en bytes' => fn () => str_repeat('á', 32767).'a',
+]);
+
+test('old input conserva el contexto POST sobre los filtros GET al recuperar errores', function () {
+    $this->payload['detalles'][0]['coches'] = 0;
+    $this->payload['detalles'][0]['latas_adicionales'] = 0;
+    $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
+        ->post(route('produccion.store'), $this->payload)->assertSessionHasErrors('detalles.0.coches');
+    $response = $this->withCookie(config('session.cookie'), app('session.store')->getId())
+        ->get(route('produccion.index', ['fecha' => '2026-02-30', 'turno_id' => ['incorrecto']]))
+        ->assertOk()->assertSeeText('El total de latas debe ser mayor que cero');
+    expect($response->viewData('fechaSeleccionada'))->toBe($this->payload['fecha'])
+        ->and($response->viewData('turnoSeleccionadoId'))->toBe((string) $this->payload['turno_id'])
+        ->and($response->viewData('errorConsulta'))->toBeNull();
+    assertNoPanStoreWrites();
 });

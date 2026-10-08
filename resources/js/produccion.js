@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     const formulario = document.getElementById('formulario-produccion');
+    // Blade publica la constante del backend; el navegador solo calcula una ayuda visual.
+    const latasPorCoche = Number(formulario.dataset.latasPorCoche);
     const inputCategoria = document.getElementById('categoria-seleccionada');
     const botonesCategoria = document.querySelectorAll('.btn-categoria');
     const detalle = formulario.querySelector('.detalle-pan');
@@ -45,15 +47,15 @@ document.addEventListener('DOMContentLoaded', function () {
     function actualizarTotal(detalle) {
         const coches = detalle.querySelector('[data-campo="coches"]');
         const latas = detalle.querySelector('[data-campo="latas_adicionales"]');
-        const total = coches.valueAsNumber * 18 + latas.valueAsNumber;
+        const total = coches.valueAsNumber * latasPorCoche + latas.valueAsNumber;
         const valido = Number.isSafeInteger(coches.valueAsNumber) && coches.valueAsNumber >= 0
-            && Number.isSafeInteger(latas.valueAsNumber) && latas.valueAsNumber >= 0 && latas.valueAsNumber <= 17
+            && Number.isSafeInteger(latas.valueAsNumber) && latas.valueAsNumber >= 0 && latas.valueAsNumber < latasPorCoche
             && Number.isSafeInteger(total);
 
         // Solo texto informativo: ningún total calculado se incorpora al POST.
         detalle.querySelector('[data-total-latas]').textContent = valido
             ? `${coches.value} coche(s) + ${latas.value} latas = ${total} latas en total`
-            : 'Introduce coches enteros y de 0 a 17 latas.';
+            : `Introduce coches enteros y de 0 a ${latasPorCoche - 1} latas.`;
     }
 
     function mostrarCamposDe(categoria) {
