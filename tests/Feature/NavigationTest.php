@@ -60,13 +60,35 @@ test('el autenticado ve el menú compartido y la sección activa', function (str
         expect($link->getAttribute('href'))->toBe(route($destino));
         expect($link->getAttribute('aria-current'))->toBe($destino === $ruta ? 'page' : '');
         expect(str_contains($link->getAttribute('class'), 'activo'))->toBe($destino === $ruta);
+        expect(trim($link->textContent))->toBe(['Dashboard', 'Producción', 'Historial'][$index]);
+        expect($xpath->query('.//svg[@aria-hidden="true" and @focusable="false"]', $link)->length)->toBe(1);
     }
+
+    $paneles = $xpath->query('//aside[@id="sidebar-panel" and @data-sidebar]');
+    expect($paneles->length)->toBe(1)
+        ->and($xpath->query('//*[@id="sidebar-panel"]')->length)->toBe(1);
+    $panel = $paneles->item(0);
+    // Sin JS, el panel no se entrega oculto/inert: la navegación sigue disponible.
+    expect($panel->hasAttribute('hidden'))->toBeFalse()
+        ->and($panel->hasAttribute('inert'))->toBeFalse();
+    $abrir = $xpath->query('//button[@data-sidebar-abrir]')->item(0);
+    $cerrar = $xpath->query('//button[@data-sidebar-cerrar]')->item(0);
+    foreach ([$abrir, $cerrar] as $control) {
+        expect($control->getAttribute('type'))->toBe('button')
+            ->and($control->getAttribute('aria-controls'))->toBe($panel->getAttribute('id'))
+            ->and($control->getAttribute('aria-label'))->not->toBe('')
+            ->and($control->hasAttribute('hidden'))->toBeTrue();
+    }
+    expect($abrir->getAttribute('aria-expanded'))->toBe('false')
+        ->and($xpath->query('//*[@data-sidebar-overlay and @hidden and @aria-hidden="true"]')->length)->toBe(1)
+        ->and($xpath->query('.//a', $panel)->length)->toBe(3);
+    expect($xpath->query('.//svg[not(@aria-hidden="true") or not(@focusable="false")]', $panel)->length)->toBe(0);
 
     $logout = $xpath->query('//form[@class="sidebar-salir"]')->item(0);
     expect($logout->getAttribute('action'))->toBe(route('logout'));
     expect($logout->getAttribute('method'))->toBe('POST');
     expect($xpath->query('.//input[@name="_token"]', $logout)->length)->toBe(1);
-    expect($xpath->query('.//button[@type="submit"]', $logout)->item(0)->textContent)->toBe('Cerrar sesión');
+    expect(trim($xpath->query('.//button[@type="submit"]', $logout)->item(0)->textContent))->toBe('Cerrar sesión');
 
     // Se revisa el HTML original: un parser puede reparar y ocultar forms anidados.
     preg_match_all('~</?form\b[^>]*>~i', $response->getContent(), $tags);

@@ -6,7 +6,7 @@
     <title>Dashboard - Panadería RS</title>
     @vite(['resources/css/dashboard.css'])
 </head>
-<body>
+<body class="pagina-con-sidebar">
     <x-sidebar />
 
     <main class="dashboard">
@@ -14,7 +14,7 @@
             <div>
                 <p class="dashboard-etiqueta">Panadería RS</p>
                 <h1>Dashboard</h1>
-                <p class="dashboard-descripcion">Un vistazo a la producción de Pan.</p>
+                <p class="dashboard-descripcion">Resumen de los lotes y las latas de Pan.</p>
             </div>
             <nav class="dashboard-accesos" aria-label="Accesos rápidos">
                 <a class="dashboard-boton dashboard-boton-principal" href="{{ route('produccion.index') }}">Registrar producción</a>
@@ -25,7 +25,7 @@
         <section class="dashboard-seccion" aria-labelledby="resumen-hoy">
             <div class="dashboard-titulo-seccion">
                 <h2 id="resumen-hoy">Resumen de hoy</h2>
-                <time datetime="{{ $fechaHoy->toDateString() }}">{{ $fechaHoy->format('d/m/Y') }}</time>
+                <time class="dashboard-fecha" datetime="{{ $fechaHoy->toDateString() }}">{{ $fechaHoy->format('d/m/Y') }}</time>
             </div>
             <div class="dashboard-resumen">
                 <article class="dashboard-metrica">
@@ -73,13 +73,14 @@
             @if ($ultimasProducciones->isEmpty())
                 <p class="dashboard-vacio" role="status">Aún no hay lotes de Pan registrados.</p>
             @else
+                <p class="dashboard-ayuda-tabla">Desliza la tabla para ver todas las columnas.</p>
                 <div class="dashboard-tabla-contenedor" role="region" aria-label="Últimos lotes de Pan" tabindex="0">
                     <table class="dashboard-tabla">
                         <thead>
                             <tr>
                                 <th scope="col">Producto</th>
                                 <th scope="col">Turno</th>
-                                <th scope="col" class="dashboard-cantidad">Cantidad</th>
+                                <th scope="col" class="dashboard-cantidad">Cantidad (latas)</th>
                                 <th scope="col">Fecha</th>
                                 <th scope="col">Registró la sesión</th>
                             </tr>

@@ -3,14 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Historial de Producción</title>
+    <title>Historial - Panadería RS</title>
     @vite(['resources/css/historial.css'])
 </head>
-<body>
+<body class="pagina-con-sidebar">
     <x-sidebar />
     <main class="pagina-historial">
         <div class="titulo-historal">
-            <h1>Historial de Producción</h1>
+            <p class="marca-pagina">Panadería RS</p>
+            <h1>Historial de producción</h1>
+            <p class="descripcion-pagina">Consulta los lotes de Pan por fecha y turno.</p>
         </div>
 
         <div class="filtro-categoria">
@@ -24,7 +26,7 @@
 
         <form action="{{ route('history.index') }}" method="GET">
             <div class="filtro-fecha-general">
-                <div class="sub-titulo"><h2>Fecha</h2></div>
+                <div class="sub-titulo"><h2>Rango de fechas</h2></div>
                 <div class="filtro-fecha-principal">
                     <div class="filtro-fecha-desde">
                         <label for="fecha_inicio">Desde</label>

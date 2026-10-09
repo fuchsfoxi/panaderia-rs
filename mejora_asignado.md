@@ -947,3 +947,53 @@ lo sobrescribe, revisar solo esa variable y limpiar configuración cacheada
 cuando corresponda. Pruebas HTTP, sesiones array y MariaDB temporal;
 sin certificar el entorno de trabajo/despliegue. Sin commit. Informe:
 [informe_zona_horaria.md](dato_optimizar/informe_zona_horaria.md).
+
+## Sidebar y consistencia visual — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO mediante HTTP/MariaDB aislada,
+eventos JavaScript y build**; aceptación visual en navegador **PENDIENTE**.
+El menú compartido pasa a sidebar flotante de 76px, expandible a 244px
+mediante hover/foco sin mover el contenido. Panel móvil hasta 767px con
+overlay, cierre/Escape, ciclo de Tab y retorno del foco; sin JS la
+navegación permanece visible en flujo. SVG inline, paleta existente y
+Huninn compartida. Se conservan tres rutas reales y logout POST/CSRF.
+
+Solo presentación, integración de padding/ancho, import del módulo visual
+y pruebas/documentación. No se cambian controllers, Requests, Actions,
+modelos, esquema, rutas, autenticación, datos, timezone o BFCache.
+NavigationTest: 20 pruebas/313 aserciones; regresión: 161/1.716;
+suite completa: 216/2.271 aprobadas sin omisiones en MariaDB temporal.
+JavaScript: siete casos de eventos aprobados con dobles mínimos del DOM,
+sin navegador ni dependencia nueva. Pint, sintaxis, build y diff correctos.
+Build avisa sobre fontaine opcional sin bloquear; no se modifica esa
+configuración. Sin consultas/escrituras sobre la base de trabajo.
+
+Pendiente: checklist visual real y lector de pantalla. Un layout común
+puede evaluarse después si crece el sistema. Sin commit ni push. Informe:
+[informe_sidebar_pulido_visual.md](dato_optimizar/informe_sidebar_pulido_visual.md).
+
+## Pulido final de presentación — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO mediante HTTP/MariaDB aislada,
+inspección de código y build**. Aceptación visual real **PENDIENTE**.
+Se conservan los cambios anteriores del sidebar que ya estaban en Git.
+Este pulido ajusta solo las tres vistas/CSS y estilos comunes de contenido:
+títulos/subtítulos, fecha del Dashboard, unidad de la tabla, focos,
+botón de consulta, «Latas adicionales», «Limpiar producto», ayudas y
+controles de participantes en móvil. Torta/Bocadito deshabilitados con
+«Próximamente», sin implementar sus flujos. Aviso de catálogos incompletos
+desde colecciones recibidas, sin consultas en Blade o reglas nuevas.
+
+Se adapta un test existente y se añaden tres casos pequeños de catálogos.
+Regresión solicitada: 164 pruebas/1.746 aserciones; suite completa:
+219/2.301 aprobadas sin omisiones. Pint/build/diff correctos. Sin JS
+modificado en esta tarea: cálculo, reset, participantes, sidebar y BFCache
+se conservan; contratos name/id/envío de las vistas comprobados sin cambios.
+Controllers, Requests, Action, modelos, rutas, esquema y timezone intactos.
+Servidor/fixtures temporales, sesiones array, sin base de trabajo ni .env.
+
+Pendiente real antes de presentar: checklist visual y teclado en navegador.
+El controller requiere categoría Pan existente antes de renderizar;
+no se cambia ese contrato ni se afirma ausencia en el entorno real.
+Sin commit ni push. Informe:
+[informe_pulido_final_presentacion.md](dato_optimizar/informe_pulido_final_presentacion.md).

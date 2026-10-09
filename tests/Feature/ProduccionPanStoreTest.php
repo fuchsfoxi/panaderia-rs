@@ -485,7 +485,8 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
     $this->actingAs($this->fixtures['usuario']);
     $response = $this->followingRedirects()->post(route('produccion.store'), $this->payload)->assertOk()
         ->assertSeeText('Registrar producto')->assertDontSeeText('Agregar producto')
-        ->assertDontSeeText('Eliminar producto')->assertDontSeeText('Latas adicionales')
+        ->assertDontSeeText('Eliminar producto')->assertSeeText('Latas adicionales')
+        ->assertSeeText('Limpiar producto')
         ->assertSeeText('0 a 17 latas')->assertDontSee('plantilla-detalle-pan', false);
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
@@ -499,7 +500,32 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
         ->and($xpath->query('//textarea[@name="detalles[0][observacion]"]')->item(0)->textContent)->toBe('')
         ->and($xpath->query('//fieldset//input[@data-participante-campo]')->length)->toBe(0)
         ->and($xpath->query('//article[@data-detalle-registrado]')->length)->toBe(1);
+
+    foreach (['torta' => 'Torta', 'bocadito' => 'Bocadito'] as $familia => $nombre) {
+        $boton = $xpath->query('//button[@data-categoria="'.$familia.'"]')->item(0);
+        expect($boton->hasAttribute('disabled'))->toBeTrue()
+            ->and(trim($boton->textContent))->toBe($nombre.' · Próximamente');
+    }
+    expect($xpath->query('//button[@data-categoria="pan"]')->item(0)->getAttribute('aria-pressed'))->toBe('true');
 });
+
+test('producción explica los datos faltantes sin impedir el renderizado del formulario', function (string $catalogo, string $mensaje) {
+    // Cambios exclusivamente en fixtures dentro de la transacción aislada.
+    match ($catalogo) {
+        'productos' => Producto::query()->update(['activo' => false]),
+        'turnos' => Turno::query()->delete(),
+        'roles' => RolProduccion::where('nombre_roles_produccion', 'Ayudante')->delete(),
+    };
+    $this->actingAs($this->fixtures['usuario'])->get(route('produccion.index'))->assertOk()
+        ->assertSeeText('Faltan datos para registrar la producción.')
+        ->assertSeeText($mensaje)
+        ->assertSee('id="formulario-produccion"', false);
+    assertNoPanStoreWrites();
+})->with([
+    ['productos', 'No hay productos de Pan disponibles.'],
+    ['turnos', 'No hay turnos disponibles.'],
+    ['roles', 'Faltan los roles Maestro o Ayudante.'],
+]);
 
 test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y categoría Pan', function () {
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();

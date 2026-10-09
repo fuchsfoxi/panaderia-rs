@@ -1,56 +1,274 @@
-/* Menú provisional en el flujo normal: no se superpone al contenido. */
+@import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
+
+/* Se reserva el ancho compacto; la expansión se superpone sin mover la página. */
+body.pagina-con-sidebar {
+    margin: 0;
+    padding: 24px 32px 48px 108px;
+    background-color: #f6f2ef;
+}
+
+.pagina-con-sidebar .marca-pagina {
+    margin: 0;
+    color: #4f6355;
+    font-size: 0.85rem;
+    letter-spacing: 0.08em;
+}
+
+.pagina-con-sidebar .descripcion-pagina {
+    margin: 0;
+    color: #4f6355;
+    line-height: 1.5;
+}
+
+/* Foco común del contenido; los controles del sidebar conservan su contraste. */
+.pagina-con-sidebar :is(.dashboard, .pagina-produccion, .pagina-historial) :is(a, button, input, select, textarea):focus-visible {
+    outline: 2px solid #4f6355;
+    outline-offset: 3px;
+}
+
+.sidebar,
+.sidebar * {
+    box-sizing: border-box;
+}
+
 .sidebar {
+    position: fixed;
+    z-index: 30;
+    top: 16px;
+    left: 16px;
+    width: 76px;
+    height: calc(100vh - 32px);
+    height: calc(100dvh - 32px);
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 16px;
-    padding: 16px;
-    margin-bottom: 24px;
+    flex-direction: column;
+    gap: 24px;
+    padding: 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 24px;
     background-color: #33403a;
     color: #f6f2ef;
+    box-shadow: 0 4px 16px rgb(51 64 58 / 10%);
+    transition: width 160ms ease;
+}
+
+.sidebar:focus-within {
+    width: 244px;
 }
 
 .sidebar-perfil {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+}
+
+.sidebar-perfil,
+.sidebar-nav,
+.sidebar-salir {
+    flex-shrink: 0;
+}
+
+.sidebar-avatar {
+    display: grid;
+    place-items: center;
+    flex: 0 0 52px;
+    height: 52px;
+    border-radius: 18px;
+    background-color: #4f6355;
+}
+
+.sidebar-icono {
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* El texto permanece en el árbol accesible aun en el estado compacto. */
+.sidebar-texto {
+    flex: 0 0 152px;
+    opacity: 0;
+    transition: opacity 120ms ease;
+}
+
+.sidebar:focus-within .sidebar-texto {
+    opacity: 1;
+}
+
+.sidebar-nombre {
     overflow-wrap: anywhere;
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.sidebar-etiqueta {
+    display: block;
+    margin-bottom: 4px;
+    color: #aec0ac;
+    font-size: 0.75rem;
 }
 
 .sidebar-nav {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 8px;
 }
 
 .sidebar .sidebar-link {
-    display: inline-block;
-    padding: 10px 12px;
-    border: 1px solid transparent;
-    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 52px;
+    padding: 14px;
+    border: 0;
+    border-radius: 16px;
     background: transparent;
     color: inherit;
     font: inherit;
+    text-align: left;
     text-decoration: none;
+    white-space: nowrap;
     cursor: pointer;
 }
 
-.sidebar .sidebar-link.activo {
-    background-color: #f6f2ef;
-    color: #33403a;
-    font-weight: bold;
-}
-
 .sidebar .sidebar-link:hover {
-    text-decoration: underline;
+    background-color: #4f6355;
 }
 
-.sidebar .sidebar-link:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: 3px;
+.sidebar .sidebar-link.activo {
+    background-color: #aec0ac;
+    color: #33403a;
+    font-weight: 600;
 }
 
 .sidebar-salir {
-    margin: 0 0 0 auto;
+    margin: auto 0 0;
+    padding-top: 16px;
+    border-top: 1px solid #7d9481;
 }
 
-.sidebar-salir .sidebar-link {
-    border-color: currentColor;
+.sidebar-menu,
+.sidebar-cerrar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 12px;
+    border: 0;
+    border-radius: 16px;
+    background-color: #33403a;
+    color: #f6f2ef;
+    font: inherit;
+    cursor: pointer;
+}
+
+.sidebar button:focus-visible,
+.sidebar a:focus-visible,
+.sidebar-menu:focus-visible {
+    outline: 2px solid #f6f2ef;
+    outline-offset: -4px;
+}
+
+.sidebar .sidebar-link.activo:focus-visible {
+    outline-color: #33403a;
+}
+
+.sidebar-menu[hidden],
+.sidebar-cerrar[hidden],
+.sidebar-overlay[hidden] {
+    display: none;
+}
+
+@media (hover: hover) and (min-width: 768px) {
+    .sidebar:hover {
+        width: 244px;
+    }
+
+    .sidebar:hover .sidebar-texto {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 767px) {
+    body.pagina-con-sidebar {
+        padding: 24px 16px 32px;
+    }
+
+    body.pagina-con-sidebar.sidebar-enhanced {
+        padding-top: 80px;
+    }
+
+    /* Fallback sin JS: navegación completa, visible y sin superposición. */
+    .sidebar,
+    .sidebar:focus-within {
+        position: static;
+        width: 100%;
+        height: auto;
+        margin-bottom: 24px;
+        gap: 16px;
+    }
+
+    .sidebar .sidebar-texto {
+        opacity: 1;
+        flex: 1;
+    }
+
+    .sidebar-nombre {
+        min-width: 0;
+    }
+
+    .sidebar-menu {
+        position: fixed;
+        z-index: 20;
+        top: 16px;
+        left: 16px;
+        box-shadow: 0 4px 16px rgb(51 64 58 / 10%);
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        z-index: 25;
+        inset: 0;
+        background-color: rgb(51 64 58 / 35%);
+        touch-action: none;
+    }
+
+    .sidebar-enhanced .sidebar {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        width: min(280px, calc(100vw - 24px));
+        height: calc(100vh - 24px);
+        height: calc(100dvh - 24px);
+        margin: 0;
+        visibility: hidden;
+        transform: translateX(calc(-100% - 16px));
+        transition: transform 160ms ease, visibility 160ms;
+        overscroll-behavior: contain;
+    }
+
+    .sidebar-enhanced .sidebar-abierto {
+        visibility: visible;
+        transform: translateX(0);
+    }
+
+    .sidebar-cerrar {
+        align-self: flex-end;
+        background-color: #4f6355;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .sidebar-texto,
+    .sidebar-enhanced .sidebar {
+        transition: none;
+    }
 }

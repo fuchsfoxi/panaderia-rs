@@ -4,7 +4,6 @@ body {
     font-family: 'Huninn', sans-serif;
     background-color: #F6F2EF;
     margin: 0;
-    padding: 40px;
     color: #33403A;
 }
 
@@ -46,20 +45,17 @@ body {
     padding-left: 20px;
 }
 
-.titulo-produccion h2 {
-    font-size: 12px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    color: #7D9481;
-    margin: 0 0 4px 0;
-    font-weight: 600;
+.titulo-produccion {
+    padding-bottom: 28px;
+    margin-bottom: 32px;
+    border-bottom: 1px solid #AEC0AC;
 }
 
 .titulo-produccion h1 {
-    font-size: 32px;
+    font-size: clamp(1.8rem, 4vw, 2.3rem);
     color: #33403A;
-    margin: 0 0 24px 0;
-    font-weight: 700;
+    margin: 8px 0;
+    font-weight: 400;
 }
 
 .titulo-historial h2 {
@@ -71,6 +67,7 @@ body {
 
 .categoria-botones {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 24px;
 }
@@ -79,7 +76,7 @@ body {
     flex: 1;
     max-width: 220px;
     padding: 16px 24px;
-    border: none;
+    border: 1px solid #AEC0AC;
     border-radius: 16px;
     font-family: inherit;
     font-size: 16px;
@@ -95,7 +92,31 @@ body {
     color: #F6F2EF;
 }
 
-.btn-categoria:hover:not(.activo) {
+.btn-categoria:hover:not(.activo):not(:disabled) {
+    background-color: #AEC0AC;
+}
+
+.btn-categoria:disabled {
+    opacity: 0.65;
+    cursor: default;
+}
+
+.feedback-produccion p {
+    margin: 12px 0 0;
+}
+
+#consultar-produccion {
+    min-height: 44px;
+    padding: 12px 18px;
+    border: 1px solid #AEC0AC;
+    border-radius: 24px;
+    background-color: #F6F2EF;
+    color: #33403A;
+    font: inherit;
+    cursor: pointer;
+}
+
+#consultar-produccion:hover {
     background-color: #AEC0AC;
 }
 
@@ -168,7 +189,7 @@ body {
 .campo select,
 .campo textarea {
     font-family: inherit;
-    font-size: 15px;
+    font-size: 1rem;
     padding: 12px 16px;
     border: 1px solid #AEC0AC;
     border-radius: 12px;
@@ -181,6 +202,7 @@ body {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234F6355' stroke-width='2' fill='none' fill-rule='evenodd'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 16px center;
+    padding-right: 36px;
 }
 
 .campo textarea {
@@ -191,7 +213,28 @@ body {
 
 .campo input::placeholder,
 .campo textarea::placeholder {
-    color: #7D9481;
+    color: #4F6355;
+}
+
+.campo small,
+[data-estado-participantes] {
+    color: #4F6355;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.total-latas-etiqueta {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+[data-total-latas] {
+    padding: 12px 16px;
+    border: 1px solid #AEC0AC;
+    border-radius: 12px;
+    background-color: #F6F2EF;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
 }
 
 .campo-cantidad {
@@ -231,6 +274,8 @@ body {
     font-size: 13px;
     font-weight: 600;
     padding: 6px 10px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
     border-radius: 999px;
 }
 
@@ -241,7 +286,10 @@ body {
     font-size: 13px;
     color: #33403A;
     line-height: 1;
-    padding: 0;
+    padding: 4px;
+    min-width: 28px;
+    min-height: 28px;
+    flex-shrink: 0;
 }
 
 #agregar-empleado {
@@ -272,12 +320,13 @@ body {
 
 .popover-empleado select {
     font-family: inherit;
-    font-size: 13px;
+    font-size: 1rem;
     padding: 6px 10px;
     border: 1px solid #AEC0AC;
     border-radius: 8px;
-    background-color: #FFFFFF;
+    background-color: #F6F2EF;
     color: #33403A;
+    min-height: 44px;
 }
 
 .popover-empleado button {
@@ -290,6 +339,7 @@ body {
     background-color: #33403A;
     color: #F6F2EF;
     cursor: pointer;
+    min-height: 44px;
 }
 
 .formulario-botones {
@@ -306,6 +356,7 @@ body {
     border-radius: 999px;
     cursor: pointer;
     border: none;
+    min-height: 44px;
 }
 
 .formulario-botones button[type="button"] {
@@ -317,6 +368,19 @@ body {
 .formulario-botones button[type="submit"] {
     background-color: #33403A;
     color: #F6F2EF;
+}
+
+.formulario-botones button[type="button"]:hover {
+    background-color: #AEC0AC;
+}
+
+.formulario-botones button[type="submit"]:hover {
+    background-color: #4F6355;
+}
+
+.formulario-botones button:disabled {
+    opacity: 0.65;
+    cursor: default;
 }
 
 .panel-info {
@@ -497,7 +561,73 @@ body {
     overflow-wrap: anywhere;
 }
 
+.tarjeta-header,
+.tarjeta-body h3 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 .tarjeta-observacion {
     flex-basis: 100%;
     white-space: pre-line;
+}
+
+/* Ajustes de ancho para convivir con el sidebar en tablet y móvil. */
+.formulario-card,
+.campo {
+    min-width: 0;
+}
+
+.pagina-produccion .campo input,
+.pagina-produccion .campo select,
+.pagina-produccion .campo textarea {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+}
+
+@media (max-width: 767px) {
+    .contenido-produccion {
+        flex-direction: column;
+    }
+
+    .formulario-card {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 20px;
+    }
+
+    .panel-info {
+        box-sizing: border-box;
+        max-width: none;
+        width: 100%;
+    }
+
+    .formulario-produccion {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .campo-ancho {
+        grid-column: 1;
+    }
+
+    .categoria-botones,
+    .formulario-card-header,
+    .formulario-botones {
+        flex-wrap: wrap;
+    }
+
+    .detalle-pan {
+        padding: 16px;
+    }
+
+    .popover-empleado label {
+        flex-basis: 100%;
+    }
+
+    .popover-empleado select,
+    .popover-empleado button {
+        width: 100%;
+        min-height: 44px;
+    }
 }

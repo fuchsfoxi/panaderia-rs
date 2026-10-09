@@ -3,17 +3,18 @@
     <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Producción</title>
+    <title>Producción - Panadería RS</title>
     @vite(['resources/css/produccion.css', 'resources/js/produccion.js'])
     </head>
-    <body>
+    <body class="pagina-con-sidebar">
     <x-sidebar />
 
     <div class="pagina-produccion">
 
         <div class="titulo-produccion">
-            <h2>Sistema Panadería</h2>
-            <h1>INGRESO DE PRODUCCIÓN</h1>
+            <p class="marca-pagina">Panadería RS</p>
+            <h1>Producción</h1>
+            <p class="descripcion-pagina">Registra un producto de Pan para la fecha y el turno seleccionados.</p>
         </div>
 
         @if (session('success'))
@@ -43,13 +44,34 @@
         @endif
 
         <div class="categoria-botones">
-            <button type="button" class="btn-categoria activo" data-categoria="pan">Pan</button>
-            <button type="button" class="btn-categoria" data-categoria="torta">Torta</button>
-            <button type="button" class="btn-categoria" data-categoria="bocadito">Bocadito</button>
+            <button type="button" class="btn-categoria activo" data-categoria="pan" aria-pressed="true">Pan</button>
+            <button type="button" class="btn-categoria" data-categoria="torta" disabled>Torta · Próximamente</button>
+            <button type="button" class="btn-categoria" data-categoria="bocadito" disabled>Bocadito · Próximamente</button>
         </div>
         @error('categoria')
             <p class="error-campo" role="alert">{{ $message }}</p>
         @enderror
+
+        @if ($productosPan->isEmpty() || $turnos->isEmpty() || $empleados->isEmpty() || ! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante'))
+            <div class="feedback-produccion" role="status">
+                <strong>Faltan datos para registrar la producción.</strong>
+                <ul>
+                    @if ($productosPan->isEmpty())
+                        <li>No hay productos de Pan disponibles.</li>
+                    @endif
+                    @if ($turnos->isEmpty())
+                        <li>No hay turnos disponibles.</li>
+                    @endif
+                    @if ($empleados->isEmpty())
+                        <li>No hay empleados disponibles.</li>
+                    @endif
+                    @if (! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante'))
+                        <li>Faltan los roles Maestro o Ayudante.</li>
+                    @endif
+                </ul>
+                <p>Solicita que se completen estos datos antes de registrar un producto.</p>
+            </div>
+        @endif
 
         @php
             $latasPorCoche = \App\Models\DetallePan::LATAS_POR_COCHE;
@@ -70,7 +92,7 @@
                     <div class="formulario-produccion">
 
                         <div class="campo">
-                            <label for="fecha">Fecha</label>
+                            <label for="fecha">Fecha de producción</label>
                             <input type="date" id="fecha" name="fecha" value="{{ $fechaSeleccionada }}" required>
                             @error('fecha')
                                 <p class="error-campo" role="alert">{{ $message }}</p>
@@ -137,16 +159,17 @@
                                         @enderror
                                     </div>
                                     <div class="campo">
-                                        <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas</label>
+                                        <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas adicionales</label>
                                         <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '' }}" required>
-                                        <small>0 a {{ $latasPorCoche - 1 }} latas</small>
+                                        <small>0 a {{ $latasPorCoche - 1 }} latas, además de los coches.</small>
                                         @error("detalles.$indice.latas_adicionales")
                                             <p class="error-campo" role="alert">{{ $message }}</p>
                                         @enderror
                                     </div>
                                     <div class="campo campo-ancho">
+                                        <span class="total-latas-etiqueta">Total de latas</span>
                                         <output data-total-latas aria-live="polite">0 latas en total</output>
-                                        <small>El total es informativo; se recalculará en el servidor.</small>
+                                        <small>Incluye las latas de los coches y las latas adicionales.</small>
                                     </div>
                                     <div class="campo campo-ancho">
                                         <label data-label="observacion" for="detalle-{{ $indice }}-observacion">Observación de este producto</label>
@@ -156,7 +179,7 @@
                                         @enderror
                                     </div>
                                     <div class="campo campo-ancho">
-                                        <p>Participantes de este producto: exactamente 1 Maestro y mínimo 1 Ayudante.</p>
+                                        <p><strong>Participantes</strong><br>Este producto requiere exactamente 1 Maestro y mínimo 1 Ayudante.</p>
                                         <div class="empleados-tags" data-participantes>
                                             @foreach (array_values((array) ($detalle['participantes'] ?? [])) as $participante)
                                                 @php
@@ -193,7 +216,7 @@
                                             <button type="button" data-agregar-participante>Agregar participante</button>
                                         </div>
                                         <p data-estado-participantes aria-live="polite"></p>
-                                        <p data-error-detalle role="alert"></p>
+                                        <p class="error-campo" data-error-detalle role="alert"></p>
                                         @php
                                             $erroresParticipantes = collect($errors->get("detalles.$indice.participantes"))
                                                 ->merge(collect($errors->get("detalles.$indice.participantes.*"))->flatten())
@@ -237,7 +260,7 @@
 
                     <p id="aviso-familia" role="status" hidden>El registro de Torta y Bocadito todavía está pendiente.</p>
                     <div class="formulario-botones">
-                        <button type="button" id="btn-cancelar-form">Cancelar</button>
+                        <button type="button" id="btn-cancelar-form">Limpiar producto</button>
                         <button type="submit">Registrar producto</button>
                     </div>
                 </div>
