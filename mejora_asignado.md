@@ -859,3 +859,35 @@ Los valores reales, máximo operativo, unidad_medida_id y temporada_fe siguen
 pendientes; frontend/coches+latas, copia en store y CRUD Productos no se
 implementaron. Detalle, contrato futuro y comando selectivo en
 sprint4_modelos_relaciones.md. Se detiene para revisión sin continuar Sprint 5.
+
+## Historial funcional de Pan — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO en MariaDB aislada**. Esta actualización
+describe el checkout de esta tarea; las auditorías anteriores conservan su
+fecha y su alcance. Producción de Pan ya tenía controller, FormRequests y
+Action funcionales al comenzar y no se modificaron.
+
+`GET /history` conserva `auth`. Lista lotes reales de sesiones clasificadas
+como Pan, con fecha, turno de cabecera, producto, latas almacenadas, coches
+y resto mediante `DetallePan::LATAS_POR_COCHE`, observación, participantes
+y usuario registrador de la sesión. Reutiliza relaciones Eloquent y el rol
+del custom Pivot, cargado en lote. No hay IDs de catálogo fijos.
+
+Filtros GET opcionales de fecha desde/hasta inclusivas y turno existente;
+rango ordenado, errores visibles sin consulta de detalles, estado vacío,
+15 lotes por página y filtros conservados. Torta/Bocadito deshabilitados
+con «Próximamente». No se implementan módulos adicionales ni autor por lote.
+
+Se comprobaron login real → dashboard → producción → registro de Pan →
+historial → filtro por fecha → filtro por turno con fixtures persistidos.
+Regresión relacionada: 163 pruebas/1.595 aserciones aprobadas. Suite completa
+con `php tests/run-mariadb.php --do-not-cache-result`: 202 pruebas/2.048
+aserciones aprobadas, sin omisiones. `php artisan test` sin el runner omite
+200 pruebas; no acredita esa cobertura. Build y Pint correctos.
+
+No hubo consultas, migraciones, seeders ni escrituras en la base de trabajo.
+Sesiones array y tests HTTP; sin nueva revisión visual en navegador ni
+certificación de sesiones database. Pendientes: aceptación visual/operativa
+en el entorno real y decisión de clasificación de cabeceras legacy NULL si
+existen. Sin commit. Informe y lista de archivos:
+[informe_historial_funcional.md](dato_optimizar/informe_historial_funcional.md).

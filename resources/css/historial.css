@@ -64,7 +64,7 @@ body {
   color: var(--crema);
 }
 
-.btn-categoria:hover:not(.active) {
+.btn-categoria:hover:not(.active):not(:disabled) {
   background-color: var(--verde-claro);
 }
 
@@ -216,4 +216,60 @@ select {
 
 .detalles-link:hover {
   text-decoration: underline;
+}
+
+.categoria-botones,
+.filtro-fecha-principal {
+  flex-wrap: wrap;
+}
+
+.btn-categoria:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-limpiar {
+  text-decoration: none;
+}
+
+.carta-historial {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.info-carta,
+.meta-carta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.info-carta p {
+  margin-top: 6px;
+}
+
+.observacion {
+  white-space: pre-wrap;
+}
+
+.error-filtro {
+  color: #8a3030;
+  max-width: 260px;
+  font-size: 0.85rem;
+}
+
+.estado-vacio {
+  padding: 20px;
+  border: 1px solid var(--verde-claro);
+  border-radius: 16px;
+}
+
+.paginacion-historial {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.paginacion-historial a {
+  color: var(--verde-oscuro);
 }
