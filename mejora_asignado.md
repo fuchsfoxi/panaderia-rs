@@ -891,3 +891,35 @@ certificación de sesiones database. Pendientes: aceptación visual/operativa
 en el entorno real y decisión de clasificación de cabeceras legacy NULL si
 existen. Sin commit. Informe y lista de archivos:
 [informe_historial_funcional.md](dato_optimizar/informe_historial_funcional.md).
+
+## Dashboard funcional de Pan — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO en MariaDB aislada**. El Dashboard ahora
+resume lotes y latas de hoy según la fecha Laravel; agrupa por el turno de
+cabecera y muestra cinco últimos lotes de sesiones de Pan, con producto,
+fecha, turno, cantidad y usuario registrador de la sesión. Catálogos e IDs
+reales, sin atribuir autor individual al detalle.
+
+El agregado diario se resuelve en SQL y la lista reciente usa eager loading.
+Hay ceros/mensajes para ausencia de producción y catálogos, tarjetas por
+turnos disponibles y grupo explícito para cabeceras sin turno. Los accesos
+rápidos utilizan las rutas existentes de Producción e Historial. Se conserva
+la paleta y el sidebar; se retiran gráficos/modales y valores de la maqueta.
+
+No se modificaron Producción, Historial, modelos, rutas, migraciones,
+seeders, login/logout, sidebar ni dependencias. Tampoco se consultó o
+escribió en la base de trabajo. No hubo commit ni despliegue.
+
+Pruebas nuevas: `DashboardTest`, 12 casos/120 aserciones aprobados. Regresión
+relacionada: 163 pruebas/1.595 aserciones. Suite completa con
+`php tests/run-mariadb.php --do-not-cache-result`: 214 pruebas/2.168
+aserciones aprobadas, sin omisiones. Pint, build y diff correctos.
+
+Recorrido comprobado con HTTP, provider y persistencia reales en fixtures:
+login → Dashboard → registrar Pan → volver al Dashboard con métricas nuevas
+→ Historial con el lote. Sesiones array, assets compilados aparte; sin nueva
+revisión visual en navegador ni certificación del entorno de trabajo.
+Fecha según UTC configurado actualmente, sin modificar esa configuración.
+Pendientes: aceptación visual/operativa y clasificación explícita de
+cabeceras sin categoría si existen. Informe y rutas:
+[informe_dashboard_funcional.md](dato_optimizar/informe_dashboard_funcional.md).
