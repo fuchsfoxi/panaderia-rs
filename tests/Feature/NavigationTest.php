@@ -222,3 +222,67 @@ test('login conserva el acceso al dashboard y el destino solicitado', function (
     $this->get(route($destino ?? 'dashboard'))->assertOk();
     $this->get(route('login'))->assertRedirect(route('dashboard'));
 })->with([null, 'produccion.index', 'history.index']);
+
+test('login formularios y logout conservan el esquema público con HTTP interno', function (bool $proxyHttps) {
+    $internalRoot = $proxyHttps ? 'http://panaderia-proxy.example.test' : 'http://127.0.0.1:8000';
+    $publicRoot = $proxyHttps ? 'https://panaderia-proxy.example.test' : $internalRoot;
+    $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1']);
+    if ($proxyHttps) {
+        $this->withHeaders(['X-Forwarded-Proto' => 'https']);
+    }
+    // Comprobar los valores por defecto sin depender de overrides del entorno.
+    config(['session.secure' => null, 'session.domain' => null, 'session.same_site' => 'lax']);
+
+    $provider = Mockery::mock(EloquentUserProvider::class, [app('hash'), Usuario::class])->makePartial();
+    $provider->shouldReceive('retrieveByCredentials')->once()
+        ->with(['username' => 'usuario.prueba', 'password' => 'clave-de-prueba'])
+        ->andReturn($this->usuario);
+    Auth::guard()->setProvider($provider);
+
+    $response = $this->get($internalRoot.'/login')->assertOk();
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    $login = $xpath->query('//form')->item(0);
+    expect($login->getAttribute('action'))->toBe($publicRoot.'/login')
+        ->and($login->getAttribute('method'))->toBe('POST');
+    $cookie = collect($response->headers->getCookies())->first(
+        fn ($cookie) => $cookie->getName() === config('session.cookie'),
+    );
+    expect($cookie)->not->toBeNull()
+        ->and($cookie->isSecure())->toBe($proxyHttps)
+        ->and($cookie->getDomain())->toBeNull()
+        ->and($cookie->getSameSite())->toBe('lax');
+
+    $this->get($internalRoot.'/produccion')->assertRedirect($publicRoot.'/login');
+    $oldId = app('session.store')->getId();
+    $this->post($internalRoot.'/login', [
+        'username' => 'usuario.prueba',
+        'password' => 'clave-de-prueba',
+    ])->assertRedirect($publicRoot.'/produccion');
+    $this->assertAuthenticatedAs($this->usuario);
+    expect(app('session.store')->getId())->not->toBe($oldId);
+
+    $response = $this->get($internalRoot.'/produccion')->assertOk();
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    foreach (['//form[@class="sidebar-salir"]' => '/logout', '//form[@id="formulario-produccion"]' => '/produccion'] as $selector => $path) {
+        $form = $xpath->query($selector)->item(0);
+        expect($form->getAttribute('action'))->toBe($publicRoot.$path)
+            ->and($form->getAttribute('method'))->toBe('POST');
+    }
+    $this->get($internalRoot.'/login')->assertRedirect($publicRoot.'/dashboard');
+    $this->get($internalRoot.'/logout')->assertStatus(405);
+    $this->assertAuthenticatedAs($this->usuario);
+
+    $this->withSession(['dato_privado' => 'anterior']);
+    $oldId = app('session.store')->getId();
+    $oldToken = app('session.store')->token();
+    $this->post($internalRoot.'/logout')
+        ->assertRedirect($publicRoot.'/login')->assertSessionMissing('dato_privado');
+    $this->assertGuest();
+    expect(app('session.store')->getId())->not->toBe($oldId)
+        ->and(app('session.store')->token())->not->toBe($oldToken);
+    Auth::forgetGuards();
+    $this->get($internalRoot.'/produccion')->assertRedirect($publicRoot.'/login');
+})->with(['localhost HTTP' => false, 'proxy local HTTPS' => true]);

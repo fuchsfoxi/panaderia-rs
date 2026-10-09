@@ -997,3 +997,36 @@ El controller requiere categoría Pan existente antes de renderizar;
 no se cambia ese contrato ni se afirma ausencia en el entorno real.
 Sin commit ni push. Informe:
 [informe_pulido_final_presentacion.md](dato_optimizar/informe_pulido_final_presentacion.md).
+
+## HTTPS detrás de Cloudflare Quick Tunnel local — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO mediante HTTP y MariaDB aislada**.
+Comprobación real de Quick Tunnel/celular **PENDIENTE**.
+Laravel instalado 13.25.0 y Symfony HTTP Foundation 8.1.4: se configura
+`trustProxies()` nativo en `bootstrap/app.php` para exactamente `127.0.0.1`
+y `::1`, aceptando X-Forwarded-For/Host/Port/Proto. Reconoce HTTPS público
+aunque cloudflared conecte por HTTP interno. Sin comodines ni forceScheme.
+
+Reproducción antes del cambio: ProxyHttpsTest con 4 aprobadas/3 fallidas,
+22 aserciones; Laravel ignoraba HTTPS desde los dos loopbacks. Después:
+7 pruebas/28 aserciones aprobadas. Comprueba route/asset/redirect, puerto
+público y forwarding explícito, rechazo de peers remotos IPv4/IPv6/LAN y
+HTTP local normal. NavigationTest añade dos recorridos de formularios,
+login, destino solicitado, cookie con defaults, logout POST/invalidación y
+GET logout rechazado: 22 pruebas/385 aserciones aprobadas. Suite completa:
+228 pruebas/2.401 aserciones, ninguna omitida. Pint y diff correctos.
+
+No se cambian APP_URL, cookies, .env, assets, auth o lógica de negocio.
+Con secure null, la preparación nativa de cookies sigue HTTPS reconocido
+y permite HTTP local; se comprueba en sesiones array, sin certificar
+overrides ni driver database real. Las lecturas de cuenta en el nuevo
+recorrido se simulan; hash/guard/controller son reales. Servidor/fixtures
+MariaDB temporales sin red ni base de trabajo. El sandbox bloqueó su socket;
+otro intento quedó sin espacio antes de tests. Con autorización se retiraron
+solo dos bases ficticias de esta tarea ya detenidas, conservando logs.
+
+Para prueba externa: assets compilados con `npm run build` y `public/hot`
+ausente; hot tiene prioridad sobre el manifest. No se ejecutó build porque
+no cambiaron assets. Sin túnel, navegador, optimize:clear, commit o push.
+Informe y única checklist manual de nueve pasos:
+[informe_cloudflare_https_proxy.md](dato_optimizar/informe_cloudflare_https_proxy.md).
