@@ -9,6 +9,7 @@ use App\Models\Produccion;
 use App\Models\RolProduccion;
 use App\Models\Turno;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Env;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\IsolatedMariaDb;
@@ -199,6 +200,66 @@ test('dashboard usa la fecha Laravel al cambiar de día y conserva el historial 
         ->and($response->viewData('totalLotesHoy'))->toBe(0)
         ->and($response->viewData('totalLatasHoy'))->toBe(0)
         ->and($response->viewData('ultimasProducciones'))->toHaveCount(1);
+});
+
+test('la configuración por defecto y el reloj Laravel utilizan America Lima', function () {
+    $entorno = Env::getRepository();
+    $timezoneAnterior = $entorno->get('APP_TIMEZONE');
+    try {
+        $entorno->clear('APP_TIMEZONE');
+        $configuracion = require config_path('app.php');
+        expect($configuracion['timezone'])->toBe('America/Lima');
+    } finally {
+        if ($timezoneAnterior === null) {
+            $entorno->clear('APP_TIMEZONE');
+        } else {
+            $entorno->set('APP_TIMEZONE', $timezoneAnterior);
+        }
+    }
+
+    expect(config('app.timezone'))->toBe('America/Lima')
+        ->and(date_default_timezone_get())->toBe('America/Lima')
+        ->and(now()->getTimezone()->getName())->toBe('America/Lima')
+        ->and(today()->getTimezone()->getName())->toBe('America/Lima');
+});
+
+test('hoy y la fecha por defecto siguen el día de Lima sin desplazar DATE ni filtros del historial', function () {
+    $turnoId = $this->fixtures['turno']->id;
+    $diaNueve = crearLoteDashboard($this->fixtures, '2026-10-09', $turnoId, 11);
+    $diaDiez = crearLoteDashboard($this->fixtures, '2026-10-10', $turnoId, 23);
+    $fechasOriginales = DB::table('produccion')->orderBy('id')->pluck('fecha')->all();
+    $this->actingAs($this->fixtures['usuario']);
+
+    foreach ([
+        ['2026-10-10 02:00:00', '2026-10-09', $diaNueve, 11],
+        ['2026-10-10 05:00:00', '2026-10-10', $diaDiez, 23],
+    ] as [$instanteUtc, $fechaLocal, $lote, $latas]) {
+        // Congelar el mismo instante UTC; Laravel debe resolver su fecha local.
+        $this->travelTo(Carbon::parse($instanteUtc, 'UTC'));
+        expect(now()->toDateString())->toBe($fechaLocal)
+            ->and(today()->toDateString())->toBe($fechaLocal);
+
+        $dashboard = $this->get(route('dashboard'))->assertOk();
+        expect($dashboard->viewData('fechaHoy')->toDateString())->toBe($fechaLocal)
+            ->and($dashboard->viewData('totalLotesHoy'))->toBe(1)
+            ->and($dashboard->viewData('totalLatasHoy'))->toBe($latas);
+
+        $produccion = $this->get(route('produccion.index', ['turno_id' => $turnoId]))->assertOk();
+        expect($produccion->viewData('fechaSeleccionada'))->toBe($fechaLocal)
+            ->and($produccion->viewData('detallesRegistrados')->pluck('id')->all())->toBe([$lote->id]);
+        $produccion->assertSee('name="fecha" value="'.$fechaLocal.'"', false);
+
+        $historial = $this->get(route('history.index', [
+            'fecha_inicio' => '2026-10-09', 'fecha_fin' => '2026-10-09',
+        ]))->assertOk();
+        expect($historial->viewData('detalles')->pluck('id')->all())->toBe([$diaNueve->id])
+            ->and($historial->viewData('detalles')->sole()->produccion->fecha->toDateString())->toBe('2026-10-09');
+    }
+
+    expect(DB::table('produccion')->orderBy('id')->pluck('fecha')->all())->toBe($fechasOriginales)
+        ->and($fechasOriginales)->toBe(['2026-10-09', '2026-10-10'])
+        ->and($diaNueve->produccion()->firstOrFail()->fecha->toDateString())->toBe('2026-10-09')
+        ->and($diaDiez->produccion()->firstOrFail()->fecha->toDateString())->toBe('2026-10-10');
 });
 
 test('login dashboard registro de Pan y regreso actualizan métricas e historial con datos persistidos', function () {

@@ -923,3 +923,27 @@ Fecha según UTC configurado actualmente, sin modificar esa configuración.
 Pendientes: aceptación visual/operativa y clasificación explícita de
 cabeceras sin categoría si existen. Informe y rutas:
 [informe_dashboard_funcional.md](dato_optimizar/informe_dashboard_funcional.md).
+
+## Zona horaria operativa de Perú — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO en MariaDB aislada**.
+`config/app.php` usa `env('APP_TIMEZONE', 'America/Lima')` y `.env.example`
+declara esa variable. Sustituye UTC como valor por defecto del proyecto.
+Las menciones de UTC en las entregas previas conservan su alcance histórico.
+
+Se añadieron solo dos pruebas en DashboardTest: configuración/reloj de Lima
+y límite de día con instantes UTC. A las 02:00 UTC del 10/10, Dashboard y
+Producción utilizan el 09/10 local; a las 05:00 UTC cambian al 10/10. El filtro
+explícito de Historial conserva el 09/10 y los valores DATE SQL no cambian.
+
+DashboardTest: 14 pruebas/157 aserciones; regresión de Historial, Producción y
+navegación: 147/1.493; suite completa del runner: 216/2.205, todas aprobadas
+sin omisiones. Pint y diff correctos. Sin assets modificados ni build nuevo.
+
+Controllers, Requests, Action, modelos, esquema y datos reales intactos.
+No se inspeccionó/modificó el .env real ni se ejecutó config:clear u
+optimize:clear. Sin APP_TIMEZONE explícito ya se aplica Lima; si el entorno
+lo sobrescribe, revisar solo esa variable y limpiar configuración cacheada
+cuando corresponda. Pruebas HTTP, sesiones array y MariaDB temporal;
+sin certificar el entorno de trabajo/despliegue. Sin commit. Informe:
+[informe_zona_horaria.md](dato_optimizar/informe_zona_horaria.md).
