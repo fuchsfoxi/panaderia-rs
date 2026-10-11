@@ -77,7 +77,7 @@ test('la observación es nullable e independiente en cada detalle', function ($c
         ->and(Schema::hasColumn('produccion', 'observacion'))->toBeFalse();
 })->with('detalles de produccion');
 
-test('cada torta física conserva forma foto y observación propias sin cantidad', function () {
+test('cada lote de torta conserva forma foto observación y cantidad propias', function () {
     $first = IsolatedMariaDb::detail(DetalleTorta::class, $this->produccion, $this->fixtures, [
         'forma' => 'circular', 'foto' => 'pruebas/primera.jpg', 'observacion' => 'Diseño floral',
     ]);
@@ -93,7 +93,8 @@ test('cada torta física conserva forma foto y observación propias sin cantidad
         ->and($second->fresh()->forma)->toBe('rectangular')
         ->and($second->fresh()->foto)->toBe('pruebas/segunda.jpg')
         ->and($second->fresh()->observacion)->toBe('Otro diseño')
-        ->and(Schema::hasColumn('detalle_torta', 'cantidad'))->toBeFalse();
+        ->and(Schema::hasColumn('detalle_torta', 'cantidad'))->toBeTrue()
+        ->and($first->fresh()->cantidad)->toBe(1);
 });
 
 test('participantes comparten rol y se insertan leen actualizan y eliminan por ambas claves', function ($class, $relation, $pivotClass) {

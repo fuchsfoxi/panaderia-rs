@@ -10,7 +10,7 @@ Login, Dashboard, Producción/Historial de Pan, zona horaria y sidebar ya eran f
 
 Problemas concretos:
 
-- Producción permitía seleccionar Torta/Bocadito y ver formularios preliminares aunque no registran esas familias.
+- Producción permitía seleccionar Torta/Bocadito y ver   formularios preliminares aunque no registran esas familias.
 - Título de Producción en mayúsculas/negrita frente a títulos más ligeros de otras páginas; marcas, subtítulos y separación diferentes.
 - «Latas» no aclaraba que son adicionales a los coches. «Cancelar» limpiaba el producto conservando la sesión, sin explicar esa acción.
 - Ayuda del total mencionaba el servidor; el botón de consulta no tenía estilo propio.

@@ -90,7 +90,7 @@ test('muestra errores del producto y conserva campos y participantes al volver a
     $response = $this->followingRedirects()->from(route('produccion.index'))
         ->post(route('produccion.store'), $this->payload);
     $response->assertOk()->assertSeeText('Revisa los campos indicados')
-        ->assertSeeText('El total de latas debe ser mayor que cero y no exceder 2147483647.')
+        ->assertSeeText('Ingresa al menos un coche o una lata adicional.')
         ->assertSeeText('Cada detalle de Pan debe tener al menos un Ayudante.');
 
     $document = new DOMDocument;
@@ -109,7 +109,7 @@ test('muestra errores del producto y conserva campos y participantes al volver a
             }
         }
     }
-    expect($xpath->query('//fieldset[@data-indice="0"]//*[@role="alert" and contains(., "El total de latas")]')->length)->toBe(1)
+    expect($xpath->query('//fieldset[@data-indice="0"]//*[@role="alert" and contains(., "Ingresa al menos un coche")]')->length)->toBe(1)
         ->and($xpath->query('//fieldset[@data-indice="0"]//*[@role="alert" and contains(., "al menos un Ayudante")]')->length)->toBe(1)
         ->and($xpath->query('//fieldset[contains(@class, "detalle-pan")]')->length)->toBe(1);
     expect(substr_count($response->getContent(), 'Cada detalle de Pan debe tener al menos un Ayudante.'))->toBe(1);
@@ -128,7 +128,7 @@ test('presenta errores estructurales junto a los campos relevantes', function (s
     expect(substr_count($response->getContent(), $mensaje))->toBe(1);
     assertNoPanStoreWrites();
 })->with([
-    ['categoria', 'torta', 'Solo se puede registrar Pan. Torta y Bocadito todavía no están implementados.'],
+    ['categoria', 'torta', 'Esta ruta solo permite registrar Pan.'],
     ['fecha', null, 'El campo fecha es obligatorio.'],
     ['turno_id', null, 'El campo turno es obligatorio.'],
     ['detalles', [], 'El campo detalles de Pan es obligatorio.'],
@@ -295,9 +295,9 @@ test('rechaza entradas inválidas y conserva el formulario sin escrituras', func
     ['turno_id', null], ['turno_id', 'no-es-id'],
     ['detalles', []], ['detalles', 'incorrecto'], ['detalles.0', 'incorrecto'],
     ['detalles.0.producto_id', null],
-    ['detalles.0.coches', null], ['detalles.0.coches', -1], ['detalles.0.coches', 1.5],
+    ['detalles.0.coches', 'abc'], ['detalles.0.coches', -1], ['detalles.0.coches', 1.5],
     ['detalles.0.coches', 119304648],
-    ['detalles.0.latas_adicionales', null], ['detalles.0.latas_adicionales', -1],
+    ['detalles.0.latas_adicionales', 'abc'], ['detalles.0.latas_adicionales', -1],
     ['detalles.0.latas_adicionales', 18], ['detalles.0.latas_adicionales', 2.5],
     ['detalles.0.observacion', ['incorrecto']],
     ['detalles.0.participantes', []], ['detalles.0.participantes', 'incorrecto'],
@@ -327,7 +327,7 @@ test('rechaza Torta y Bocadito con un mensaje comprensible', function (string $f
     $this->payload['categoria'] = $familia;
     $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
         ->post(route('produccion.store'), $this->payload)->assertRedirect(route('produccion.index'))
-        ->assertSessionHasErrors(['categoria' => 'Solo se puede registrar Pan. Torta y Bocadito todavía no están implementados.'])
+        ->assertSessionHasErrors(['categoria' => 'Esta ruta solo permite registrar Pan.'])
         ->assertSessionHasInput('categoria', $familia);
     assertNoPanStoreWrites();
 })->with(['torta', 'bocadito']);
@@ -405,14 +405,53 @@ test('rollback revierte solo esta petición ante un fallo real de detalle o pivo
     'pivot en sesión existente' => [DetallePanEmpleado::class, 2, true],
 ]);
 
-test('registra cantidades por coches y latas sin depender del cálculo del navegador', function (int $coches, int $latas, int $cantidad) {
+test('registra cantidades por coches y latas sin depender del cálculo del navegador', function (mixed $coches, mixed $latas) {
+    $this->travelTo(now()->startOfDay());
+    $this->payload['fecha'] = now()->toDateString();
     $this->payload['detalles'][0]['coches'] = $coches;
     $this->payload['detalles'][0]['latas_adicionales'] = $latas;
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
         ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
-    expect(Produccion::count())->toBe(1)->and(DetallePan::count())->toBe(1)
-        ->and(DetallePan::sole()->cantidad)->toBe($cantidad);
-})->with([[0, 1, 1], [0, 9, 9], [1, 0, 18], [1, 5, 23], [2, 3, 39]]);
+    $produccion = Produccion::sole();
+    $detalle = DetallePan::sole();
+    expect($detalle->cantidad)->toBe((int) $coches * DetallePan::LATAS_POR_COCHE + (int) $latas)
+        ->and($detalle->producto_id)->toBe($this->fixtures['productos']['Pan']->id)
+        ->and($detalle->turno_id)->toBe($this->payload['turno_id'])
+        ->and($detalle->produccion_id)->toBe($produccion->id)
+        ->and($produccion->turno_id)->toBe($this->payload['turno_id']);
+    foreach ($this->payload['detalles'][0]['participantes'] as $participante) {
+        $this->assertDatabaseHas('detalle_pan_empleado', ['detalle_pan_id' => $detalle->id] + $participante);
+    }
+    $dashboard = $this->get(route('dashboard'))->assertOk();
+    expect($dashboard->viewData('totalLotesHoy'))->toBe(1)
+        ->and($dashboard->viewData('totalLatasHoy'))->toBe($detalle->cantidad);
+    $historial = $this->get(route('history.index'))->assertOk()
+        ->assertSeeText('Cantidad: '.$detalle->cantidad.' latas en total');
+    expect($historial->viewData('detalles')->sole()->id)->toBe($detalle->id);
+})->with([
+    [0, 1], [0, 9], [1, 0], [1, 5], [2, 3],
+    'solo latas' => [0, 12], 'solo coches' => [2, 0], 'ambos positivos' => [2, 5],
+    'coches vacío' => ['', 12], 'latas vacío' => [2, ''],
+    'coches null' => [null, 12], 'latas null' => [2, null],
+]);
+
+test('normaliza cantidades vacías a cero y rechaza el total cero sin escrituras', function (mixed $coches, mixed $latas) {
+    $this->payload['detalles'][0]['coches'] = $coches;
+    $this->payload['detalles'][0]['latas_adicionales'] = $latas;
+    $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
+        ->post(route('produccion.store'), $this->payload)->assertRedirect(route('produccion.index'))
+        ->assertSessionHasErrors(['detalles.0.coches' => 'Ingresa al menos un coche o una lata adicional.'])
+        ->assertSessionHasInput('detalles.0.coches', 0)
+        ->assertSessionHasInput('detalles.0.latas_adicionales', 0);
+    assertNoPanStoreWrites();
+})->with(['ceros' => [0, 0], 'ambos vacíos' => ['', ''], 'ambos null' => [null, null]]);
+
+test('un campo de cantidad omitido se normaliza sin fabricar estructuras de detalles', function (string $campo) {
+    unset($this->payload['detalles'][0][$campo]);
+    $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
+        ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
+    expect(DetallePan::sole()->cantidad)->toBe($campo === 'coches' ? 5 : DetallePan::LATAS_POR_COCHE);
+})->with(['coches', 'latas_adicionales']);
 
 test('repetir el producto crea detalles separados sin sumar ni alterar snapshots anteriores', function () {
     $this->payload['detalles'][0]['coches'] = 0;
@@ -495,18 +534,27 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
         ->and($xpath->query('//select[@name="turno_id"]/option[@selected]')->item(0)->getAttribute('value'))->toBe((string) $this->payload['turno_id'])
         ->and($xpath->query('//fieldset[contains(@class, "detalle-pan")]')->length)->toBe(1)
         ->and($xpath->query('//select[@name="detalles[0][producto_id]"]/option[@selected]')->length)->toBe(0)
-        ->and($xpath->query('//input[@name="detalles[0][coches]"]')->item(0)->getAttribute('value'))->toBe('')
-        ->and($xpath->query('//input[@name="detalles[0][latas_adicionales]"]')->item(0)->getAttribute('value'))->toBe('')
+        ->and($xpath->query('//input[@name="detalles[0][coches]"]')->item(0)->getAttribute('value'))->toBe('0')
+        ->and($xpath->query('//input[@name="detalles[0][latas_adicionales]"]')->item(0)->getAttribute('value'))->toBe('0')
         ->and($xpath->query('//textarea[@name="detalles[0][observacion]"]')->item(0)->textContent)->toBe('')
         ->and($xpath->query('//fieldset//input[@data-participante-campo]')->length)->toBe(0)
         ->and($xpath->query('//article[@data-detalle-registrado]')->length)->toBe(1);
 
     foreach (['torta' => 'Torta', 'bocadito' => 'Bocadito'] as $familia => $nombre) {
         $boton = $xpath->query('//button[@data-categoria="'.$familia.'"]')->item(0);
-        expect($boton->hasAttribute('disabled'))->toBeTrue()
-            ->and(trim($boton->textContent))->toBe($nombre.' · Próximamente');
+        expect($boton->hasAttribute('disabled'))->toBeFalse()
+            ->and(trim($boton->textContent))->toBe($nombre);
     }
     expect($xpath->query('//button[@data-categoria="pan"]')->item(0)->getAttribute('aria-pressed'))->toBe('true');
+    foreach (['coches', 'latas_adicionales'] as $campo) {
+        $input = $xpath->query('//input[@name="detalles[0]['.$campo.']"]')->item(0);
+        expect($input->getAttribute('min'))->toBe('0')
+            ->and($input->getAttribute('step'))->toBe('1')
+            ->and($input->hasAttribute('required'))->toBeFalse();
+    }
+    expect($xpath->query('//form[@id="formulario-produccion"]')->item(0)->getAttribute('data-latas-por-coche'))
+        ->toBe((string) DetallePan::LATAS_POR_COCHE);
+    $response->assertSeeText('Ingresa al menos un coche o una lata adicional.');
 });
 
 test('producción explica los datos faltantes sin impedir el renderizado del formulario', function (string $catalogo, string $mensaje) {
@@ -683,7 +731,7 @@ test('old input conserva el contexto POST sobre los filtros GET al recuperar err
         ->post(route('produccion.store'), $this->payload)->assertSessionHasErrors('detalles.0.coches');
     $response = $this->withCookie(config('session.cookie'), app('session.store')->getId())
         ->get(route('produccion.index', ['fecha' => '2026-02-30', 'turno_id' => ['incorrecto']]))
-        ->assertOk()->assertSeeText('El total de latas debe ser mayor que cero');
+        ->assertOk()->assertSeeText('Ingresa al menos un coche o una lata adicional.');
     expect($response->viewData('fechaSeleccionada'))->toBe($this->payload['fecha'])
         ->and($response->viewData('turnoSeleccionadoId'))->toBe((string) $this->payload['turno_id'])
         ->and($response->viewData('errorConsulta'))->toBeNull();

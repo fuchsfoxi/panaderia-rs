@@ -21,5 +21,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion.index');
     Route::post('/produccion', [ProduccionController::class, 'store'])->name('produccion.store');
+    Route::post('/produccion/torta', [ProduccionController::class, 'storeTorta'])->name('produccion.torta.store');
+    Route::post('/produccion/bocadito', [ProduccionController::class, 'storeBocadito'])->name('produccion.bocadito.store');
     Route::get('/history', [HistorialController::class, 'index'])->name('history.index');
 });

@@ -14,7 +14,7 @@
         <div class="titulo-produccion">
             <p class="marca-pagina">Panadería RS</p>
             <h1>Producción</h1>
-            <p class="descripcion-pagina">Registra un producto de Pan para la fecha y el turno seleccionados.</p>
+            <p class="descripcion-pagina">Registra Pan, Torta o Bocadito para la fecha y el turno seleccionados.</p>
         </div>
 
         @if (session('success'))
@@ -28,10 +28,10 @@
                 // Los errores con ubicación propia se muestran solo junto a su campo.
                 $erroresGenerales = collect($errors->getMessages())->reject(function ($mensajes, $campo) {
                     return in_array($campo, ['categoria', 'fecha', 'turno_id', 'detalles'], true)
-                        || preg_match('/^detalles\.0\.(producto_id|coches|latas_adicionales|observacion|participantes(?:\..+)?)$/', $campo);
+                        || preg_match('/^detalles\.0\.(producto_id|coches|latas_adicionales|cantidad|forma|foto|observacion|participantes(?:\..+)?)$/', $campo);
                 })->flatten()->unique();
             @endphp
-            <div class="feedback-produccion feedback-produccion-error" role="alert">
+            <div data-error-familia="{{ $categoriaSeleccionada }}" class="feedback-produccion feedback-produccion-error" role="alert">
                 <strong>No se pudo registrar la producción. Revisa los campos indicados.</strong>
                 @if ($erroresGenerales->isNotEmpty())
                     <ul>
@@ -44,20 +44,30 @@
         @endif
 
         <div class="categoria-botones">
-            <button type="button" class="btn-categoria activo" data-categoria="pan" aria-pressed="true">Pan</button>
-            <button type="button" class="btn-categoria" data-categoria="torta" disabled>Torta · Próximamente</button>
-            <button type="button" class="btn-categoria" data-categoria="bocadito" disabled>Bocadito · Próximamente</button>
+            @foreach (['pan' => 'Pan', 'torta' => 'Torta', 'bocadito' => 'Bocadito'] as $clave => $nombre)
+                <button type="button" class="btn-categoria {{ $categoriaSeleccionada === $clave ? 'activo' : '' }}" data-categoria="{{ $clave }}" aria-pressed="{{ $categoriaSeleccionada === $clave ? 'true' : 'false' }}">{{ $nombre }}</button>
+            @endforeach
         </div>
+        <noscript><p>Selecciona una familia:
+            @foreach (['pan' => 'Pan', 'torta' => 'Torta', 'bocadito' => 'Bocadito'] as $clave => $nombre)
+                <a href="{{ route('produccion.index', ['categoria' => $clave, 'fecha' => $fechaSeleccionada, 'turno_id' => $turnoSeleccionadoId]) }}">{{ $nombre }}</a>
+            @endforeach
+            . Para agregar participantes utiliza JavaScript.</p></noscript>
+        @php
+            $productosPorFamilia = ['pan' => $productosPan, 'torta' => $productosTorta, 'bocadito' => $productosBocadito];
+            $productosSeleccionados = $productosPorFamilia[$categoriaSeleccionada];
+            $rutaRegistro = ['pan' => 'produccion.store', 'torta' => 'produccion.torta.store', 'bocadito' => 'produccion.bocadito.store'];
+        @endphp
         @error('categoria')
-            <p class="error-campo" role="alert">{{ $message }}</p>
+            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
         @enderror
 
-        @if ($productosPan->isEmpty() || $turnos->isEmpty() || $empleados->isEmpty() || ! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante'))
+        @if ($productosSeleccionados->isEmpty() || $turnos->isEmpty() || $empleados->isEmpty() || ! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante'))
             <div class="feedback-produccion" role="status">
                 <strong>Faltan datos para registrar la producción.</strong>
                 <ul>
-                    @if ($productosPan->isEmpty())
-                        <li>No hay productos de Pan disponibles.</li>
+                    @if ($productosSeleccionados->isEmpty())
+                        <li>No hay productos de {{ $nombreCategoria }} disponibles.</li>
                     @endif
                     @if ($turnos->isEmpty())
                         <li>No hay turnos disponibles.</li>
@@ -76,15 +86,15 @@
         @php
             $latasPorCoche = \App\Models\DetallePan::LATAS_POR_COCHE;
         @endphp
-        <form id="formulario-produccion" data-latas-por-coche="{{ $latasPorCoche }}" action="{{ route('produccion.store') }}" method="POST" enctype="multipart/form-data">
+        <form id="formulario-produccion" data-latas-por-coche="{{ $latasPorCoche }}" data-pan-url="{{ route('produccion.store') }}" data-torta-url="{{ route('produccion.torta.store') }}" data-bocadito-url="{{ route('produccion.bocadito.store') }}" action="{{ route($rutaRegistro[$categoriaSeleccionada]) }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <input type="hidden" name="categoria" id="categoria-seleccionada" value="pan">
+            <input type="hidden" name="categoria" id="categoria-seleccionada" value="{{ $categoriaSeleccionada }}">
 
             <div class="contenido-produccion">
 
                 <div class="formulario-card">
                     <div class="formulario-card-header">
-                        <h3>Detalles de Producción de Pan</h3>
+                        <h3>Detalles de Producción de {{ $nombreCategoria }}</h3>
                         <span class="estado-activo">Activo</span>
                     </div>
                     <hr>
@@ -95,11 +105,11 @@
                             <label for="fecha">Fecha de producción</label>
                             <input type="date" id="fecha" name="fecha" value="{{ $fechaSeleccionada }}" required>
                             @error('fecha')
-                                <p class="error-campo" role="alert">{{ $message }}</p>
+                                <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <div class="campo campo-condicional" data-mostrar-en="pan" id="campo-turno">
+                        <div class="campo" id="campo-turno">
                             <label for="turno">Turno</label>
                             <select id="turno" name="turno_id" required>
                                 <option value="">Selecciona un turno</option>
@@ -108,23 +118,23 @@
                                 @endforeach
                             </select>
                             @error('turno_id')
-                                <p class="error-campo" role="alert">{{ $message }}</p>
+                                <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <div class="campo-ancho campo-condicional" data-mostrar-en="pan">
+                        <div class="campo-ancho">
                             @error('detalles')
-                                <p class="error-campo" role="alert">{{ $message }}</p>
+                                <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                             <button type="button" id="consultar-produccion" data-url="{{ route('produccion.index') }}">Ver producción de esta fecha y turno</button>
-                            <p>1 coche = {{ $latasPorCoche }} latas. Cada producto tiene su propia observación y participantes.</p>
+                            <p class="campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'block' : 'none' }}">1 coche = {{ $latasPorCoche }} latas. Cada producto tiene su propia observación y participantes.</p>
                             @php
                                 // old() contiene también datos rechazados: no confiar en sus tipos.
                                 $anterior = old('detalles.0', []);
                                 $anterior = is_array($anterior) ? $anterior : [];
                                 $detalle = [];
-                                foreach (['producto_id', 'coches', 'latas_adicionales', 'observacion'] as $campo) {
-                                    $valor = $anterior[$campo] ?? null;
+                                foreach (['producto_id', 'coches', 'latas_adicionales', 'cantidad', 'forma', 'observacion'] as $campo) {
+                                    $valor = $anterior[$campo] ?? (in_array($campo, ['coches', 'latas_adicionales'], true) ? 0 : null);
                                     $detalle[$campo] = is_scalar($valor) ? (string) $valor : '';
                                 }
                                 $participantesAnteriores = $anterior['participantes'] ?? [];
@@ -140,42 +150,66 @@
                                 <legend>Producto terminado</legend>
                                 <div class="formulario-produccion">
                                     <div class="campo campo-ancho">
-                                        <label data-label="producto_id" for="detalle-{{ $indice }}-producto_id">Producto Pan</label>
+                                        <label data-label="producto_id" for="detalle-{{ $indice }}-producto_id">Producto {{ $nombreCategoria }}</label>
                                         <select data-control="producto_id" data-campo="producto_id" id="detalle-{{ $indice }}-producto_id" name="detalles[{{ $indice }}][producto_id]" required>
                                             <option value="">Selecciona un producto</option>
-                                            @foreach ($productosPan as $producto)
-                                                <option value="{{ $producto->id }}" @selected((string) ($detalle['producto_id'] ?? '') === (string) $producto->id)>{{ $producto->nombre_p }}</option>
+                                            @foreach ($productosPorFamilia as $familia => $productos)
+                                                @foreach ($productos as $producto)
+                                                    <option value="{{ $producto->id }}" data-familia="{{ $familia }}" @disabled($categoriaSeleccionada !== $familia) @selected($categoriaSeleccionada === $familia && (string) $detalle['producto_id'] === (string) $producto->id)>{{ $producto->nombre_p }}</option>
+                                                @endforeach
                                             @endforeach
                                         </select>
                                         @error("detalles.$indice.producto_id")
-                                            <p class="error-campo" role="alert">{{ $message }}</p>
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                                         @enderror
                                     </div>
-                                    <div class="campo">
+                                    <div class="campo campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
                                         <label data-label="coches" for="detalle-{{ $indice }}-coches">Coches</label>
-                                        <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" min="0" step="1" value="{{ $detalle['coches'] ?? '' }}" required>
+                                        <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" @disabled($categoriaSeleccionada !== 'pan') min="0" step="1" value="{{ $detalle['coches'] ?? '0' }}">
                                         @error("detalles.$indice.coches")
-                                            <p class="error-campo" role="alert">{{ $message }}</p>
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                                         @enderror
                                     </div>
-                                    <div class="campo">
+                                    <div class="campo campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
                                         <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas adicionales</label>
-                                        <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '' }}" required>
+                                        <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" @disabled($categoriaSeleccionada !== 'pan') min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '0' }}">
                                         <small>0 a {{ $latasPorCoche - 1 }} latas, además de los coches.</small>
                                         @error("detalles.$indice.latas_adicionales")
-                                            <p class="error-campo" role="alert">{{ $message }}</p>
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                                         @enderror
                                     </div>
-                                    <div class="campo campo-ancho">
+                                    <div class="campo campo-ancho campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
                                         <span class="total-latas-etiqueta">Total de latas</span>
                                         <output data-total-latas aria-live="polite">0 latas en total</output>
-                                        <small>Incluye las latas de los coches y las latas adicionales.</small>
+                                        <small>Ingresa al menos un coche o una lata adicional.</small>
+                                    </div>
+                                    <div class="campo campo-condicional" data-mostrar-en="torta bocadito" style="display:{{ $categoriaSeleccionada !== 'pan' ? 'flex' : 'none' }}">
+                                        <label for="detalle-cantidad">Cantidad (unidades)</label>
+                                        <input type="number" data-campo="cantidad" id="detalle-cantidad" name="detalles[0][cantidad]" min="1" max="2147483647" step="1" required @disabled($categoriaSeleccionada === 'pan') value="{{ $detalle['cantidad'] }}">
+                                        @error('detalles.0.cantidad')
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div class="campo campo-condicional" data-mostrar-en="torta" style="display:{{ $categoriaSeleccionada === 'torta' ? 'flex' : 'none' }}">
+                                        <label for="detalle-forma">Forma de Torta</label>
+                                        <input type="text" data-campo="forma" id="detalle-forma" name="detalles[0][forma]" maxlength="30" placeholder="Circular, rectangular…" required @disabled($categoriaSeleccionada !== 'torta') value="{{ $detalle['forma'] }}">
+                                        @error('detalles.0.forma')
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div class="campo campo-ancho campo-condicional" data-mostrar-en="torta" style="display:{{ $categoriaSeleccionada === 'torta' ? 'flex' : 'none' }}">
+                                        <label for="detalle-foto">Foto de Torta (opcional)</label>
+                                        <input type="file" data-campo="foto" id="detalle-foto" name="detalles[0][foto]" accept="image/jpeg,image/png,image/webp" @disabled($categoriaSeleccionada !== 'torta')>
+                                        <small>JPEG, PNG o WebP. Máximo 2 MB. Si hay un error, vuelve a seleccionar el archivo.</small>
+                                        @error('detalles.0.foto')
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                     <div class="campo campo-ancho">
                                         <label data-label="observacion" for="detalle-{{ $indice }}-observacion">Observación de este producto</label>
                                         <textarea data-control="observacion" data-campo="observacion" id="detalle-{{ $indice }}-observacion" name="detalles[{{ $indice }}][observacion]" placeholder="Notas adicionales o novedades del lote...">{{ $detalle['observacion'] ?? '' }}</textarea>
                                         @error("detalles.$indice.observacion")
-                                            <p class="error-campo" role="alert">{{ $message }}</p>
+                                            <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                                         @enderror
                                     </div>
                                     <div class="campo campo-ancho">
@@ -223,7 +257,7 @@
                                                 ->unique();
                                         @endphp
                                         @if ($erroresParticipantes->isNotEmpty())
-                                            <div class="error-campo" role="alert">
+                                            <div data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">
                                                 <ul>
                                                     @foreach ($erroresParticipantes as $mensaje)
                                                         <li>{{ $mensaje }}</li>
@@ -235,68 +269,26 @@
                                 </div>
                             </fieldset>
                         </div>
-
-                        <div class="campo campo-ancho campo-condicional" data-mostrar-en="bocadito" style="display:none;">
-                            <label for="producto-bocadito">Producto Bocadito (registro pendiente)</label>
-                            <select id="producto-bocadito" disabled>
-                                <option value="">Catálogo pendiente</option>
-                            </select>
-                        </div>
-
-                        <div class="campo campo-condicional" data-mostrar-en="bocadito" id="campo-cantidad-bocadito" style="display:none;">
-                            <label for="cantidad_bocadito">Cantidad (Unidades)</label>
-                            <div class="campo-cantidad">
-                                <input type="number" id="cantidad_bocadito" name="cantidad_unidades" min="0" disabled>
-                                <span>unidades</span>
-                            </div>
-                        </div>
-
-                        <div class="campo campo-ancho campo-condicional" data-mostrar-en="bocadito" style="display:none;">
-                            <label for="observaciones-bocadito">Observaciones</label>
-                            <textarea id="observaciones-bocadito" name="observaciones" disabled></textarea>
-                        </div>
-
                     </div>
 
-                    <p id="aviso-familia" role="status" hidden>El registro de Torta y Bocadito todavía está pendiente.</p>
                     <div class="formulario-botones">
                         <button type="button" id="btn-cancelar-form">Limpiar producto</button>
                         <button type="submit">Registrar producto</button>
                     </div>
                 </div>
 
-                <div class="panel-info campo-condicional" data-mostrar-en="torta" id="panel-info-torta" style="display:none;">
-                    <div class="panel-info-etiqueta">Información Adicional</div>
-                    <h3>Variación de Categoría</h3>
-                    <p>Vista preliminar de <strong>Torta</strong>. Su registro funcional todavía está pendiente.</p>
-                    <hr>
-
-                    <h4>Forma de Torta</h4>
-                    <div class="forma-opciones">
-                        <button type="button" class="btn-forma" data-forma="circular" disabled>Circular</button>
-                        <button type="button" class="btn-forma" data-forma="rectangular" disabled>Rectang.</button>
-                    </div>
-                    <input type="hidden" name="forma" id="forma-seleccionada" disabled>
-
-                    <h4>Subir foto (Obligatorio)</h4>
-                    <label for="foto" class="foto-upload">
-                        📷<br>Agregar foto
-                    </label>
-                    <input type="file" id="foto" name="foto" accept="image/*" style="display:none;" disabled>
-                </div>
-
             </div>
         </form>
 
-        <section aria-labelledby="titulo-produccion-registrada" class="campo-condicional" data-mostrar-en="pan">
+        <section aria-labelledby="titulo-produccion-registrada" data-registros-familia="{{ $categoriaSeleccionada }}">
             <div class="titulo-historial">
                 <h2 id="titulo-produccion-registrada">Producción registrada{{ $turnoSeleccionado ? ' — Turno '.$turnoSeleccionado->nombre_turnos : '' }}</h2>
             </div>
             @if ($errorConsulta)
-                <p class="feedback-produccion feedback-produccion-error" role="alert">{{ $errorConsulta }}</p>
+                <p data-error-familia="{{ $categoriaSeleccionada }}" class="feedback-produccion feedback-produccion-error" role="alert">{{ $errorConsulta }}</p>
             @elseif ($cabecerasDuplicadas)
                 @if (! $errors->has('produccion'))
-                    <p class="feedback-produccion feedback-produccion-error" role="alert">Existen varias sesiones de Pan para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto.</p>
+                    <p data-error-familia="{{ $categoriaSeleccionada }}" class="feedback-produccion feedback-produccion-error" role="alert">Existen varias sesiones de {{ $nombreCategoria }} para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto.</p>
                 @endif
             @elseif (! $turnoSeleccionado)
                 <p>Selecciona una fecha y un turno para consultar su producción.</p>
@@ -306,12 +298,22 @@
                     @forelse ($detallesRegistrados as $registro)
                         <article class="tarjeta-produccion" data-detalle-registrado="{{ $registro->id }}">
                             <div class="tarjeta-header">
-                                <span class="tarjeta-categoria">Pan</span>
+                                <span class="tarjeta-categoria">{{ $nombreCategoria }}</span>
                                 <span class="tarjeta-fecha">{{ $fechaSeleccionada }} — Turno {{ $turnoSeleccionado->nombre_turnos }}</span>
                             </div>
                             <div class="tarjeta-body">
                                 <h3>{{ $registro->producto->nombre_p }}</h3>
+                                @if ($categoriaSeleccionada === 'pan')
                                 <p>{{ intdiv($registro->cantidad, $latasPorCoche) }} coches + {{ $registro->cantidad % $latasPorCoche }} latas ({{ $registro->cantidad }} latas en total)</p>
+                                @else
+                                    <p>{{ $registro->cantidad }} unidades</p>
+                                    @if ($categoriaSeleccionada === 'torta')
+                                        <p>Forma: {{ $registro->forma }}</p>
+                                        @if ($registro->foto)
+                                            <a href="{{ asset('storage/'.$registro->foto) }}" target="_blank" rel="noopener">Ver foto</a>
+                                        @endif
+                                    @endif
+                                @endif
                                 <div class="tarjeta-empleados">
                                     @foreach ($registro->empleados as $participanteRegistrado)
                                         @php

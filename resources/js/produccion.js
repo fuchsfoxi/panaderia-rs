@@ -8,7 +8,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const fecha = document.getElementById('fecha');
     const turno = document.getElementById('turno');
     const guardar = formulario.querySelector('button[type="submit"]');
-    const avisoFamilia = document.getElementById('aviso-familia');
     const titulo = formulario.querySelector('.formulario-card-header h3');
 
     function participantes(detalle) {
@@ -47,35 +46,62 @@ document.addEventListener('DOMContentLoaded', function () {
     function actualizarTotal(detalle) {
         const coches = detalle.querySelector('[data-campo="coches"]');
         const latas = detalle.querySelector('[data-campo="latas_adicionales"]');
-        const total = coches.valueAsNumber * latasPorCoche + latas.valueAsNumber;
-        const valido = Number.isSafeInteger(coches.valueAsNumber) && coches.valueAsNumber >= 0
-            && Number.isSafeInteger(latas.valueAsNumber) && latas.valueAsNumber >= 0 && latas.valueAsNumber < latasPorCoche
+        const numeroCoches = coches.value === '' && !coches.validity.badInput ? 0 : coches.valueAsNumber;
+        const numeroLatas = latas.value === '' && !latas.validity.badInput ? 0 : latas.valueAsNumber;
+        const total = numeroCoches * latasPorCoche + numeroLatas;
+        const valido = Number.isSafeInteger(numeroCoches) && numeroCoches >= 0
+            && Number.isSafeInteger(numeroLatas) && numeroLatas >= 0 && numeroLatas < latasPorCoche
             && Number.isSafeInteger(total);
 
         // Solo texto informativo: ningún total calculado se incorpora al POST.
         detalle.querySelector('[data-total-latas]').textContent = valido
-            ? `${coches.value} coche(s) + ${latas.value} latas = ${total} latas en total`
+            ? (total > 0
+                ? `${numeroCoches} coche(s) + ${numeroLatas} latas = ${total} latas en total`
+                : '0 latas en total. Ingresa al menos un coche o una lata adicional.')
             : `Introduce coches enteros y de 0 a ${latasPorCoche - 1} latas.`;
     }
 
     function mostrarCamposDe(categoria) {
+        const nombres = { pan: 'Pan', torta: 'Torta', bocadito: 'Bocadito' };
+        if (!Object.hasOwn(nombres, categoria)) categoria = 'pan';
+        const cambio = inputCategoria.value !== categoria;
         document.querySelectorAll('.campo-condicional').forEach(campo => {
-            const activo = campo.dataset.mostrarEn === categoria;
-            campo.style.display = activo ? 'block' : 'none';
-            // Ocultar visualmente no excluye controles del POST; disabled sí.
+            const activo = campo.dataset.mostrarEn.split(' ').includes(categoria);
+            campo.style.display = activo ? (campo.classList.contains('campo') ? 'flex' : 'block') : 'none';
             campo.querySelectorAll('input, select, textarea, button').forEach(control => {
                 control.disabled = !activo;
             });
         });
-        inputCategoria.value = categoria;
-        botonesCategoria.forEach(boton => {
-            boton.classList.toggle('activo', boton.dataset.categoria === categoria);
+        const producto = detalle.querySelector('[data-campo="producto_id"]');
+        Array.from(producto.options).forEach(option => {
+            if (!option.dataset.familia) return;
+            option.disabled = option.dataset.familia !== categoria;
+            option.hidden = option.disabled;
         });
-        const esPan = categoria === 'pan';
-        guardar.disabled = !esPan;
-        avisoFamilia.hidden = esPan;
-        const nombres = { pan: 'Pan', torta: 'Torta', bocadito: 'Bocadito' };
+        if (cambio) {
+            producto.value = '';
+            detalle.querySelectorAll('[data-campo="cantidad"], [data-campo="forma"], [data-campo="foto"], [data-campo="observacion"]')
+                .forEach(control => { control.value = ''; });
+            detalle.querySelector('[data-participantes]').replaceChildren();
+            detalle.querySelector('[data-error-detalle]').textContent = '';
+            actualizarParticipantes(detalle);
+        }
+        inputCategoria.value = categoria;
+        formulario.action = formulario.dataset[`${categoria}Url`];
+        botonesCategoria.forEach(boton => {
+            const activo = boton.dataset.categoria === categoria;
+            boton.classList.toggle('activo', activo);
+            boton.setAttribute('aria-pressed', String(activo));
+        });
+        document.querySelectorAll('[data-error-familia]').forEach(error => {
+            error.hidden = error.dataset.errorFamilia !== categoria;
+        });
+        // Las tarjetas consultadas pertenecen a la familia cargada por el GET.
+        const registros = document.querySelector('[data-registros-familia]');
+        if (registros) registros.hidden = registros.dataset.registrosFamilia !== categoria;
+        guardar.disabled = false;
         titulo.textContent = `Detalles de Producción de ${nombres[categoria]}`;
+        detalle.querySelector('[data-label="producto_id"]').textContent = `Producto ${nombres[categoria]}`;
     }
 
     function agregarParticipante(detalle) {
@@ -129,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     detalle.addEventListener('click', event => {
         const boton = event.target.closest('button');
-        if (!boton || inputCategoria.value !== 'pan') return;
+        if (!boton) return;
         if (boton.hasAttribute('data-agregar-participante')) {
             agregarParticipante(detalle);
         } else if (boton.hasAttribute('data-quitar-participante')) {
@@ -149,42 +175,31 @@ document.addEventListener('DOMContentLoaded', function () {
         const url = new URL(event.currentTarget.dataset.url, window.location.href);
         url.searchParams.set('fecha', fecha.value);
         url.searchParams.set('turno_id', turno.value);
+        if (inputCategoria.value !== 'pan') url.searchParams.set('categoria', inputCategoria.value);
         window.location.assign(url);
-    });
-
-    const inputForma = document.getElementById('forma-seleccionada');
-    const botonesForma = document.querySelectorAll('.btn-forma');
-    botonesForma.forEach(boton => {
-        boton.addEventListener('click', () => {
-            botonesForma.forEach(otro => otro.classList.toggle('activo', otro === boton));
-            inputForma.value = boton.dataset.forma;
-        });
     });
 
     document.getElementById('btn-cancelar-form').addEventListener('click', () => formulario.reset());
     formulario.addEventListener('reset', () => {
-        const contexto = { fecha: fecha.value, turno: turno.value };
-        // El reset nativo recuperaría old(); después vaciamos el producto y conservamos la sesión.
+        const contexto = { fecha: fecha.value, turno: turno.value, categoria: inputCategoria.value };
+        // El reset nativo recuperaría old(); después dejamos cantidades en cero y conservamos la sesión.
         queueMicrotask(() => {
             fecha.value = contexto.fecha;
             turno.value = contexto.turno;
+            inputCategoria.value = contexto.categoria;
             detalle.querySelectorAll('[data-campo], [data-control="empleado"], [data-control="rol"]')
-                .forEach(control => { control.value = ''; });
+                .forEach(control => {
+                    control.value = ['coches', 'latas_adicionales'].includes(control.dataset.campo) ? '0' : '';
+                });
             detalle.querySelector('[data-participantes]').replaceChildren();
             detalle.querySelector('[data-error-detalle]').textContent = '';
-            inputForma.value = '';
-            botonesForma.forEach(boton => boton.classList.remove('activo'));
-            mostrarCamposDe('pan');
+            mostrarCamposDe(inputCategoria.value);
             actualizarParticipantes(detalle);
             actualizarTotal(detalle);
         });
     });
 
     formulario.addEventListener('submit', event => {
-        if (inputCategoria.value !== 'pan') {
-            event.preventDefault();
-            return;
-        }
         const tags = participantes(detalle);
         const ids = tags.map(tag => tag.querySelector('[data-participante-campo="empleado_id"]').value);
         const valido = tags.filter(tag => tag.dataset.rolNombre === 'Maestro').length === 1
@@ -198,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Estas ayudas no reemplazan la validación definitiva de store().
     });
 
-    mostrarCamposDe('pan');
+    mostrarCamposDe(inputCategoria.value);
     actualizarParticipantes(detalle);
     actualizarTotal(detalle);
 });

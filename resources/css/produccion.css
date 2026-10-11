@@ -186,6 +186,7 @@ body {
 .campo input[type="date"],
 .campo input[type="number"],
 .campo input[type="text"],
+.campo input[type="file"],
 .campo select,
 .campo textarea {
     font-family: inherit;

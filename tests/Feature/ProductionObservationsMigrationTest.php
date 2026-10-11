@@ -18,7 +18,7 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     $new = database_path('migrations/2026_10_02_162600_add_observacion_to_production_details.php');
     $familyPath = database_path('migrations/2026_10_02_180000_add_categoria_and_turno_to_produccion.php');
     $panUnitsPath = database_path('migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php');
-    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath]));
+    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
     expect($originals)->toHaveCount(21);
     expect(Artisan::call('migrate', [
         '--database' => 'sprint4_test', '--path' => $originals, '--realpath' => true, '--force' => true,
@@ -183,4 +183,33 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
             ->and(DB::table($table)->whereNotNull($field)->count())->toBe(0);
     }
     expect(Schema::getForeignKeys('detalle_pan'))->toBe($legacyForeignKeys);
+
+    // Cantidad de Torta evoluciona el contrato histórico: una fila física = 1.
+    $tortaAntes = (array) DB::table('detalle_torta')->where('id', $before['detalle_torta']->id)->first();
+    $cantidadesTorta = require database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php');
+    $cantidadesTorta->up();
+    $tortaDespues = (array) DB::table('detalle_torta')->where('id', $tortaAntes['id'])->first();
+    expect($tortaDespues['cantidad'])->toBe(1);
+    unset($tortaDespues['cantidad']);
+    expect($tortaDespues)->toBe($tortaAntes);
+    $columna = collect(Schema::getColumns('detalle_torta'))->firstWhere('name', 'cantidad');
+    expect($columna['type_name'])->toBe('int')->and($columna['nullable'])->toBeFalse()
+        ->and($columna['default'])->toBeNull();
+    foreach ([0, -1] as $cantidad) {
+        expect(fn () => DB::table('detalle_torta')->where('id', $tortaAntes['id'])->update(['cantidad' => $cantidad]))
+            ->toThrow(QueryException::class);
+    }
+    expect(fn () => DB::table('detalle_torta')->insert([
+        'produccion_id' => $tortaAntes['produccion_id'], 'producto_id' => $tortaAntes['producto_id'], 'forma' => 'circular',
+    ]))->toThrow(QueryException::class);
+    DB::table('detalle_torta')->where('id', $tortaAntes['id'])->update(['cantidad' => 4]);
+    expect(fn () => $cantidadesTorta->down())->toThrow(RuntimeException::class, 'distintas de uno');
+    expect(DB::table('detalle_torta')->where('id', $tortaAntes['id'])->value('cantidad'))->toBe(4);
+    DB::table('detalle_torta')->where('id', $tortaAntes['id'])->update(['cantidad' => 1]);
+    $cantidadesTorta->down();
+    expect(Schema::hasColumn('detalle_torta', 'cantidad'))->toBeFalse()
+        ->and((array) DB::table('detalle_torta')->where('id', $tortaAntes['id'])->first())->toBe($tortaAntes);
+    $cantidadesTorta->up();
+    expect(DB::table('detalle_torta')->where('id', $tortaAntes['id'])->value('cantidad'))->toBe(1);
+
 });

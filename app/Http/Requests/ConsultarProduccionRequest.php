@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ConsultarProduccionRequest extends FormRequest
 {
@@ -20,6 +21,7 @@ class ConsultarProduccionRequest extends FormRequest
     {
         // Al recuperar un POST, sus campos prevalecen sobre los filtros del GET.
         $this->contexto = [
+            'categoria' => $this->session()->get('produccion_familia', $this->old('categoria', $this->query('categoria', 'pan'))),
             'fecha' => $this->old('fecha', $this->query('fecha', now()->toDateString())),
             'turno_id' => $this->old('turno_id', $this->query('turno_id')),
         ];
@@ -33,6 +35,7 @@ class ConsultarProduccionRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'categoria' => ['required', 'string', Rule::in(['pan', 'torta', 'bocadito'])],
             'fecha' => ['required', 'date_format:Y-m-d'],
             'turno_id' => ['nullable', 'integer', 'exists:turnos,id'],
         ];
@@ -54,6 +57,7 @@ class ConsultarProduccionRequest extends FormRequest
     {
         // Se validan los valores originales antes de sanearlos para los atributos HTML.
         return [
+            'categoria' => in_array($this->contexto['categoria'], ['pan', 'torta', 'bocadito'], true) ? $this->contexto['categoria'] : 'pan',
             'fecha' => is_scalar($this->contexto['fecha']) ? (string) $this->contexto['fecha'] : '',
             'turno_id' => is_scalar($this->contexto['turno_id']) ? (string) $this->contexto['turno_id'] : null,
         ];

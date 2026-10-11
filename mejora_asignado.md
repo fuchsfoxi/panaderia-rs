@@ -1030,3 +1030,96 @@ ausente; hot tiene prioridad sobre el manifest. No se ejecutó build porque
 no cambiaron assets. Sin túnel, navegador, optimize:clear, commit o push.
 Informe y única checklist manual de nueve pasos:
 [informe_cloudflare_https_proxy.md](dato_optimizar/informe_cloudflare_https_proxy.md).
+
+## Coches y latas adicionales independientes — 2026-10-09
+
+Estado: **IMPLEMENTADO Y COMPROBADO mediante HTTP/MariaDB aislada,
+eventos JavaScript y build**. Aceptación manual de navegador **PENDIENTE**;
+Pint global **FALLIDO por formato preexistente fuera de esta tarea**.
+
+El backend ya admitía coches=0 explícito. El bloqueo eran los vacíos con
+required en Request/Blade y el preview valueAsNumber. El FormRequest ahora
+normaliza null, string vacío o campo omitido a cero antes de validar, sin
+convertir abc, decimales, negativos o arrays. Required backend conserva una
+garantía estructural después de normalizar; frontend deja cantidades sin
+required y muestra cero. Min=0, enteros y máximos existentes se mantienen.
+
+La Action conserva fórmula única con DetallePan::LATAS_POR_COCHE y rechazo
+de total<=0/desbordamiento antes de escribir. Se separa el mensaje de total
+cero: «Ingresa al menos un coche o una lata adicional.». Sin cambiar canon,
+producto, turno, Maestro/Ayudantes o límite de latas como resto de un coche.
+Preview usa el factor publicado por Blade, considera vacío válido como cero
+y distingue badInput. Limpiar producto deja cantidades cero y conserva
+fecha/turno; sin cambios de diseño, sidebar, colores, CSS o responsive.
+
+Primera regresión Producción/Action/unidades/Dashboard/Historial: 178 pruebas,
+1.738 aserciones aprobadas. Suite completa final: 240/2.618, sin omisiones,
+incluyendo los dos casos posteriores de campos omitidos y comprobación de
+cantidades guardadas en Dashboard/Historial para cada combinación válida.
+Tres casos Node de preview/reset aprobados con dobles DOM. Build aprobado
+con aviso fontaine opcional. Pint de PHP modificado y diff correctos.
+`vendor/bin/pint --test` global falla en 29 archivos: cada uno se verificó
+idéntico a HEAD; limpieza de esos archivos fuera de alcance **PENDIENTE**.
+
+Servidor/fixtures MariaDB desechables sin red, sesiones array y Vite omitido
+en HTTP; sin base de trabajo, .env, migraciones reales o Cloudflare.
+Con autorización se liberó /tmp retirando solo las dos bases ficticias
+detenidas de la tarea previa y conservando logs. Controllers/modelos/canon,
+roles, categorías, timezone y trusted proxies intactos. Sin commit/push.
+Informe y las siete pruebas manuales solicitadas:
+[informe_coches_latas_cero.md](dato_optimizar/informe_coches_latas_cero.md).
+
+
+## Sprint 5: Producción de Pan, Torta y Bocadito — 2026-10-10
+
+Estado: **IMPLEMENTADO Y COMPROBADO mediante HTTP/MariaDB aislada,
+eventos JavaScript y build**. Aceptación visual/operativa en navegador **PENDIENTE**.
+Los cambios previos sin commit de Pan y documentación se conservaron.
+
+ProduccionController mantiene lecturas/respuestas y delega a Requests/Actions por
+familia. POST Pan original conservado; POST /produccion/torta y /produccion/bocadito
+bajo auth. Helpers mínimos reutilizan cabeceras y participantes también en Pan,
+sin modificar fórmula, snapshot, orden de locks ni eventos del custom Pivot.
+Una sola página con categorías activas, campos pertinentes, productos activos del
+catálogo, old input saneado, errores de su familia y consulta de la sesión seleccionada.
+
+Torta registra cantidad positiva, forma, foto opcional, observación y participantes;
+Bocadito cantidad positiva, observación y participantes. Exactamente 1 Maestro y
+uno o más Ayudantes es una regla provisional compartida de Pan por instrucción
+actual del usuario, sin regla específica diferente documentada. Las tres familias
+requieren turno en cabecera. Esto actualiza las decisiones históricas de Torta
+individual sin cantidad, otras familias sin turno y foto obligatoria; no se atribuye
+ratificación automática a la dueña.
+
+Migración aditiva 2026_10_10_120000_add_cantidad_to_detalle_torta.php:
+INT NOT NULL, CHECK > 0, conservación histórica a 1 conforme a fila por pieza,
+sin default permanente. Down bloqueado si hay cantidad distinta de 1. Revisados
+status/archivo/pretend, aplicada selectivamente en BD local y estado Ran batch 3.
+Catálogos reales presentes: Pan/Torta/Bocadito, Maestro/Ayudante y Mañana/Noche;
+cero tortas históricas. No hubo seeders completos ni operaciones destructivas.
+Se creó storage:link; fotos JPEG/PNG/WebP hasta 2 MB en disco public con nombres
+generados y enlaces asset(). SQL revierte ante fallos y la foto nueva se elimina
+por compensación; fallos del propio borrado se reportan, sin prometer atomicidad
+física DB/filesystem o recuperación tras caída del proceso.
+
+Referencia inicial: 240 pruebas/2.618 aserciones aprobadas. Suite final con
+php tests/run-mariadb.php --do-not-cache-result: **324/324 pruebas y 3.300 aserciones**,
+0 fallidas/omitidas; 84 casos nuevos. Comprueba cantidades, fotos, participantes,
+referencias, estructuras malformadas, cabeceras reutilizadas/duplicadas, convivencia
+y fallos SQL/filesystem, además de las regresiones de Pan y evolución DDL.
+La primera ampliación tuvo siete aserciones de flash mal ubicadas tras redirects;
+se corrigieron y la suite final pasó. php artisan test convencional omite 315 y
+solo ejecuta 9 al no disponer del socket temporal: no equivale a la suite completa.
+JavaScript: 5 casos de Producción y 7 de sidebar aprobados con dobles DOM.
+Pint de PHP afectado, build y diff aprobados; aviso fontaine opcional preexistente.
+
+HTTP con sesiones array/Vite omitido, servidor y fixtures desechables sin red;
+no se registraron datos de negocio reales ni se leyó/modificó .env. Conexiones y
+escritura del Vault requirieron escalamiento de sandbox. Se actualizaron 13 notas
+originales de Producción, Sprint 5, Laravel, migraciones, decisiones, estado y roadmap,
+preservando su historia y nombres reales, sin copiar el Vault al repositorio.
+
+Pendientes: aceptación manual/operativa, reglas propias de equipo si cambian,
+usuarios/cuentas por turno/productos y futuras ampliaciones de Historial/Dashboard.
+No se declara cierre total del sprint, despliegue, commit ni push. Informe completo:
+[Sprint5_Produccion_Torta_Bocadito.md](dato_optimizar/Sprint5_Produccion_Torta_Bocadito.md).

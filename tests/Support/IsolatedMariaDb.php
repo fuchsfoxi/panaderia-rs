@@ -17,6 +17,7 @@ use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 class IsolatedMariaDb
@@ -86,6 +87,9 @@ class IsolatedMariaDb
         $attributes += $class === DetalleTorta::class
             ? ['forma' => 'circular', 'foto' => 'pruebas/torta-ficticia.jpg']
             : ['cantidad' => 3];
+        if ($class === DetalleTorta::class && Schema::hasColumn('detalle_torta', 'cantidad')) {
+            $attributes['cantidad'] = 1;
+        }
         if ($class === DetallePan::class) {
             $attributes += ['unidad_medida_id' => $fixtures['unidad']->id, 'turno_id' => $fixtures['turno']->id];
         }

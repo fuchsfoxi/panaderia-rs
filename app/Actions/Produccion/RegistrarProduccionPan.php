@@ -13,6 +13,11 @@ use Illuminate\Validation\ValidationException;
 
 class RegistrarProduccionPan
 {
+    public function __construct(
+        private ResolverCabeceraProduccion $cabeceras,
+        private ValidarParticipantesProduccion $participantes,
+    ) {}
+
     /**
      * Recibe la estructura validada por el límite HTTP; devuelve la sesión registrada.
      */
@@ -29,7 +34,7 @@ class RegistrarProduccionPan
 
             $this->validarReglas($detalle, $categoriaPan, $producto, $roles, $totalLatas);
 
-            $produccion = $this->resolverCabecera($datos['fecha'], (int) $datos['turno_id'], $categoriaPan, $usuarioId);
+            $produccion = $this->cabeceras->resolver($datos['fecha'], (int) $datos['turno_id'], $categoriaPan, $usuarioId);
             $detallePan = $this->registrarDetalle($produccion, $producto, $detalle, $totalLatas);
             $this->registrarParticipantes($detallePan, $detalle['participantes']);
 
@@ -62,67 +67,18 @@ class RegistrarProduccionPan
             $errores['detalles.0.producto_id'] = 'El producto no tiene una unidad de medida válida. Revise su catálogo.';
         }
 
-        if ($totalLatas <= 0 || $totalLatas > DetallePan::MAX_CANTIDAD_LATAS) {
-            $errores['detalles.0.coches'] = 'El total de latas debe ser mayor que cero y no exceder '.DetallePan::MAX_CANTIDAD_LATAS.'.';
+        if ($totalLatas <= 0) {
+            $errores['detalles.0.coches'] = 'Ingresa al menos un coche o una lata adicional.';
+        } elseif ($totalLatas > DetallePan::MAX_CANTIDAD_LATAS) {
+            $errores['detalles.0.coches'] = 'El total de latas no puede exceder '.DetallePan::MAX_CANTIDAD_LATAS.'.';
         }
 
-        $errores = array_merge($errores, $this->erroresDeParticipantes($detalle['participantes'], $roles));
+        $errores = array_merge($errores, $this->participantes->errores($detalle['participantes'], $roles, 'Pan'));
 
         // No se escribe nada hasta comprobar todas las reglas del único detalle.
         if ($errores) {
             throw ValidationException::withMessages($errores);
         }
-    }
-
-    private function erroresDeParticipantes(array $participantes, Collection $roles): array
-    {
-        $errores = [];
-        $empleados = [];
-        $maestros = 0;
-        $ayudantes = 0;
-        foreach ($participantes as $posicion => $participante) {
-            $empleadoId = (int) $participante['empleado_id'];
-            if (isset($empleados[$empleadoId])) {
-                $errores['detalles.0.participantes'][] = 'Un empleado no puede repetirse dentro del mismo detalle.';
-            }
-            $empleados[$empleadoId] = true;
-            $rol = $roles->get($participante['rol_produccion_id']);
-            if (! $rol) {
-                $errores["detalles.0.participantes.$posicion.rol_produccion_id"] = 'Para Pan solo se permiten los roles Maestro y Ayudante.';
-            } elseif ($rol->nombre_roles_produccion === 'Maestro') {
-                $maestros++;
-            } else {
-                $ayudantes++;
-            }
-        }
-        if ($maestros !== 1) {
-            $errores['detalles.0.participantes'][] = 'Cada detalle de Pan debe tener exactamente un Maestro.';
-        }
-        if ($ayudantes < 1) {
-            $errores['detalles.0.participantes'][] = 'Cada detalle de Pan debe tener al menos un Ayudante.';
-        }
-
-        return $errores;
-    }
-
-    private function resolverCabecera(string $fecha, int $turnoId, Categoria $categoriaPan, int $usuarioId): Produccion
-    {
-        $producciones = Produccion::where('fecha', $fecha)
-            ->where('categoria_id', $categoriaPan->id)
-            ->where('turno_id', $turnoId)
-            ->lockForUpdate()->limit(2)->get();
-        if ($producciones->count() > 1) {
-            throw ValidationException::withMessages([
-                'produccion' => 'Existen varias sesiones de Pan para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto.',
-            ]);
-        }
-
-        return $producciones->first() ?? Produccion::create([
-            'fecha' => $fecha,
-            'registrado_por_usuario_id' => $usuarioId,
-            'categoria_id' => $categoriaPan->id,
-            'turno_id' => $turnoId,
-        ]);
     }
 
     private function registrarDetalle(Produccion $produccion, Producto $producto, array $detalle, int $totalLatas): DetallePan

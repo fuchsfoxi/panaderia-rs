@@ -14,10 +14,16 @@ class DetalleTorta extends Model
     protected $fillable = [
         'produccion_id',
         'producto_id',
+        'cantidad',
         'observacion',
         'forma',
         'foto',
     ];
+
+    protected function casts(): array
+    {
+        return ['cantidad' => 'integer'];
+    }
 
     public function empleados(): BelongsToMany
     {
