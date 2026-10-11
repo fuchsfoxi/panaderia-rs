@@ -51,6 +51,7 @@ function datosLoteDashboard(array $fixtures, string $fecha, int $turnoId, ?int $
         'categoria' => 'pan', 'fecha' => $fecha, 'turno_id' => $turnoId,
         'detalles' => [[
             'producto_id' => $fixtures['productos']['Pan']->id,
+            'hora_finalizacion' => '08:35',
             'coches' => intdiv($latas, DetallePan::LATAS_POR_COCHE),
             'latas_adicionales' => $latas % DetallePan::LATAS_POR_COCHE,
             'participantes' => [

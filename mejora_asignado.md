@@ -1123,3 +1123,75 @@ Pendientes: aceptación manual/operativa, reglas propias de equipo si cambian,
 usuarios/cuentas por turno/productos y futuras ampliaciones de Historial/Dashboard.
 No se declara cierre total del sprint, despliegue, commit ni push. Informe completo:
 [Sprint5_Produccion_Torta_Bocadito.md](dato_optimizar/Sprint5_Produccion_Torta_Bocadito.md).
+
+## Sprint 5: UI de Producción y hora de Pan — 2026-10-11
+
+Estado: **IMPLEMENTADO Y COMPROBADO mediante HTTP/MariaDB aislada,
+eventos JavaScript y build**. **Aceptación visual en navegador: PENDIENTE**.
+
+Pan conserva diseño/canon/cantidades y tiene resumen compacto, chips/+ y
+observaciones menores. Añade hora real obligatoria HH:MM en cada nuevo registro,
+sin hora automática; se guarda en detalle_pan.hora_finalizacion TIME nullable
+para históricos, nunca en cabecera. Request/Action/modelo conservan sus
+responsabilidades, locks, snapshots, transacciones y reglas de participantes.
+
+Torta conserva backend y mejora formulario/panel adicional responsive, formas
+rápidas con texto libre y zona de foto. Galería sin capture y cámara con
+capture=environment; solo selector activo tiene name, preview local con object
+URL, cambiar/quitar y limpieza sin subida anticipada. Bocadito conserva lógica;
+solo comparte presentación común. Consulta permanece accesible al cambiar familia.
+Historial/Dashboard solo adaptan fixtures de tests a hora nueva, sin cambios
+funcionales; usuarios/productos y otros módulos fuera del alcance.
+
+Migración nueva 2026_10_11_100000_add_hora_finalizacion_to_detalle_pan.php:
+status/archivo/pretend revisados, aplicada selectivamente en base local y
+status final Ran batch 4. Nullable sin backfill; down bloqueado si hay horas.
+Preservación/up/down/up comprobados solo con fixtures aisladas; sin rollback
+local, registros de negocio reales, .env, seeders ni operaciones destructivas.
+
+Referencia inicial 324/324 y 3.300 aserciones. Final **337/337 y 3.442 aserciones**,
+0 fallidas/omitidas; 13 casos nuevos y ampliaciones del contrato/migración.
+php artisan test convencional: 9 aprobadas, 328 omitidas, no equivale a runner.
+JS: **12 Producción + 7 sidebar** aprobados con dobles DOM; sin navegador real.
+Pint de diez PHP afectados, build y diff correctos; aviso fontaine preexistente.
+Fallos intermedios de clasificación de migración y limpieza de preview corregidos;
+revisión final recuperó consulta fuera del bloque de resultados ocultables.
+
+Se actualizaron ocho notas originales de Producción/Laravel/esquema/decisión/
+Sprint/estado en Obsidian, tras inspección y lectura completa, sin borrar historia
+ni copiar la bóveda al repo. Escalamiento de conexión/escritura autorizado y
+completado. Servidor MariaDB desechable sin red, dos bases ficticias, sesiones
+array y Vite omitido en HTTP. Aceptación manual de responsive/cámara/teclado
+PENDIENTE; no se cierra todo Sprint 5 ni se acredita despliegue, commit o push.
+Informe y checklist:
+[Sprint5_Mejora_UI_Produccion_Hora_Pan_Torta.md](dato_optimizar/Sprint5_Mejora_UI_Produccion_Hora_Pan_Torta.md).
+
+## Sprint 5: corrección del login móvil — 2026-10-11
+
+Estado: **IMPLEMENTADO Y COMPROBADO en Chrome headless con emulación móvil,
+assets compilados y pruebas HTTP/MariaDB aisladas**. **Aceptación visual móvil
+en navegador real: PENDIENTE** (celular físico y túnel Cloudflare).
+
+La decoración absoluta con right:-100px ampliaba el área desplazable 100 px;
+los inputs flex conservaban su ancho mínimo nativo y desbordaban el campo de
+contraseña. Se contienen los brillos en una capa propia y se permite reducir
+inputs/bloque/tarjeta. Encabezado limitado al ancho disponible; hasta 480 px,
+título y padding adaptables e inputs de 16 px. Video, paleta, fuentes, radios,
+sombras y medidas de escritorio conservados. No cambia login.js ni autenticación.
+
+El PNG solicitado no existía: se restaura el SVG original desde Git y se enlaza
+con asset(), sin URL fija. Chrome comprobó 320/360/375/390/412/430/768/1440 px:
+8/8 sin overflow incluso retirando overflow-x:hidden; logo/fuentes cargados,
+tarjeta centrada, controles contenidos y toggle funcionando. Capturas de 375 y
+1440 px revisadas; no acreditan dispositivo físico, Safari o teclado virtual.
+
+Build y diff antes/después aprobados; aviso fontaine opcional preexistente.
+NavigationTest/ProxyHttpsTest: **29/29 pruebas y 413 aserciones**, 0 fallidas,
+MariaDB temporal sin red y sesiones array. No existen tests JS específicos del
+login; se comprueba el script compilado en Chrome. No se repite la suite global.
+
+Se actualizan solo LARAVEL/Blade.md y PENDIENTES/Bugs.md originales del Vault,
+preservando historia. Escritura y Chrome autorizados mediante escalamiento.
+Cambios anteriores de Producción preservados; sin controllers/rutas/sesiones,
+datos reales, configuración Vite/túnel, commit o push. Informe:
+[Sprint5_Correccion_Login_Movil.md](dato_optimizar/Sprint5_Correccion_Login_Movil.md).

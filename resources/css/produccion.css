@@ -123,7 +123,7 @@ body {
 .contenido-produccion {
     display: flex;
     gap: 24px;
-    align-items: stretch;
+    align-items: flex-start;
     margin-bottom: 20px;
 }
 
@@ -162,7 +162,7 @@ body {
 
 .formulario-produccion {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 20px;
     margin-bottom: 20px;
 }
@@ -177,13 +177,15 @@ body {
     grid-column: 1 / -1;
 }
 
-.campo label {
+.campo label,
+.campo-etiqueta {
     font-size: 14px;
     font-weight: 600;
     color: #33403A;
 }
 
 .campo input[type="date"],
+.campo input[type="time"],
 .campo input[type="number"],
 .campo input[type="text"],
 .campo input[type="file"],
@@ -208,7 +210,7 @@ body {
 
 .campo textarea {
     resize: vertical;
-    min-height: 90px;
+    min-height: 56px;
     font-family: inherit;
 }
 
@@ -224,18 +226,33 @@ body {
     overflow-wrap: anywhere;
 }
 
+[data-estado-participantes] {
+    margin: 0;
+    font-size: 13px;
+}
+
 .total-latas-etiqueta {
     font-weight: 600;
     font-size: 0.9rem;
 }
 
-[data-total-latas] {
-    padding: 12px 16px;
+.resumen-latas {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 10px 14px;
     border: 1px solid #AEC0AC;
     border-radius: 12px;
     background-color: #F6F2EF;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
+}
+
+[data-total-latas] {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.resumen-latas small {
+    margin-left: auto;
 }
 
 .campo-cantidad {
@@ -293,22 +310,34 @@ body {
     flex-shrink: 0;
 }
 
-#agregar-empleado {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: none;
-    background-color: #DCD6C4;
-    color: #33403A;
-    font-size: 16px;
-    cursor: pointer;
+.participantes-linea {
     display: flex;
+    gap: 8px;
     align-items: center;
-    justify-content: center;
+}
+
+.participantes-linea .empleados-tags {
+    flex: 1;
+    min-width: 0;
+}
+
+.btn-agregar-participante {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    border: 1px solid #AEC0AC;
+    background-color: #F6F2EF;
+    color: #33403A;
+    font: inherit;
+    font-size: 24px;
+    cursor: pointer;
 }
 
 .popover-empleado {
-    display: none;
+    display: flex;
+    flex-wrap: wrap;
+    box-sizing: border-box;
     align-items: center;
     gap: 8px;
     background-color: #F6F2EF;
@@ -388,24 +417,18 @@ body {
     background-color: #F6F2EF;
     border-radius: 24px;
     padding: 28px;
-    flex: 1;
-    max-width: 340px;
-    box-shadow: 0 2px 12px rgba(51, 64, 58, 0.08);
+    flex: 0 1 290px;
+    min-width: 0;
+    border: 1px solid #AEC0AC;
 }
 
-.panel-info-etiqueta {
+.panel-info .panel-info-etiqueta {
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    color: #C07F4E;
-    margin-bottom: 6px;
-}
-
-.panel-info h3 {
-    font-size: 18px;
-    color: #33403A;
-    margin: 0 0 8px 0;
+    color: #4F6355;
+    margin: 0 0 8px;
 }
 
 .panel-info p {
@@ -424,7 +447,7 @@ body {
 .forma-opciones {
     display: flex;
     gap: 10px;
-    margin-bottom: 20px;
+    flex-wrap: wrap;
 }
 
 .btn-forma {
@@ -438,8 +461,9 @@ body {
     font-family: inherit;
     font-size: 13px;
     font-weight: 600;
-    color: #7D9481;
+    color: #4F6355;
     cursor: pointer;
+    min-height: 44px;
 }
 
 .btn-forma.activo {
@@ -452,11 +476,10 @@ body {
     display: block;
     border: 2px dashed #AEC0AC;
     border-radius: 16px;
-    padding: 32px;
+    padding: 20px 12px;
     text-align: center;
     color: #7D9481;
     font-size: 14px;
-    cursor: pointer;
 }
 
 .campo-condicional {
@@ -540,16 +563,76 @@ body {
 }
 
 .detalle-pan {
-    margin: 16px 0 0;
-    padding: 20px;
-    border: 1px solid #AEC0AC;
-    border-radius: 16px;
+    margin: 0 0 20px;
+    padding: 0;
+    border: 0;
     min-width: 0;
 }
 
-.popover-empleado {
+.campo-foto {
+    margin-top: 24px;
+}
+
+.foto-upload img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.foto-upload p {
+    margin: 10px 0;
+    overflow-wrap: anywhere;
+}
+
+.foto-acciones {
+    display: flex;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.campo .btn-foto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    min-height: 44px;
     box-sizing: border-box;
+    border: 1px solid #AEC0AC;
+    border-radius: 999px;
+    background-color: #F6F2EF;
+    color: #33403A;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.btn-foto:hover,
+.btn-agregar-participante:hover {
+    background-color: #AEC0AC;
+}
+
+.solo-lectores {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.foto-upload:focus-within {
+    outline: 2px solid #4F6355;
+    outline-offset: 3px;
+}
+
+.pagina-produccion [hidden] {
+    display: none !important;
 }
 
 .tarjeta-produccion {
@@ -602,6 +685,7 @@ body {
         box-sizing: border-box;
         max-width: none;
         width: 100%;
+        flex-basis: auto;
     }
 
     .formulario-produccion {
@@ -616,10 +700,6 @@ body {
     .formulario-card-header,
     .formulario-botones {
         flex-wrap: wrap;
-    }
-
-    .detalle-pan {
-        padding: 16px;
     }
 
     .popover-empleado label {

@@ -21,6 +21,8 @@ class DetallePan extends Model
         'produccion_id',
         'producto_id',
         'observacion',
+        // Hora local del lote, sin asociar una fecha ficticia mediante un cast datetime.
+        'hora_finalizacion',
         'unidad_medida_id',
         'turno_id',
         // Cantidad canónica de Pan: total de latas producidas, siempre entero.

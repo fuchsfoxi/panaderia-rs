@@ -91,6 +91,7 @@ class RegistrarProduccionPan
             'turno_id' => $produccion->turno_id,
             'panes_por_lata_usado' => $producto->panes_por_lata,
             'observacion' => $detalle['observacion'] ?? null,
+            'hora_finalizacion' => $detalle['hora_finalizacion'],
         ]);
     }
 

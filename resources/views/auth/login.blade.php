@@ -17,14 +17,16 @@
         </video>
     </div>
 
-    <div class="brillo-calido brillo-calido-izquierdo"></div>
-    <div class="brillo-calido brillo-calido-derecho"></div>
+    <div class="brillos-fondo" aria-hidden="true">
+        <div class="brillo-calido brillo-calido-izquierdo"></div>
+        <div class="brillo-calido brillo-calido-derecho"></div>
+    </div>
 
     <div class="bloque-principal-login">
 
         <div class="encabezado-marca">
             <div class="placa-icono-logo">
-                <img src="{{ asset('images/icono_login.png') }}" alt="icono_login">
+                <img src="{{ asset('images/icono_login.svg') }}" alt="Panadería RS" width="32" height="32">
             </div>
             <h1 class="titulo-marca">PANIFICADORA AMAZÓNICA</h1>
             <p class="subtitulo-marca">Sistema de Gestión de Producción de Panadería</p>

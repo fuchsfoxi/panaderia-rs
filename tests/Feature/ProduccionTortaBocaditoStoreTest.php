@@ -207,7 +207,7 @@ test('cabeceras duplicadas bloquean cada familia sin seleccionar una arbitraria'
 test('los tres registros conviven y la consulta solo carga la familia seleccionada', function () {
     $this->actingAs($this->fixtures['usuario']);
     $pan = cantidadPayload($this->fixtures, 'Pan');
-    $pan['detalles'][0] += ['coches' => 1, 'latas_adicionales' => 2];
+    $pan['detalles'][0] += ['coches' => 1, 'latas_adicionales' => 2, 'hora_finalizacion' => '08:35'];
     $this->post(route('produccion.store'), $pan)->assertSessionHasNoErrors();
     foreach (['Torta', 'Bocadito'] as $familia) {
         $this->post(rutaCantidad($familia), cantidadPayload($this->fixtures, $familia))->assertSessionHasNoErrors();
@@ -333,3 +333,30 @@ test('admite varios Ayudantes y observación opcional o texto cero', function (s
     expect(modeloCantidad($familia)::sole()->observacion)->toBe($observacion)
         ->and(modeloCantidad($familia)::sole()->empleados)->toHaveCount(3);
 })->with(['Torta', 'Bocadito'])->with([null, '0']);
+
+test('Torta presenta opciones ampliables y controles separados de galería y cámara', function () {
+    $payload = cantidadPayload($this->fixtures, 'Torta');
+    $payload['detalles'][0]['forma'] = 'Corazón';
+    $payload['detalles'][0]['cantidad'] = 0;
+    $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index', ['categoria' => 'torta']))
+        ->post(rutaCantidad('Torta'), $payload)->assertSessionHasErrors('detalles.0.cantidad');
+    $response = $this->withCookie(config('session.cookie'), app('session.store')->getId())
+        ->get(route('produccion.index'))->assertOk()->assertSeeText('Información adicional');
+    expect($response->viewData('categoriaSeleccionada'))->toBe('torta');
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    $forma = $xpath->query('//aside//input[@name="detalles[0][forma]"]')->item(0);
+    expect($forma->getAttribute('value'))->toBe('Corazón')
+        ->and($xpath->query('//aside//button[@data-forma]')->length)->toBe(2)
+        ->and($xpath->query('//img[@data-preview-foto and @hidden]')->length)->toBe(1);
+    $galeria = $xpath->query('//input[@id="detalle-foto"]')->item(0);
+    $camara = $xpath->query('//input[@id="detalle-foto-camara"]')->item(0);
+    expect($galeria->getAttribute('accept'))->toBe('image/jpeg,image/png,image/webp')
+        ->and($galeria->hasAttribute('capture'))->toBeFalse()
+        ->and($camara->getAttribute('capture'))->toBe('environment')
+        ->and($camara->hasAttribute('name'))->toBeFalse()
+        ->and($xpath->query('//section[@data-registros-familia]//button[@id="consultar-produccion"]')->length)->toBe(0)
+        ->and($xpath->query('//input[@type="file" and @name="detalles[0][foto]"]')->length)->toBe(1)
+        ->and($xpath->query('//input[@name="detalles[0][hora_finalizacion]" and @disabled]')->length)->toBe(1);
+});

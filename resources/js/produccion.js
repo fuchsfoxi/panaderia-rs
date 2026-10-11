@@ -9,6 +9,86 @@ document.addEventListener('DOMContentLoaded', function () {
     const turno = document.getElementById('turno');
     const guardar = formulario.querySelector('button[type="submit"]');
     const titulo = formulario.querySelector('.formulario-card-header h3');
+    const editorParticipantes = detalle.querySelector('#editor-participantes');
+    const abrirParticipantes = detalle.querySelector('[data-abrir-participantes]');
+    const forma = detalle.querySelector('[data-campo="forma"]');
+    const formas = detalle.querySelectorAll('[data-forma]');
+    const fotos = [detalle.querySelector('[data-campo="foto"]'), detalle.querySelector('[data-campo="foto_camara"]')];
+    const preview = detalle.querySelector('[data-preview-foto]');
+    const nombreFoto = detalle.querySelector('[data-nombre-foto]');
+    const iconoFoto = detalle.querySelector('[data-icono-foto]');
+    const quitarFoto = detalle.querySelector('[data-quitar-foto]');
+    const labelFoto = detalle.querySelector('[data-label-foto]');
+    let urlFoto = null;
+
+    function mostrarEditor(abierto) {
+        editorParticipantes.hidden = !abierto;
+        abrirParticipantes.setAttribute('aria-expanded', String(abierto));
+        if (abierto) detalle.querySelector('[data-control="empleado"]').focus();
+    }
+
+    function actualizarForma() {
+        formas.forEach(boton => {
+            const activo = forma.value.toLowerCase() === boton.dataset.forma;
+            boton.classList.toggle('activo', activo);
+            boton.setAttribute('aria-pressed', String(activo));
+        });
+    }
+
+    function liberarPreview() {
+        if (urlFoto) URL.revokeObjectURL(urlFoto);
+        urlFoto = null;
+        preview.removeAttribute('src');
+        preview.hidden = true;
+    }
+
+    function limpiarFoto() {
+        liberarPreview();
+        fotos.forEach(input => { input.value = ''; input.removeAttribute('name'); });
+        fotos[0].name = 'detalles[0][foto]';
+        nombreFoto.textContent = 'Tomar o subir foto';
+        iconoFoto.hidden = false;
+        quitarFoto.hidden = true;
+        labelFoto.textContent = 'Subir foto';
+    }
+
+    fotos.forEach(input => input.addEventListener('change', () => {
+        const archivo = input.files[0];
+        if (!archivo) return;
+        liberarPreview();
+        fotos.forEach(otro => {
+            otro.removeAttribute('name');
+            if (otro !== input) otro.value = '';
+        });
+        // Solo el selector elegido tiene nombre: evita enviar dos archivos foto.
+        input.name = 'detalles[0][foto]';
+        nombreFoto.textContent = archivo.name;
+        quitarFoto.hidden = false;
+        labelFoto.textContent = 'Cambiar foto';
+        if (['image/jpeg', 'image/png', 'image/webp'].includes(archivo.type)) {
+            urlFoto = URL.createObjectURL(archivo);
+            preview.src = urlFoto;
+            preview.hidden = false;
+            iconoFoto.hidden = true;
+        } else {
+            iconoFoto.hidden = false;
+            nombreFoto.textContent = 'Selecciona una imagen JPG, PNG o WEBP.';
+        }
+    }));
+    preview.addEventListener('error', () => {
+        liberarPreview();
+        iconoFoto.hidden = false;
+        nombreFoto.textContent = 'No se pudo mostrar la imagen. Cambia la foto si es necesario.';
+    });
+    quitarFoto.addEventListener('click', () => { limpiarFoto(); fotos[0].focus(); });
+    window.addEventListener('pagehide', event => {
+        if (!event.persisted) liberarPreview();
+    });
+    formas.forEach(boton => boton.addEventListener('click', () => {
+        forma.value = boton.dataset.forma;
+        actualizarForma();
+    }));
+    forma.addEventListener('input', actualizarForma);
 
     function participantes(detalle) {
         return Array.from(detalle.querySelectorAll('[data-participante]'));
@@ -40,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         detalle.querySelector('[data-estado-participantes]').textContent =
-            `${maestros} Maestro(s) y ${ayudantes} Ayudante(s). Se requiere 1 Maestro y mínimo 1 Ayudante.`;
+            tags.length ? `${maestros} Maestro · ${ayudantes} Ayudante(s)` : '1 Maestro y mínimo 1 Ayudante.';
     }
 
     function actualizarTotal(detalle) {
@@ -55,9 +135,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Solo texto informativo: ningún total calculado se incorpora al POST.
         detalle.querySelector('[data-total-latas]').textContent = valido
-            ? (total > 0
-                ? `${numeroCoches} coche(s) + ${numeroLatas} latas = ${total} latas en total`
-                : '0 latas en total. Ingresa al menos un coche o una lata adicional.')
+            ? `${total} latas`
             : `Introduce coches enteros y de 0 a ${latasPorCoche - 1} latas.`;
     }
 
@@ -80,12 +158,16 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (cambio) {
             producto.value = '';
-            detalle.querySelectorAll('[data-campo="cantidad"], [data-campo="forma"], [data-campo="foto"], [data-campo="observacion"]')
-                .forEach(control => { control.value = ''; });
+            detalle.querySelectorAll('[data-campo]')
+                .forEach(control => { control.value = ['coches', 'latas_adicionales'].includes(control.dataset.campo) ? '0' : ''; });
+            limpiarFoto();
+            mostrarEditor(false);
             detalle.querySelector('[data-participantes]').replaceChildren();
             detalle.querySelector('[data-error-detalle]').textContent = '';
             actualizarParticipantes(detalle);
+            actualizarTotal(detalle);
         }
+        actualizarForma();
         inputCategoria.value = categoria;
         formulario.action = formulario.dataset[`${categoria}Url`];
         botonesCategoria.forEach(boton => {
@@ -147,6 +229,8 @@ document.addEventListener('DOMContentLoaded', function () {
         selectRol.value = '';
         error.textContent = '';
         actualizarParticipantes(detalle);
+        mostrarEditor(false);
+        abrirParticipantes.focus();
     }
 
     botonesCategoria.forEach(boton => {
@@ -156,12 +240,21 @@ document.addEventListener('DOMContentLoaded', function () {
     detalle.addEventListener('click', event => {
         const boton = event.target.closest('button');
         if (!boton) return;
-        if (boton.hasAttribute('data-agregar-participante')) {
+        if (boton.hasAttribute('data-abrir-participantes')) {
+            mostrarEditor(editorParticipantes.hidden);
+        } else if (boton.hasAttribute('data-agregar-participante')) {
             agregarParticipante(detalle);
         } else if (boton.hasAttribute('data-quitar-participante')) {
             boton.closest('[data-participante]').remove();
             detalle.querySelector('[data-error-detalle]').textContent = '';
             actualizarParticipantes(detalle);
+        }
+    });
+    editorParticipantes.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            mostrarEditor(false);
+            abrirParticipantes.focus();
         }
     });
     detalle.addEventListener('input', event => {
@@ -196,6 +289,9 @@ document.addEventListener('DOMContentLoaded', function () {
             mostrarCamposDe(inputCategoria.value);
             actualizarParticipantes(detalle);
             actualizarTotal(detalle);
+            limpiarFoto();
+            mostrarEditor(false);
+            actualizarForma();
         });
     });
 
@@ -208,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function () {
             : 'Cada producto necesita exactamente 1 Maestro, mínimo 1 Ayudante y empleados sin repetir.';
         if (!valido) {
             event.preventDefault();
-            detalle.querySelector('[data-control="empleado"]').focus();
+            mostrarEditor(true);
         }
         // Estas ayudas no reemplazan la validación definitiva de store().
     });

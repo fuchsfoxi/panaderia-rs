@@ -58,6 +58,7 @@ class RegistrarProduccionPanRequest extends FormRequest
             'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
             'detalles.*' => ['required', 'array'],
             'detalles.*.producto_id' => ['required', 'integer', 'exists:productos,id'],
+            'detalles.*.hora_finalizacion' => ['required', 'date_format:H:i'],
             'detalles.*.coches' => ['required', 'integer', 'min:0', 'max:'.intdiv(DetallePan::MAX_CANTIDAD_LATAS, DetallePan::LATAS_POR_COCHE)],
             'detalles.*.latas_adicionales' => ['required', 'integer', 'min:0', 'max:'.(DetallePan::LATAS_POR_COCHE - 1)],
             'detalles.*.observacion' => ['nullable', 'string', function (string $attribute, mixed $value, Closure $fail): void {
@@ -86,6 +87,7 @@ class RegistrarProduccionPanRequest extends FormRequest
             'detalles.size' => 'Registre exactamente un producto de Pan por envío.',
             'detalles.required_array_keys' => 'El producto de Pan debe enviarse en detalles[0].',
             'detalles.*.coches.min' => 'La cantidad de coches no puede ser negativa.',
+            'detalles.*.hora_finalizacion.date_format' => 'La hora de finalización debe ser válida con formato HH:MM.',
             'detalles.*.latas_adicionales.min' => 'Las latas adicionales no pueden ser negativas.',
             'detalles.*.latas_adicionales.max' => 'Las latas adicionales no pueden superar '.(DetallePan::LATAS_POR_COCHE - 1).'.',
             'categoria.in' => 'Esta ruta solo permite registrar Pan.',
@@ -105,6 +107,7 @@ class RegistrarProduccionPanRequest extends FormRequest
             'detalles' => 'detalles de Pan',
             'detalles.*' => 'detalle de Pan',
             'detalles.*.producto_id' => 'producto',
+            'detalles.*.hora_finalizacion' => 'hora de finalización',
             'detalles.*.coches' => 'coches',
             'detalles.*.latas_adicionales' => 'latas adicionales',
             'detalles.*.observacion' => 'observación',

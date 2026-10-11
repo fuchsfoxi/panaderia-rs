@@ -34,6 +34,7 @@ beforeEach(function () {
         'turno_id' => $this->fixtures['turno']->id,
         'detalles' => [[
             'producto_id' => $this->fixtures['productos']['Pan']->id,
+            'hora_finalizacion' => '08:35',
             'coches' => 1,
             'latas_adicionales' => 5,
             'observacion' => 'Nota del primer lote',
@@ -102,7 +103,8 @@ test('muestra errores del producto y conserva campos y participantes al volver a
         expect($xpath->query('//select[@name="detalles['.$i.'][producto_id]"]/option[@selected]')->item(0)->getAttribute('value'))->toBe((string) $detalle['producto_id'])
             ->and($xpath->query('//input[@name="detalles['.$i.'][coches]"]')->item(0)->getAttribute('value'))->toBe((string) $detalle['coches'])
             ->and($xpath->query('//input[@name="detalles['.$i.'][latas_adicionales]"]')->item(0)->getAttribute('value'))->toBe((string) $detalle['latas_adicionales'])
-            ->and($xpath->query('//textarea[@name="detalles['.$i.'][observacion]"]')->item(0)->textContent)->toBe($detalle['observacion']);
+            ->and($xpath->query('//textarea[@name="detalles['.$i.'][observacion]"]')->item(0)->textContent)->toBe($detalle['observacion'])
+            ->and($xpath->query('//input[@name="detalles[0][hora_finalizacion]"]')->item(0)->getAttribute('value'))->toBe('08:35');
         foreach ($detalle['participantes'] as $j => $participante) {
             foreach ($participante as $campo => $id) {
                 expect($xpath->query('//input[@name="detalles['.$i.'][participantes]['.$j.']['.$campo.']"]')->item(0)->getAttribute('value'))->toBe((string) $id);
@@ -173,6 +175,8 @@ test('guarda Pan con cabecera derivada cantidad snapshot y participantes reales'
         ->and($detalle->turno_id)->toBe($produccion->turno_id)
         ->and($detalle->producto_id)->toBe($this->fixtures['productos']['Pan']->id)
         ->and($detalle->cantidad)->toBe(23)
+        ->and($detalle->hora_finalizacion)->toBe('08:35:00')
+        ->and(array_key_exists('hora_finalizacion', $produccion->getAttributes()))->toBeFalse()
         ->and($detalle->unidad_medida_id)->toBe($this->fixtures['productos']['Pan']->unidad_medida_id)
         ->and($detalle->panes_por_lata_usado)->toBe(12)
         ->and($detalle->observacion)->toBe('Nota del primer lote');
@@ -201,7 +205,7 @@ test('reutiliza la cabecera en peticiones sucesivas con productos y observacione
         ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
     $this->payload['detalles'][0] = array_replace($this->payload['detalles'][0], [
         'producto_id' => $otroPan->id, 'coches' => 0, 'latas_adicionales' => 7,
-        'observacion' => 'Nota independiente del segundo lote',
+        'observacion' => 'Nota independiente del segundo lote', 'hora_finalizacion' => '09:20',
     ]);
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
         ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
@@ -210,6 +214,7 @@ test('reutiliza la cabecera en peticiones sucesivas con productos y observacione
     $this->assertDatabaseCount('detalle_pan_empleado', 4);
     $detalles = Produccion::sole()->detallesPan()->orderBy('id')->get();
     expect($detalles->pluck('cantidad')->all())->toBe([23, 7])
+        ->and($detalles->pluck('hora_finalizacion')->all())->toBe(['08:35:00', '09:20:00'])
         ->and($detalles->pluck('panes_por_lata_usado')->all())->toBe([12, 14])
         ->and($detalles->pluck('observacion')->all())->toBe(['Nota del primer lote', 'Nota independiente del segundo lote']);
     foreach ($detalles as $detalle) {
@@ -523,10 +528,10 @@ test('rechaza cabeceras duplicadas sin elegir una ni alterar los registros exist
 test('éxito conserva fecha y turno y deja un único formulario de producto limpio', function () {
     $this->actingAs($this->fixtures['usuario']);
     $response = $this->followingRedirects()->post(route('produccion.store'), $this->payload)->assertOk()
-        ->assertSeeText('Registrar producto')->assertDontSeeText('Agregar producto')
+        ->assertSeeText('Guardar')->assertDontSeeText('Agregar producto')
         ->assertDontSeeText('Eliminar producto')->assertSeeText('Latas adicionales')
-        ->assertSeeText('Limpiar producto')
-        ->assertSeeText('0 a 17 latas')->assertDontSee('plantilla-detalle-pan', false);
+        ->assertSeeText('Cancelar')
+        ->assertSeeText('1 coche = 18 latas')->assertDontSee('plantilla-detalle-pan', false);
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
@@ -554,7 +559,7 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
     }
     expect($xpath->query('//form[@id="formulario-produccion"]')->item(0)->getAttribute('data-latas-por-coche'))
         ->toBe((string) DetallePan::LATAS_POR_COCHE);
-    $response->assertSeeText('Ingresa al menos un coche o una lata adicional.');
+    $response->assertDontSeeText('Ingresa al menos un coche o una lata adicional.');
 });
 
 test('producción explica los datos faltantes sin impedir el renderizado del formulario', function (string $catalogo, string $mensaje) {
@@ -736,4 +741,52 @@ test('old input conserva el contexto POST sobre los filtros GET al recuperar err
         ->and($response->viewData('turnoSeleccionadoId'))->toBe((string) $this->payload['turno_id'])
         ->and($response->viewData('errorConsulta'))->toBeNull();
     assertNoPanStoreWrites();
+});
+
+test('Pan rechaza una hora faltante o inválida sin escrituras y conserva su familia', function (mixed $hora) {
+    $this->payload['detalles'][0]['hora_finalizacion'] = $hora;
+    $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index', ['categoria' => 'torta']))
+        ->post(route('produccion.store'), $this->payload)->assertRedirect()
+        ->assertSessionHasErrors('detalles.0.hora_finalizacion');
+    $response = $this->withCookie(config('session.cookie'), app('session.store')->getId())
+        ->get(route('produccion.index', ['categoria' => 'torta']))->assertOk()
+        ->assertSeeText('Revisa los campos indicados');
+    expect($response->viewData('categoriaSeleccionada'))->toBe('pan');
+    assertNoPanStoreWrites();
+})->with([null, '', '24:00', '08:60', '8:35', '08:35:12', 'texto', [['08:35']]]);
+
+test('Pan exige hora incluso si se omite la propiedad', function () {
+    unset($this->payload['detalles'][0]['hora_finalizacion']);
+    $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
+        ->assertSessionHasErrors('detalles.0.hora_finalizacion');
+    assertNoPanStoreWrites();
+});
+
+test('horas límite válidas se guardan en el detalle sin asignación automática', function (string $hora) {
+    $this->payload['detalles'][0]['hora_finalizacion'] = $hora;
+    $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
+        ->assertSessionHasNoErrors();
+    expect(DetallePan::sole()->hora_finalizacion)->toBe($hora.':00');
+    $response = $this->get(panContextUrl($this->payload))->assertOk()->assertSeeText('Finalización: '.$hora);
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $input = (new DOMXPath($document))->query('//input[@name="detalles[0][hora_finalizacion]"]')->item(0);
+    expect($input->getAttribute('value'))->toBe('')
+        ->and($input->getAttribute('type'))->toBe('time')
+        ->and($input->hasAttribute('required'))->toBeTrue();
+})->with(['00:00', '23:59']);
+
+test('lote histórico sin hora se consulta y no cambia al reutilizar la cabecera', function () {
+    $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
+        ->assertSessionHasNoErrors();
+    $cabecera = Produccion::sole();
+    $historico = IsolatedMariaDb::detail(DetallePan::class, $cabecera, $this->fixtures);
+    expect($historico->fresh()->hora_finalizacion)->toBeNull();
+    $this->payload['detalles'][0]['hora_finalizacion'] = '09:20';
+    $this->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
+    expect(Produccion::count())->toBe(1)
+        ->and($historico->fresh()->hora_finalizacion)->toBeNull()
+        ->and($cabecera->detallesPan()->orderBy('id')->pluck('hora_finalizacion')->all())
+        ->toBe(['08:35:00', null, '09:20:00']);
+    $this->get(panContextUrl($this->payload))->assertOk()->assertSeeText('Sin hora registrada');
 });

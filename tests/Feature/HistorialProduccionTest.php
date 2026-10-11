@@ -27,6 +27,7 @@ beforeEach(function () {
         'categoria' => 'pan', 'fecha' => '2026-10-05', 'turno_id' => $this->fixtures['turno']->id,
         'detalles' => [[
             'producto_id' => $this->fixtures['productos']['Pan']->id,
+            'hora_finalizacion' => '08:35',
             'coches' => 2, 'latas_adicionales' => 4, 'observacion' => 'Nota real del lote de prueba',
             'participantes' => [
                 ['empleado_id' => $this->fixtures['empleados'][0]->id, 'rol_produccion_id' => $this->fixtures['roles']['Maestro']->id],

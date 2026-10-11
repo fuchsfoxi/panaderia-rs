@@ -18,7 +18,8 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     $new = database_path('migrations/2026_10_02_162600_add_observacion_to_production_details.php');
     $familyPath = database_path('migrations/2026_10_02_180000_add_categoria_and_turno_to_produccion.php');
     $panUnitsPath = database_path('migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php');
-    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
+    $horaPanPath = database_path('migrations/2026_10_11_100000_add_hora_finalizacion_to_detalle_pan.php');
+    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
     expect($originals)->toHaveCount(21);
     expect(Artisan::call('migrate', [
         '--database' => 'sprint4_test', '--path' => $originals, '--realpath' => true, '--force' => true,
@@ -212,4 +213,25 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     $cantidadesTorta->up();
     expect(DB::table('detalle_torta')->where('id', $tortaAntes['id'])->value('cantidad'))->toBe(1);
 
+    // La hora no se infiere para registros históricos. Ensayo DDL solo en aislamiento.
+    $panAntes = (array) DB::table('detalle_pan')->where('id', $before['detalle_pan']->id)->first();
+    $horaPan = require $horaPanPath;
+    $horaPan->up();
+    $panDespues = (array) DB::table('detalle_pan')->where('id', $panAntes['id'])->first();
+    expect($panDespues['hora_finalizacion'])->toBeNull();
+    unset($panDespues['hora_finalizacion']);
+    expect($panDespues)->toBe($panAntes);
+    $columnaHora = collect(Schema::getColumns('detalle_pan'))->firstWhere('name', 'hora_finalizacion');
+    expect($columnaHora['type_name'])->toBe('time')
+        ->and($columnaHora['nullable'])->toBeTrue()
+        ->and(Schema::hasColumn('produccion', 'hora_finalizacion'))->toBeFalse();
+    DB::table('detalle_pan')->where('id', $panAntes['id'])->update(['hora_finalizacion' => '08:35']);
+    expect(fn () => $horaPan->down())->toThrow(RuntimeException::class, 'hay horas de finalización');
+    expect(DB::table('detalle_pan')->where('id', $panAntes['id'])->value('hora_finalizacion'))->toBe('08:35:00');
+    DB::table('detalle_pan')->where('id', $panAntes['id'])->update(['hora_finalizacion' => null]);
+    $horaPan->down();
+    expect(Schema::hasColumn('detalle_pan', 'hora_finalizacion'))->toBeFalse()
+        ->and((array) DB::table('detalle_pan')->where('id', $panAntes['id'])->first())->toBe($panAntes);
+    $horaPan->up();
+    expect(DB::table('detalle_pan')->where('id', $panAntes['id'])->value('hora_finalizacion'))->toBeNull();
 });
