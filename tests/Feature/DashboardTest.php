@@ -288,6 +288,8 @@ test('dashboard mantiene consultas acotadas al pasar de uno a varios lotes recie
     $this->fixtures['usuario']->load('empleado');
     $this->actingAs($this->fixtures['usuario']);
     $medir = function (): int {
+        // Cada petición independiente incluye la lectura del rol para autorizar.
+        $this->fixtures['usuario']->unsetRelation('rol');
         DB::enableQueryLog();
         DB::flushQueryLog();
         try {

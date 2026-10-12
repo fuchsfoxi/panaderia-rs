@@ -213,6 +213,8 @@ test('las consultas de relaciones y pivotes no crecen con los lotes de la págin
     $this->fixtures['usuario']->load('empleado');
     $this->actingAs($this->fixtures['usuario']);
     $medir = function (): int {
+        // No reutilizar el rol cargado por una petición anterior del mismo test.
+        $this->fixtures['usuario']->unsetRelation('rol');
         DB::enableQueryLog();
         DB::flushQueryLog();
         try {
@@ -341,6 +343,7 @@ test('el número de consultas es constante también con tres familias en la pág
     $this->fixtures['usuario']->load('empleado');
     $this->actingAs($this->fixtures['usuario']);
     $medir = function (): int {
+        $this->fixtures['usuario']->unsetRelation('rol');
         DB::enableQueryLog();
         DB::flushQueryLog();
         try {

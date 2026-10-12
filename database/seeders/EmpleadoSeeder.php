@@ -2,24 +2,28 @@
 
 namespace Database\Seeders;
 
+use App\Models\Cargo;
+use App\Models\Empleado;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class EmpleadoSeeder extends Seeder
 {
+    public const NOMBRE_ADMINISTRADOR = 'Carlos M.';
+
+    public const NUMERO_ADMINISTRADOR = '001';
+
     public function run(): void
     {
-        DB::table('empleados')->insert([
-            [
-                'nombre_empleados' => 'Carlos M.',
-                'numero_empleados' => '001',
-                'cargo_id' => 5, // Administrador
-            ],
-            [
-                'nombre_empleados' => 'Ana R.',
-                'numero_empleados' => '002',
-                'cargo_id' => 1, // Panadero
-            ],
-        ]);
+        foreach ([
+            [self::NOMBRE_ADMINISTRADOR, self::NUMERO_ADMINISTRADOR, 'Administrador'],
+            ['Ana R.', '002', 'Panadero'],
+        ] as [$nombre, $numero, $cargo]) {
+            Empleado::firstOrCreate([
+                'nombre_empleados' => $nombre,
+                'numero_empleados' => $numero,
+            ], [
+                'cargo_id' => Cargo::where('nombre_cargos', $cargo)->sole()->id,
+            ]);
+        }
     }
 }

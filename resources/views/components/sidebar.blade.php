@@ -23,6 +23,7 @@
 
     <nav class="sidebar-nav" aria-label="Navegación principal">
 
+        @can('acceder-operacion')
         <a href="{{ route('dashboard') }}"
            class="sidebar-link {{ request()->routeIs('dashboard') ? 'activo' : '' }}"
            @if(request()->routeIs('dashboard')) aria-current="page" @endif>
@@ -43,6 +44,7 @@
             <svg class="sidebar-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 11a9 9 0 1 1 2 7M3 4v7h7M12 7v5l3 2" /></svg>
             <span class="sidebar-texto">Historial</span>
         </a>
+        @endcan
 
     </nav>
 

@@ -173,6 +173,39 @@ Crear un usuario de prueba con un hash de coste menor al configurado, autenticar
 
 ### Problema 7: Roles persistidos sin autorización en rutas
 
+**Reanudación comprobada — 2026-10-12:** el código de autorización y los cinco
+archivos nuevos ya estaban presentes tras el reinicio; se revisaron y conservaron
+sin reimplementarlos ni descartar cambios. Se repitieron autorización/seeders
+**80/80 pruebas, 719 aserciones** y suite completa **439/439, 4.386 aserciones,
+0 fallidas/omitidas**, con MariaDB temporal sin red y verificación de datadir/base.
+También pasaron **12 casos JS de Producción + 7 sidebar**, build, Pint dirty/PHP
+nuevo y diff. No se leyó ni escribió la base operativa. Se completó el informe
+de Fase 2 y se actualizaron 11 notas originales del Vault con escritura autorizada
+y su historia preservada; no quedó autorización pendiente. La implementación
+base está comprobada; CRUD, estados, último Administrador, sesiones database y
+aceptación visual/operativa continúan PENDIENTES. El bloque siguiente conserva
+el registro encontrado antes del reinicio; los datos reales que menciona no
+se reauditaron ahora.
+
+**Actualización — 2026-10-12, Sprint 6 / Fase 2: IMPLEMENTADO Y COMPROBADO en aislamiento.**
+La matriz Administrador/Operador fue definida por el usuario. Rol centraliza nombres;
+Usuario incorpora helpers; dos Gates (`acceder-operacion`, `administrar-sistema`)
+autorizan por nombre, sin IDs fijos. Seis rutas operativas incorporan `auth` + `can`;
+logout conserva solo `auth`. Encargado/desconocido/sin relación reciben 403 y pueden
+cerrar sesión; sidebar reutiliza `@can` sin enlaces administrativos inexistentes.
+Seeder de roles idempotente, sin borrar Encargado; seeders de cuenta/empleado resuelven
+referencias sin IDs fijos y conservan registros existentes al repetirse.
+
+Evidencia: suite completa **439/439 pruebas, 4.386 aserciones, 0 fallidas/omitidas**
+en MariaDB temporal sin red; **80 pruebas nuevas/719 aserciones** de autorización
+y seeders. Doce pruebas JS de Producción y siete de sidebar, Pint/build/diff correctos.
+Login/logout/rehash, Proxy HTTPS y reglas de las tres familias conservados.
+No se ejecutaron seeders ni migraciones en la base operativa; datos reales comunicados
+por el usuario, cuentas y relaciones de pruebas aisladas, sesiones array/withoutVite.
+Módulos administrativos/estados, reglas del último administrador y aceptación visual
+real permanecen PENDIENTES. Informe: [SPRINT_6_FASE_2_AUTORIZACION.md](SPRINT_6_FASE_2_AUTORIZACION.md).
+El diagnóstico inferior conserva el estado inicial de la auditoría de 2026-10-01.
+
 **Prioridad:** Media, condicionada a restricciones de negocio aún no definidas.
 
 **Archivo:** `routes/web.php`; `app/Models/Usuario.php`.

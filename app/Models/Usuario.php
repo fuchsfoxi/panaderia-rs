@@ -35,6 +35,21 @@ class Usuario extends Authenticatable
         return $this->belongsTo(Rol::class, 'rol_id');
     }
 
+    public function esAdministrador(): bool
+    {
+        return $this->rol?->nombre_roles === Rol::ADMINISTRADOR;
+    }
+
+    public function esOperador(): bool
+    {
+        return $this->rol?->nombre_roles === Rol::OPERADOR;
+    }
+
+    public function puedeAccederOperacion(): bool
+    {
+        return $this->esAdministrador() || $this->esOperador();
+    }
+
     // sirve para que Laravel sepa que el campo de la contraseña no se llama "password" sino "password_hash"
     // esto es necesario para que funcione la autenticación con el sistema de login de Laravel
     // ya que Laravel por defecto busca un campo llamado "password" para la autenticación

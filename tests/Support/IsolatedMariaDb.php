@@ -50,13 +50,13 @@ class IsolatedMariaDb
         }
     }
 
-    public static function fixtures(): array
+    public static function fixtures(string $nombreRol = Rol::OPERADOR): array
     {
         $cargo = Cargo::create(['nombre_cargos' => 'Cargo ficticio']);
         $empleados = collect(range(1, 3))->map(fn ($n) => Empleado::create([
             'nombre_empleados' => 'Empleado ficticio '.$n, 'cargo_id' => $cargo->id,
         ]));
-        $rol = Rol::create(['nombre_roles' => 'Rol ficticio']);
+        $rol = Rol::create(['nombre_roles' => $nombreRol]);
         $usuario = Usuario::create([
             'username' => 'sprint4.ficticio', 'password_hash' => Hash::make('clave-ficticia-sprint4'),
             'empleado_id' => $empleados->first()->id, 'rol_id' => $rol->id,

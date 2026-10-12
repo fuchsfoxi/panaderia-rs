@@ -2,6 +2,7 @@
 
 use App\Models\Categoria;
 use App\Models\Empleado;
+use App\Models\Rol;
 use App\Models\Usuario;
 use Illuminate\Auth\EloquentUserProvider;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -31,7 +32,7 @@ beforeEach(function () {
         'password_hash' => Hash::make('clave-de-prueba'),
     ])->setRelation('empleado', new Empleado([
         'nombre_empleados' => 'Juan Pérez',
-    ]));
+    ]))->setRelation('rol', new Rol(['nombre_roles' => Rol::OPERADOR]));
 });
 
 afterEach(function () {

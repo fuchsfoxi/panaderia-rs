@@ -8,6 +8,7 @@ export default defineConfig({
         laravel({
                 input: [
                     'resources/css/app.css',
+                    'resources/css/errores.css',
                     'resources/js/app.js',
                     'resources/css/login.css',
                     'resources/js/login.js',
