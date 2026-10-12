@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DetalleTorta extends Model
@@ -13,6 +14,7 @@ class DetalleTorta extends Model
 
     protected $fillable = [
         'produccion_id',
+        'registrado_por_usuario_id',
         'producto_id',
         'cantidad',
         'observacion',
@@ -23,6 +25,11 @@ class DetalleTorta extends Model
     protected function casts(): array
     {
         return ['cantidad' => 'integer'];
+    }
+
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
     }
 
     public function empleados(): BelongsToMany

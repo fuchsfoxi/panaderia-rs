@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DetalleBocadito extends Model
@@ -13,10 +14,16 @@ class DetalleBocadito extends Model
 
     protected $fillable = [
         'produccion_id',
+        'registrado_por_usuario_id',
         'producto_id',
         'observacion',
         'cantidad',
     ];
+
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
+    }
 
     public function empleados(): BelongsToMany
     {

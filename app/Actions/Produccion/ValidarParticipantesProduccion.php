@@ -2,6 +2,7 @@
 
 namespace App\Actions\Produccion;
 
+use App\Models\Empleado;
 use Illuminate\Database\Eloquent\Collection;
 
 class ValidarParticipantesProduccion
@@ -12,8 +13,13 @@ class ValidarParticipantesProduccion
         $empleados = [];
         $maestros = 0;
         $ayudantes = 0;
+        $existentes = Empleado::whereIn('id', array_column($participantes, 'empleado_id'))
+            ->orderBy('id')->lockForUpdate()->pluck('id')->flip();
         foreach ($participantes as $posicion => $participante) {
             $empleadoId = (int) $participante['empleado_id'];
+            if (! $existentes->has($empleadoId)) {
+                $errores["detalles.0.participantes.$posicion.empleado_id"] = 'El empleado seleccionado no existe.';
+            }
             if (isset($empleados[$empleadoId])) {
                 $errores['detalles.0.participantes'][] = 'Un empleado no puede repetirse dentro del mismo detalle.';
             }

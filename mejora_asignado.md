@@ -1195,3 +1195,43 @@ preservando historia. Escritura y Chrome autorizados mediante escalamiento.
 Cambios anteriores de Producción preservados; sin controllers/rutas/sesiones,
 datos reales, configuración Vite/túnel, commit o push. Informe:
 [Sprint5_Correccion_Login_Movil.md](dato_optimizar/Sprint5_Correccion_Login_Movil.md).
+
+## Sprint 5: cierre técnico de Producción e Historial — 2026-10-11
+
+Estado: **IMPLEMENTADO Y COMPROBADO en el checkout y aislamiento**.
+Pan/Torta/Bocadito mantienen las seis Actions y sus Requests; participantes
+exactamente 1 Maestro y uno o más Ayudantes confirmados por instrucción actual.
+Validación compartida de empleados bajo lock, factor Pan positivo o desconocido,
+foto con MIME/extensión/tamaño y compensación conservada. Autor por lote tomado
+de auth corrige sesiones reutilizadas entre cuentas distintas sin cambiar al
+creador de cabecera ni atribuirlo a históricos desconocidos.
+
+Historial SQL de tres familias con filtros fecha/turno/categoría, 15 lotes por
+página, eager loading/roles de pivots y claves familia:ID. Tarjetas compactas con
+details nativo, datos específicos y foto/autor/históricos claros. Paleta original,
+URLs asset compatibles con HTTPS y corrección de tarjetas/chips móviles sin
+ocultar overflow. Dashboard permanece de Pan y sin rediseño.
+
+Referencia inicial 337/3.442. Final **359 pruebas/3.667 aserciones**, 0 fallidas/
+omitidas; 22 casos nuevos más ampliaciones. **19 JS** existentes aprobados.
+Tres casos de concurrencia real, 33 aserciones, dos procesos por familia. Historial
+final 33/298. Build/Pint afectado/diff aprobados; avisos fontaine/CLI obsoleta
+no bloquean. Fallos intermedios de fixture MIME y cierre de pipes corregidos;
+reproducción previa de autoría 1 fallida/7 aserciones confirmada.
+
+Chrome final: **20/20 combinaciones** (cuatro vistas × 320/375/768/1024/1440), sin
+scroll horizontal ni errores JS; Detalles con Enter, participantes/popover,
+preview y foto servida comprobados, capturas revisadas. Fuentes externas bloqueadas:
+medidas con fallback; celular/Huninn/Safari/cámara/lector de pantalla no certificados.
+HTTP con sesiones array/withoutVite, MariaDB temporal sin red y dos bases ficticias.
+Concurrencia usa migrate:fresh solo sobre la base temporal verificada.
+
+Migración nueva de autoría aplicada localmente tras status/pretend, **Ran batch 5**,
+27 migraciones Ran. Sin seeders, rollback local ni registros de negocio reales.
+16 notas originales del Vault actualizadas preservando historia tras lectura completa;
+escritura por escalamiento fuera del workspace. No hay copia del Vault en el repo.
+**PENDIENTE:** aceptación operativa real; límites/riesgos del informe (archivos ante
+caída, protocolo de locks sin UNIQUE, clasificación legacy y equivalencias históricas).
+Próximo Sprint 6 recomendado: administración, sin implementarla ahora.
+Sin despliegue externo, commit o push. Informe solicitado en raíz:
+[SPRINT_5_CIERRE_CODEX.md](SPRINT_5_CIERRE_CODEX.md).

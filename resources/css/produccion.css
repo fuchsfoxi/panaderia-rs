@@ -651,6 +651,10 @@ body {
     overflow-wrap: anywhere;
 }
 
+.tarjeta-body p {
+    min-width: 0;
+}
+
 .tarjeta-observacion {
     flex-basis: 100%;
     white-space: pre-line;
@@ -671,6 +675,23 @@ body {
 }
 
 @media (max-width: 767px) {
+    .tarjeta-produccion {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .tarjeta-body {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .tarjeta-empleados,
+    .tarjeta-observacion {
+        flex: auto;
+    }
+
     .contenido-produccion {
         flex-direction: column;
     }

@@ -19,7 +19,7 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     $familyPath = database_path('migrations/2026_10_02_180000_add_categoria_and_turno_to_produccion.php');
     $panUnitsPath = database_path('migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php');
     $horaPanPath = database_path('migrations/2026_10_11_100000_add_hora_finalizacion_to_detalle_pan.php');
-    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
+    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, database_path('migrations/2026_10_11_120000_add_registrador_to_production_details.php'), database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
     expect($originals)->toHaveCount(21);
     expect(Artisan::call('migrate', [
         '--database' => 'sprint4_test', '--path' => $originals, '--realpath' => true, '--force' => true,
@@ -234,4 +234,39 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
         ->and((array) DB::table('detalle_pan')->where('id', $panAntes['id'])->first())->toBe($panAntes);
     $horaPan->up();
     expect(DB::table('detalle_pan')->where('id', $panAntes['id'])->value('hora_finalizacion'))->toBeNull();
+
+    // Registrador por lote: preservar históricos, FK y reversión protegida.
+    $migration = require database_path('migrations/2026_10_11_120000_add_registrador_to_production_details.php');
+    $tablas = ['detalle_pan', 'detalle_torta', 'detalle_bocadito'];
+    $antes = [];
+    foreach ($tablas as $tabla) {
+        $antes[$tabla] = DB::table($tabla)->get()->map(fn ($fila) => (array) $fila)->all();
+    }
+    $migration->up();
+    foreach ($tablas as $tabla) {
+        $columna = collect(Schema::getColumns($tabla))->firstWhere('name', 'registrado_por_usuario_id');
+        expect($columna['nullable'])->toBeTrue();
+        $despues = DB::table($tabla)->get()->map(function ($fila) {
+            $datos = (array) $fila;
+            expect($datos['registrado_por_usuario_id'])->toBeNull();
+            unset($datos['registrado_por_usuario_id']);
+
+            return $datos;
+        })->all();
+        expect($despues)->toBe($antes[$tabla]);
+        expect(fn () => DB::table($tabla)->update(['registrado_por_usuario_id' => 999999]))->toThrow(QueryException::class);
+    }
+    $usuarioId = DB::table('usuarios_sistema')->value('id');
+    DB::table('detalle_torta')->update(['registrado_por_usuario_id' => $usuarioId]);
+    expect(fn () => $migration->down())->toThrow(RuntimeException::class, 'hay registradores');
+    foreach ($tablas as $tabla) {
+        expect(Schema::hasColumn($tabla, 'registrado_por_usuario_id'))->toBeTrue();
+    }
+    DB::table('detalle_torta')->update(['registrado_por_usuario_id' => null]);
+    $migration->down();
+    foreach ($tablas as $tabla) {
+        expect(Schema::hasColumn($tabla, 'registrado_por_usuario_id'))->toBeFalse()
+            ->and(DB::table($tabla)->get()->map(fn ($fila) => (array) $fila)->all())->toBe($antes[$tabla]);
+    }
+    $migration->up();
 });

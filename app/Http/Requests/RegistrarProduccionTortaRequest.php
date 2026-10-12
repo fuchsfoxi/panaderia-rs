@@ -14,7 +14,7 @@ class RegistrarProduccionTortaRequest extends RegistrarProduccionPorCantidadRequ
         return parent::rules() + [
             'detalles.*.forma' => ['required', 'string', 'max:30'],
             // SVG no permitido; formato verificado por contenido, no solo extensión.
-            'detalles.*.foto' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'detalles.*.foto' => ['nullable', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'extensions:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

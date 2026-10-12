@@ -333,6 +333,9 @@
                                         @endif
                                     @endif
                                 @endif
+                                @if ($registro->registrado_por_usuario_id !== null)
+                                    <p>Registró el lote: {{ $registro->usuario?->username ?? 'Usuario no disponible' }}</p>
+                                @endif
                                 <div class="tarjeta-empleados">
                                     @foreach ($registro->empleados as $participanteRegistrado)
                                         @php

@@ -12,19 +12,22 @@
         <div class="titulo-historal">
             <p class="marca-pagina">Panadería RS</p>
             <h1>Historial de producción</h1>
-            <p class="descripcion-pagina">Consulta los lotes de Pan por fecha y turno.</p>
-        </div>
-
-        <div class="filtro-categoria">
-            <h2>Tipo de producción</h2>
-            <div class="categoria-botones">
-                <button type="button" class="btn-categoria active" aria-pressed="true">Pan</button>
-                <button type="button" class="btn-categoria" disabled>Torta · Próximamente</button>
-                <button type="button" class="btn-categoria" disabled>Bocadito · Próximamente</button>
-            </div>
+            <p class="descripcion-pagina">Consulta Pan, Torta y Bocadito por fecha, turno y categoría.</p>
         </div>
 
         <form action="{{ route('history.index') }}" method="GET">
+            <div class="campo campo-condicional filtro-categoria">
+                <label for="categoria">Tipo de producción</label>
+                <select id="categoria" name="categoria" @if ($erroresFiltros->has('categoria')) aria-invalid="true" aria-describedby="error-categoria" @endif>
+                    <option value="">Todos</option>
+                    @foreach (['pan' => 'Pan', 'torta' => 'Torta', 'bocadito' => 'Bocadito'] as $clave => $nombre)
+                        <option value="{{ $clave }}" @selected($filtros['categoria'] === $clave)>{{ $nombre }}</option>
+                    @endforeach
+                </select>
+                @if ($erroresFiltros->has('categoria'))
+                    <p class="error-filtro" id="error-categoria" role="alert">{{ $erroresFiltros->first('categoria') }}</p>
+                @endif
+            </div>
             <div class="filtro-fecha-general">
                 <div class="sub-titulo"><h2>Rango de fechas</h2></div>
                 <div class="filtro-fecha-principal">
@@ -64,6 +67,9 @@
 
         @if ($erroresFiltros->isNotEmpty())
             <p class="estado-vacio" role="alert">Revisa los filtros indicados para consultar el historial.</p>
+            @if ($erroresFiltros->has('page'))
+                <p class="error-filtro" role="alert">{{ $erroresFiltros->first('page') }}</p>
+            @endif
         @else
             <div class="datos-encontrados" role="status">{{ $detalles->total() }} registros encontrados</div>
             @php
@@ -72,6 +78,9 @@
             @endphp
             @forelse ($detalles as $detalle)
                 @php
+                    $esPan = $detalle instanceof \App\Models\DetallePan;
+                    $esTorta = $detalle instanceof \App\Models\DetalleTorta;
+                    $familia = $esPan ? 'Pan' : ($esTorta ? 'Torta' : 'Bocadito');
                     $fecha = $detalle->produccion->fecha->format('Y-m-d');
                     $maestros = $detalle->empleados->filter(fn ($empleado) => $empleado->pivot->rolProduccion?->nombre_roles_produccion === 'Maestro');
                     $ayudantes = $detalle->empleados->filter(fn ($empleado) => $empleado->pivot->rolProduccion?->nombre_roles_produccion === 'Ayudante');
@@ -80,19 +89,45 @@
                     <div class="fecha-dia"><time datetime="{{ $fecha }}">{{ $detalle->produccion->fecha->format('d/m/Y') }}</time></div>
                     @php $fechaAnterior = $fecha; @endphp
                 @endif
-                <article class="carta-historial" data-detalle-id="{{ $detalle->id }}">
+                <article class="carta-historial" data-familia="{{ strtolower($familia) }}" data-detalle-id="{{ $detalle->id }}">
                     <div class="info-carta">
+                        <span class="etiqueta-familia">{{ $familia }}</span>
                         <h3>{{ $detalle->producto?->nombre_p ?? 'Producto no disponible' }}</h3>
+                        <p><time datetime="{{ $fecha }}">{{ $detalle->produccion->fecha->format('d/m/Y') }}</time></p>
                         <p>Turno: {{ $detalle->produccion->turno?->nombre_turnos ?? 'Sin turno registrado' }}</p>
-                        <p>Cantidad: {{ $detalle->cantidad }} latas en total</p>
-                        <p>{{ intdiv($detalle->cantidad, $latasPorCoche) }} coches + {{ $detalle->cantidad % $latasPorCoche }} latas</p>
+                        <p>Cantidad: {{ $detalle->cantidad }} {{ $esPan ? 'latas en total' : 'unidades' }}</p>
                         <p>Maestro: {{ $maestros->pluck('nombre_empleados')->implode(', ') ?: 'Sin Maestro registrado' }}</p>
-                        <p>Ayudantes: {{ $ayudantes->pluck('nombre_empleados')->implode(', ') ?: 'Sin Ayudantes registrados' }}</p>
-                        <p class="observacion">Observación: {{ $detalle->observacion ?? 'Sin observación' }}</p>
                     </div>
-                    <div class="meta-carta">
-                        <span>Registró la sesión: {{ $detalle->produccion->usuario?->username ?? 'Usuario no disponible' }}</span>
-                    </div>
+                    <details class="detalles-produccion">
+                        <summary>Ver detalles <span aria-hidden="true">→</span></summary>
+                        <div class="contenido-detalles">
+                            @if ($esPan)
+                                <p>{{ intdiv($detalle->cantidad, $latasPorCoche) }} coches + {{ $detalle->cantidad % $latasPorCoche }} latas adicionales</p>
+                                <p>Total de latas: {{ $detalle->cantidad }}</p>
+                                <p>Unidad de medida: {{ $detalle->unidadMedida?->nombre_unidades_medida ?? 'Sin unidad registrada' }}</p>
+                                <p>Panes por lata utilizado: {{ $detalle->panes_por_lata_usado ?? 'Sin factor registrado' }}</p>
+                                @if ($detalle->panes_por_lata_usado > 0)
+                                    <p>Total estimado de panes: {{ $detalle->cantidad * $detalle->panes_por_lata_usado }}</p>
+                                @endif
+                                <p>Hora de finalización: {{ $detalle->hora_finalizacion !== null ? substr($detalle->hora_finalizacion, 0, 5) : 'Sin hora registrada' }}</p>
+                            @elseif ($esTorta)
+                                <p>Forma: {{ $detalle->forma }}</p>
+                                @if ($detalle->foto)
+                                    <a href="{{ asset('storage/'.$detalle->foto) }}" target="_blank" rel="noopener">
+                                        <img class="foto-torta" src="{{ asset('storage/'.$detalle->foto) }}" alt="Foto de {{ $detalle->producto?->nombre_p ?? 'la torta' }}" loading="lazy" width="480" height="320">
+                                    </a>
+                                @endif
+                            @endif
+                            <p>Ayudantes: {{ $ayudantes->pluck('nombre_empleados')->implode(', ') ?: 'Sin Ayudantes registrados' }}</p>
+                            <p class="observacion">Observación: {{ $detalle->observacion ?? 'Sin observación' }}</p>
+                            @if ($detalle->registrado_por_usuario_id !== null)
+                                <p>Registró el lote: {{ $detalle->usuario?->username ?? 'Usuario no disponible' }}</p>
+                            @else
+                                <p>Registrador del lote: desconocido (registro histórico).</p>
+                                <p>Registró la sesión: {{ $detalle->produccion->usuario?->username ?? 'Usuario no disponible' }}</p>
+                            @endif
+                        </div>
+                    </details>
                 </article>
             @empty
                 <p class="estado-vacio" role="status">No se encontraron producciones para los filtros seleccionados.</p>

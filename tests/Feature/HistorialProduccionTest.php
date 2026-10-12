@@ -1,14 +1,19 @@
 <?php
 
+use App\Actions\Produccion\RegistrarProduccionBocadito;
 use App\Actions\Produccion\RegistrarProduccionPan;
+use App\Actions\Produccion\RegistrarProduccionTorta;
 use App\Models\Categoria;
+use App\Models\DetalleBocadito;
 use App\Models\DetallePan;
 use App\Models\DetallePanEmpleado;
+use App\Models\DetalleTorta;
 use App\Models\Produccion;
 use App\Models\RolProduccion;
 use App\Models\Turno;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\Support\IsolatedMariaDb;
 
 beforeEach(function () {
@@ -68,8 +73,8 @@ test('un autenticado ve el historial vacío y los catálogos reales sin IDs fijo
         ->assertSeeText('No se encontraron producciones para los filtros seleccionados.')
         ->assertSee('value="'.$this->fixtures['turno']->id.'"', false)
         ->assertSeeText('Mañana')->assertSeeText('Noche')
-        ->assertSee('disabled>Torta · Próximamente', false)
-        ->assertSee('disabled>Bocadito · Próximamente', false);
+        ->assertSee('name="categoria"', false)
+        ->assertSeeText('Todos')->assertSeeText('Torta')->assertSeeText('Bocadito');
 });
 
 test('login dashboard producción registro e historial funcionan con datos persistidos', function () {
@@ -92,7 +97,7 @@ test('login dashboard producción registro e historial funcionan con datos persi
             ->assertSeeText('Nota real del lote de prueba')
             ->assertSeeText('Maestro: Empleado ficticio 1')
             ->assertSeeText('Ayudantes: Empleado ficticio 2, Empleado ficticio 3')
-            ->assertSeeText('Registró la sesión: '.$this->fixtures['usuario']->username);
+            ->assertSeeText('Registró el lote: '.$this->fixtures['usuario']->username);
         $detalle = $response->viewData('detalles')->sole();
         expect($detalle->cantidad)->toBe($cantidad)
             ->and($detalle->empleados->first()->pivot)->toBeInstanceOf(DetallePanEmpleado::class)
@@ -131,7 +136,7 @@ test('consulta turno de cabecera aunque el detalle legacy tenga otro turno', fun
     expect($response->viewData('detalles')->pluck('id')->all())->toBe([$noche->id]);
 });
 
-test('solo consulta sesiones de Pan y conserva productos desactivados en su historial', function () {
+test('filtra Pan conserva productos desactivados y excluye detalles incompatibles con su cabecera', function () {
     $pan = registrarLoteHistorial($this->payload, $this->fixtures);
     $this->fixtures['productos']['Pan']->update(['activo' => false]);
     $otra = Produccion::create([
@@ -140,7 +145,7 @@ test('solo consulta sesiones de Pan y conserva productos desactivados en su hist
     ]);
     // Dato inconsistente deliberado: no debe atribuirse al historial de Pan.
     IsolatedMariaDb::detail(DetallePan::class, $otra, $this->fixtures);
-    $response = $this->actingAs($this->fixtures['usuario'])->get(route('history.index', ['categoria' => 'torta']))->assertOk();
+    $response = $this->actingAs($this->fixtures['usuario'])->get(route('history.index', ['categoria' => 'pan']))->assertOk();
     expect($response->viewData('detalles')->pluck('id')->all())->toBe([$pan->id]);
 });
 
@@ -177,6 +182,11 @@ test('filtros inválidos se muestran sin redirección ni consulta de detalles', 
     'desde array' => [['fecha_inicio' => ['incorrecto']], 'fecha_inicio'],
     'hasta array' => [['fecha_fin' => ['incorrecto']], 'fecha_fin'],
     'turno array' => [['turno_id' => ['incorrecto']], 'turno_id'],
+    'categoría desconocida' => [['categoria' => 'pedidos'], 'categoria'],
+    'categoría array' => [['categoria' => ['pan']], 'categoria'],
+    'página array' => [['page' => [1]], 'page'],
+    'página cero' => [['page' => 0], 'page'],
+    'página enorme' => [['page' => '99999999999999999999999'], 'page'],
 ]);
 
 test('pagina lotes conserva los filtros combinados y usa detalle descendente en la misma fecha', function () {
@@ -229,4 +239,136 @@ test('observación y nombres se escapan y participantes ausentes no se inventan'
     $this->actingAs($this->fixtures['usuario'])->get(route('history.index'))->assertOk()
         ->assertSee('&lt;script&gt;', false)->assertDontSee('<script>alert(', false)
         ->assertSeeText('Sin Maestro registrado')->assertSeeText('Sin Ayudantes registrados');
+});
+
+test('historial reúne las tres familias con detalles accesibles y filtros combinados', function () {
+    $this->fixtures['productos']['Pan']->update(['panes_por_lata' => 12]);
+    registrarLoteHistorial($this->payload, $this->fixtures);
+    foreach (['Torta', 'Bocadito'] as $familia) {
+        $action = app($familia === 'Torta' ? RegistrarProduccionTorta::class : RegistrarProduccionBocadito::class);
+        $datos = $this->payload;
+        $datos['categoria'] = strtolower($familia);
+        $datos['detalles'][0]['producto_id'] = $this->fixtures['productos'][$familia]->id;
+        $datos['detalles'][0]['cantidad'] = 7;
+        $datos['detalles'][0]['forma'] = 'Corazón';
+        $datos['detalles'][0]['observacion'] = 'Nota '.$familia;
+        $action->ejecutar($datos, $this->fixtures['usuario']->id);
+    }
+    $this->actingAs($this->fixtures['usuario']);
+    $todos = $this->get(route('history.index'))->assertOk()
+        ->assertSeeText('Pan ficticio')->assertSeeText('Torta ficticio')->assertSeeText('Bocadito ficticio')
+        ->assertSeeText('Total estimado de panes: 480')->assertSeeText('Panes por lata utilizado: 12')
+        ->assertSeeText('Hora de finalización: 08:35')->assertSeeText('Forma: Corazón');
+    expect($todos->viewData('detalles')->total())->toBe(3);
+    // IDs locales de tablas distintas pueden coincidir: deben conservarse las tres tarjetas.
+    expect($todos->viewData('detalles')->map(fn ($detalle) => get_class($detalle))->unique())->toHaveCount(3);
+    foreach (['pan', 'torta', 'bocadito'] as $familia) {
+        $response = $this->get(route('history.index', [
+            'categoria' => $familia, 'fecha_inicio' => $this->payload['fecha'],
+            'fecha_fin' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
+        ]))->assertOk()->assertSeeText(ucfirst($familia).' ficticio');
+        expect($response->viewData('detalles'))->toHaveCount(1);
+        $html = $response->getContent();
+        expect($html)->toContain('<details class="detalles-produccion">', '<summary>Ver detalles')
+            ->not->toContain('<details class="detalles-produccion" open');
+        foreach (array_diff(['pan', 'torta', 'bocadito'], [$familia]) as $otra) {
+            $response->assertDontSeeText(ucfirst($otra).' ficticio');
+        }
+        $this->get(route('history.index', ['categoria' => $familia, 'turno_id' => $this->noche->id]))
+            ->assertOk()->assertSeeText('0 registros encontrados');
+        $this->get(route('history.index', ['categoria' => $familia, 'fecha_fin' => '2026-10-04']))
+            ->assertOk()->assertSeeText('0 registros encontrados');
+    }
+});
+
+test('pagina globalmente las familias sin cargar más de quince lotes y conserva categoría', function () {
+    foreach (range(1, 6) as $numero) {
+        registrarLoteHistorial($this->payload, $this->fixtures);
+        foreach ([DetalleTorta::class, DetalleBocadito::class] as $modelo) {
+            $familia = $modelo === DetalleTorta::class ? 'Torta' : 'Bocadito';
+            $cabecera = Produccion::firstOrCreate([
+                'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
+                'categoria_id' => $this->fixtures['productos'][$familia]->categoria_id,
+            ], ['registrado_por_usuario_id' => $this->fixtures['usuario']->id]);
+            IsolatedMariaDb::detail($modelo, $cabecera, $this->fixtures, ['foto' => null]);
+        }
+    }
+    $this->actingAs($this->fixtures['usuario']);
+    $primera = $this->get(route('history.index'))->assertOk()->viewData('detalles');
+    expect($primera->total())->toBe(18)->and($primera->count())->toBe(15);
+    $segunda = $this->get($primera->nextPageUrl())->assertOk()->viewData('detalles');
+    expect($segunda->count())->toBe(3);
+    $identidad = fn ($detalle) => get_class($detalle).':'.$detalle->id;
+    expect($primera->getCollection()->merge($segunda->getCollection())->map($identidad)->unique())->toHaveCount(18);
+    foreach (range(1, 10) as $numero) {
+        registrarLoteHistorial($this->payload, $this->fixtures);
+    }
+    $filtrada = $this->get(route('history.index', ['categoria' => 'pan']))->assertOk()->viewData('detalles');
+    parse_str(parse_url($filtrada->nextPageUrl(), PHP_URL_QUERY), $query);
+    expect($query)->toBe(['categoria' => 'pan', 'page' => '2']);
+});
+
+test('históricos no inventan autor hora ni factor y las fotos de Torta usan el disco public', function () {
+    $pan = registrarLoteHistorial($this->payload, $this->fixtures);
+    $pan->update(['registrado_por_usuario_id' => null, 'hora_finalizacion' => null]);
+    $cabecera = Produccion::create([
+        'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
+        'categoria_id' => $this->fixtures['productos']['Torta']->categoria_id,
+        'registrado_por_usuario_id' => $this->fixtures['usuario']->id,
+    ]);
+    IsolatedMariaDb::detail(DetalleTorta::class, $cabecera, $this->fixtures);
+    $this->actingAs($this->fixtures['usuario'])->get(route('history.index'))->assertOk()
+        ->assertSeeText('Registrador del lote: desconocido (registro histórico).')
+        ->assertSeeText('Registró la sesión: '.$this->fixtures['usuario']->username)
+        ->assertSeeText('Sin hora registrada')->assertSeeText('Sin factor registrado')
+        ->assertDontSeeText('Total estimado de panes:')
+        ->assertSee('src="'.Storage::disk('public')->url('pruebas/torta-ficticia.jpg').'"', false);
+});
+
+test('el número de consultas es constante también con tres familias en la página', function () {
+    $agregar = function () {
+        registrarLoteHistorial($this->payload, $this->fixtures);
+        foreach ([DetalleTorta::class, DetalleBocadito::class] as $modelo) {
+            $familia = $modelo === DetalleTorta::class ? 'Torta' : 'Bocadito';
+            $cabecera = Produccion::firstOrCreate([
+                'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
+                'categoria_id' => $this->fixtures['productos'][$familia]->categoria_id,
+            ], ['registrado_por_usuario_id' => $this->fixtures['usuario']->id]);
+            IsolatedMariaDb::detail($modelo, $cabecera, $this->fixtures, ['foto' => null]);
+        }
+    };
+    $agregar();
+    $this->fixtures['usuario']->load('empleado');
+    $this->actingAs($this->fixtures['usuario']);
+    $medir = function (): int {
+        DB::enableQueryLog();
+        DB::flushQueryLog();
+        try {
+            $this->get(route('history.index'))->assertOk();
+            $consultas = collect(DB::getQueryLog());
+            expect($consultas->filter(fn ($consulta) => str_contains($consulta['query'], 'from `roles_produccion`'))->count())->toBe(1);
+
+            return $consultas->count();
+        } finally {
+            DB::disableQueryLog();
+        }
+    };
+    $tres = $medir();
+    foreach (range(1, 4) as $numero) {
+        $agregar();
+    }
+    expect($medir())->toBe($tres);
+});
+
+test('la foto del historial conserva host y HTTPS de la petición pública', function () {
+    $cabecera = Produccion::create([
+        'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
+        'categoria_id' => $this->fixtures['productos']['Torta']->categoria_id,
+        'registrado_por_usuario_id' => $this->fixtures['usuario']->id,
+    ]);
+    IsolatedMariaDb::detail(DetalleTorta::class, $cabecera, $this->fixtures);
+    $this->actingAs($this->fixtures['usuario'])->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])
+        ->withHeaders(['X-Forwarded-Proto' => 'https'])
+        ->get('http://panaderia-proxy.example.test/history')->assertOk()
+        ->assertSee('src="https://panaderia-proxy.example.test/storage/pruebas/torta-ficticia.jpg"', false);
 });

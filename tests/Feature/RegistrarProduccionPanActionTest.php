@@ -89,6 +89,9 @@ test('la Action rechaza reglas de negocio independientemente del transporte HTTP
         case 'inactivo':
             $this->fixtures['productos']['Pan']->update(['activo' => false]);
             break;
+        case 'empleado inexistente':
+            $participantes[0]['empleado_id'] = 999999;
+            break;
         case 'otra categoría':
             $this->datos['detalles'][0]['producto_id'] = $this->fixtures['productos']['Torta']->id;
             break;
@@ -109,6 +112,7 @@ test('la Action rechaza reglas de negocio independientemente del transporte HTTP
     ['otro rol', 'detalles.0.participantes.1.rol_produccion_id'],
     ['inactivo', 'detalles.0.producto_id'],
     ['otra categoría', 'detalles.0.producto_id'],
+    ['empleado inexistente', 'detalles.0.participantes.0.empleado_id'],
 ]);
 
 test('la Action admite más de dos Ayudantes sin inventar un máximo de equipo', function () {
@@ -143,6 +147,7 @@ test('la Action reutiliza cabecera conserva autor y crea lotes con snapshots his
         ->and($segunda->registrado_por_usuario_id)->toBe($this->fixtures['usuario']->id)
         ->and($detalles)->toHaveCount(2)
         ->and($detalles->pluck('cantidad')->all())->toBe([23, 23])
+        ->and($detalles->pluck('registrado_por_usuario_id')->all())->toBe([$this->fixtures['usuario']->id, $otroUsuario->id])
         ->and($detalles->pluck('panes_por_lata_usado')->all())->toBe([12, 14])
         ->and(DB::table('detalle_pan_empleado')->count())->toBe(4);
 });
@@ -194,3 +199,10 @@ test('la Action revierte errores SQL y de programación sin ocultarlos y mantien
     'programación en sesión nueva' => [false, false],
     'programación en sesión existente' => [true, false],
 ]);
+
+test('Pan rechaza un factor de catálogo no positivo sin crear un snapshot inválido', function (int $factor) {
+    $this->fixtures['productos']['Pan']->update(['panes_por_lata' => $factor]);
+    expect(fn () => $this->registrar->ejecutar($this->datos, $this->fixtures['usuario']->id))
+        ->toThrow(ValidationException::class);
+    expect(Produccion::count())->toBe(0)->and(DetallePan::count())->toBe(0);
+})->with([0, -1]);

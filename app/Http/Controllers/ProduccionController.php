@@ -58,7 +58,7 @@ class ProduccionController extends Controller
                     'pan' => 'detallesPan', 'torta' => 'detallesTorta', 'bocadito' => 'detallesBocadito',
                 };
                 $detallesRegistrados = $producciones->first()->$relacion()
-                    ->with(['producto', 'empleados'])->orderBy('id')->get();
+                    ->with(['producto', 'empleados', 'usuario'])->orderBy('id')->get();
             }
         }
 

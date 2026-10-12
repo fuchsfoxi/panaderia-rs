@@ -45,31 +45,8 @@ body {
   margin-bottom: 8px;
 }
 
-/* Botones de categoría */
-.categoria-botones {
-  display: flex;
-  gap: 10px;
+.filtro-categoria {
   margin-bottom: 24px;
-}
-
-.btn-categoria {
-  border: none;
-  border-radius: 20px;
-  padding: 10px 24px;
-  background-color: var(--beige);
-  color: var(--verde-oscuro);
-  cursor: pointer;
-  font-size: 0.95rem;
-  transition: background-color 0.2s ease;
-}
-
-.btn-categoria.active {
-  background-color: var(--verde-medio);
-  color: var(--crema);
-}
-
-.btn-categoria:hover:not(.active):not(:disabled) {
-  background-color: var(--verde-claro);
 }
 
 /* Filtro de fecha */
@@ -187,16 +164,10 @@ select {
   gap: 16px;
 }
 
-.foto-producto {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
 .info-carta {
   flex-grow: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .info-carta h3 {
@@ -211,33 +182,8 @@ select {
   color: var(--verde-medio);
 }
 
-.meta-carta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--verde-medio);
-}
-
-.detalles-link {
-  color: var(--verde-oscuro);
-  text-decoration: none;
-  font-size: 0.85rem;
-}
-
-.detalles-link:hover {
-  text-decoration: underline;
-}
-
-.categoria-botones,
 .filtro-fecha-principal {
   flex-wrap: wrap;
-}
-
-.btn-categoria:disabled {
-  opacity: 0.6;
-  cursor: default;
 }
 
 .btn-limpiar {
@@ -247,12 +193,6 @@ select {
 .carta-historial {
   align-items: flex-start;
   flex-wrap: wrap;
-}
-
-.info-carta,
-.meta-carta {
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 
 .info-carta p {
@@ -314,8 +254,52 @@ select {
     width: 100%;
     max-width: none;
   }
+}
 
-  .meta-carta {
-    align-items: flex-start;
-  }
+.detalles-produccion {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detalles-produccion summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 12px 0;
+  color: var(--verde-oscuro);
+  text-underline-offset: 3px;
+}
+
+.detalles-produccion summary:focus-visible {
+  outline: 2px solid var(--verde-medio);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+.contenido-detalles {
+  border-top: 1px solid var(--verde-claro);
+  color: var(--verde-medio);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.etiqueta-familia {
+  display: inline-block;
+  font-size: 0.75rem;
+  background-color: var(--verde-oscuro);
+  color: var(--crema);
+  border-radius: 999px;
+  padding: 4px 10px;
+  margin-bottom: 8px;
+}
+
+.foto-torta {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 16px 0;
 }

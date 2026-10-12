@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\MessageBag;
+use Illuminate\Validation\Rule;
 
 class ConsultarHistorialProduccionRequest extends FormRequest
 {
@@ -31,6 +32,8 @@ class ConsultarHistorialProduccionRequest extends FormRequest
             'fecha_inicio' => ['nullable', 'date_format:Y-m-d'],
             'fecha_fin' => $fechaFin,
             'turno_id' => ['nullable', 'integer', 'exists:turnos,id'],
+            'categoria' => ['nullable', 'string', Rule::in(['pan', 'torta', 'bocadito'])],
+            'page' => ['nullable', 'integer', 'min:1', 'max:2147483647'],
         ];
     }
 
@@ -42,6 +45,11 @@ class ConsultarHistorialProduccionRequest extends FormRequest
             'fecha_fin.after_or_equal' => 'La fecha hasta debe ser igual o posterior a la fecha desde.',
             'turno_id.integer' => 'El turno seleccionado no es válido.',
             'turno_id.exists' => 'El turno seleccionado no existe.',
+            'categoria.in' => 'La categoría seleccionada no es válida.',
+            'categoria.string' => 'La categoría seleccionada no es válida.',
+            'page.integer' => 'La página debe ser un número entero positivo.',
+            'page.min' => 'La página debe ser un número entero positivo.',
+            'page.max' => 'La página excede el límite permitido.',
         ];
     }
 
@@ -64,7 +72,7 @@ class ConsultarHistorialProduccionRequest extends FormRequest
     public function filtros(): array
     {
         $filtros = [];
-        foreach (['fecha_inicio', 'fecha_fin', 'turno_id'] as $campo) {
+        foreach (['fecha_inicio', 'fecha_fin', 'turno_id', 'categoria'] as $campo) {
             $valor = $this->query($campo);
             $filtros[$campo] = is_scalar($valor) ? (string) $valor : '';
         }

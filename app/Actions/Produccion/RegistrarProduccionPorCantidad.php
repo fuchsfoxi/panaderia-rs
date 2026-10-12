@@ -37,7 +37,7 @@ class RegistrarProduccionPorCantidad
             if ($cantidad === false || $cantidad < 1 || $cantidad > 2147483647) {
                 $errores['detalles.0.cantidad'] = 'La cantidad debe ser un entero positivo dentro de la capacidad de almacenamiento.';
             }
-            // Regla provisional compartida con Pan; todavía no hay otra específica.
+            // Composición confirmada para las tres familias.
             $errores = array_merge($errores, $this->participantes->errores($datosDetalle['participantes'], $roles, $familia));
             if ($errores) {
                 throw ValidationException::withMessages($errores);
@@ -50,6 +50,7 @@ class RegistrarProduccionPorCantidad
             };
             $detalle = $produccion->$relacion()->create([
                 'producto_id' => $producto->id,
+                'registrado_por_usuario_id' => $usuarioId,
                 'cantidad' => $cantidad,
                 'observacion' => $datosDetalle['observacion'] ?? null,
             ] + $atributos($datosDetalle));

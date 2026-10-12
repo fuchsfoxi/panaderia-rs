@@ -35,7 +35,7 @@ class RegistrarProduccionPan
             $this->validarReglas($detalle, $categoriaPan, $producto, $roles, $totalLatas);
 
             $produccion = $this->cabeceras->resolver($datos['fecha'], (int) $datos['turno_id'], $categoriaPan, $usuarioId);
-            $detallePan = $this->registrarDetalle($produccion, $producto, $detalle, $totalLatas);
+            $detallePan = $this->registrarDetalle($produccion, $producto, $detalle, $totalLatas, $usuarioId);
             $this->registrarParticipantes($detallePan, $detalle['participantes']);
 
             return $produccion;
@@ -67,6 +67,10 @@ class RegistrarProduccionPan
             $errores['detalles.0.producto_id'] = 'El producto no tiene una unidad de medida válida. Revise su catálogo.';
         }
 
+        if ($producto?->panes_por_lata !== null && $producto->panes_por_lata <= 0) {
+            $errores['detalles.0.producto_id'] = 'El valor de panes por lata del producto debe ser positivo o desconocido.';
+        }
+
         if ($totalLatas <= 0) {
             $errores['detalles.0.coches'] = 'Ingresa al menos un coche o una lata adicional.';
         } elseif ($totalLatas > DetallePan::MAX_CANTIDAD_LATAS) {
@@ -81,11 +85,12 @@ class RegistrarProduccionPan
         }
     }
 
-    private function registrarDetalle(Produccion $produccion, Producto $producto, array $detalle, int $totalLatas): DetallePan
+    private function registrarDetalle(Produccion $produccion, Producto $producto, array $detalle, int $totalLatas, int $usuarioId): DetallePan
     {
         // Un envío crea un lote independiente, aunque su producto ya figure en la sesión.
         return $produccion->detallesPan()->create([
             'producto_id' => $producto->id,
+            'registrado_por_usuario_id' => $usuarioId,
             'cantidad' => $totalLatas,
             'unidad_medida_id' => $producto->unidad_medida_id,
             'turno_id' => $produccion->turno_id,

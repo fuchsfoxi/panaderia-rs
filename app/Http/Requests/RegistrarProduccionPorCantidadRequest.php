@@ -62,6 +62,7 @@ abstract class RegistrarProduccionPorCantidadRequest extends FormRequest
             'exists' => 'El valor seleccionado para :attribute no existe.',
             'detalles.*.foto.image' => 'La foto debe ser un archivo de imagen válido.',
             'detalles.*.foto.mimes' => 'La foto debe ser JPEG, PNG o WebP.',
+            'detalles.*.foto.extensions' => 'La extensión de la foto debe ser JPG, JPEG, PNG o WebP.',
             'detalles.*.foto.max' => 'La foto no puede superar 2 MB.',
         ];
     }

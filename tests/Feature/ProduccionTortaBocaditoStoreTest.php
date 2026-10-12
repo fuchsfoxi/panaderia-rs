@@ -11,6 +11,7 @@ use App\Models\DetalleTortaEmpleado;
 use App\Models\Produccion;
 use App\Models\RolProduccion;
 use App\Models\Turno;
+use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\UploadedFile;
@@ -80,6 +81,7 @@ test('registra lote por cantidad con registrador autenticado y pivots reales', f
     expect($cabecera->categoria_id)->toBe($this->fixtures['productos'][$familia]->categoria_id)
         ->and($cabecera->turno_id)->toBe($this->fixtures['turno']->id)
         ->and($cabecera->registrado_por_usuario_id)->toBe($this->fixtures['usuario']->id)
+        ->and($detalle->registrado_por_usuario_id)->toBe($this->fixtures['usuario']->id)
         ->and($detalle->cantidad)->toBe(4)->and($detalle->observacion)->toBe('Nota de lote '.$familia)
         ->and($detalle->empleados)->toHaveCount(2)
         ->and($response->viewData('categoriaSeleccionada'))->toBe(strtolower($familia));
@@ -241,6 +243,12 @@ test('Torta rechaza fotos y formas inválidas', function (string $caso, string $
             break;
         case 'ruta': $payload['detalles'][0]['foto'] = '../../foto.png';
             break;
+        case 'extensión falsa': $payload['detalles'][0]['foto'] = UploadedFile::fake()->image('imagen.png');
+            $payload['detalles'][0]['foto'] = new UploadedFile($payload['detalles'][0]['foto']->getPathname(), 'imagen.php', 'image/png', null, true);
+            break;
+        case 'contenido falso': $archivo = UploadedFile::fake()->createWithContent('foto.png', 'esto no es una imagen');
+            $payload['detalles'][0]['foto'] = new UploadedFile($archivo->getPathname(), 'foto.png', 'image/png', null, true);
+            break;
         case 'SVG': $payload['detalles'][0]['foto'] = UploadedFile::fake()->createWithContent('foto.svg', '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
             break;
         case 'grande': $payload['detalles'][0]['foto'] = UploadedFile::fake()->image('foto.png')->size(2049);
@@ -259,6 +267,7 @@ test('Torta rechaza fotos y formas inválidas', function (string $caso, string $
         ->get(route('produccion.index'))->assertOk()->assertSeeText($mensaje);
     expect(Produccion::count())->toBe(0)->and(Storage::disk('public')->allFiles())->toBe([]);
 })->with([
+    ['extensión falsa', 'detalles.0.foto'], ['contenido falso', 'detalles.0.foto'],
     ['texto', 'detalles.0.foto'], ['ruta', 'detalles.0.foto'], ['SVG', 'detalles.0.foto'], ['grande', 'detalles.0.foto'],
     ['sin forma', 'detalles.0.forma'], ['forma larga', 'detalles.0.forma'], ['forma array', 'detalles.0.forma'],
 ]);
@@ -309,13 +318,15 @@ test('Action de cada familia revalida producto cantidad y participantes sin Requ
         $payload['detalles'][0]['cantidad'] = 0;
     } elseif ($caso === 'producto') {
         $payload['detalles'][0]['producto_id'] = $this->fixtures['productos']['Pan']->id;
+    } elseif ($caso === 'empleado') {
+        $payload['detalles'][0]['participantes'][0]['empleado_id'] = 999999;
     } else {
         $payload['detalles'][0]['participantes'] = [$payload['detalles'][0]['participantes'][0]];
     }
     $action = app($familia === 'Torta' ? RegistrarProduccionTorta::class : RegistrarProduccionBocadito::class);
     expect(fn () => $action->ejecutar($payload, $this->fixtures['usuario']->id))->toThrow(ValidationException::class)
         ->and(Produccion::count())->toBe(0);
-})->with(['Torta', 'Bocadito'])->with(['cantidad', 'producto', 'participantes']);
+})->with(['Torta', 'Bocadito'])->with(['cantidad', 'producto', 'participantes', 'empleado']);
 
 test('invitados no pueden registrar las nuevas familias', function (string $familia) {
     $this->post(rutaCantidad($familia), cantidadPayload($this->fixtures, $familia))->assertRedirect(route('login'));
@@ -360,3 +371,20 @@ test('Torta presenta opciones ampliables y controles separados de galería y cá
         ->and($xpath->query('//input[@type="file" and @name="detalles[0][foto]"]')->length)->toBe(1)
         ->and($xpath->query('//input[@name="detalles[0][hora_finalizacion]" and @disabled]')->length)->toBe(1);
 });
+
+test('cada lote conserva el usuario autenticado aunque comparta sesión con otro registrador', function (string $familia) {
+    $payload = cantidadPayload($this->fixtures, $familia);
+    $otro = Usuario::create([
+        'username' => 'otro.registrador.ficticio', 'password_hash' => $this->fixtures['usuario']->password_hash,
+        'empleado_id' => $this->fixtures['empleados'][2]->id, 'rol_id' => $this->fixtures['rol']->id,
+    ]);
+    $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
+    $payload['detalles'][0]['registrado_por_usuario_id'] = $this->fixtures['usuario']->id;
+    $this->actingAs($otro)->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
+    expect(Produccion::sole()->registrado_por_usuario_id)->toBe($this->fixtures['usuario']->id)
+        ->and(modeloCantidad($familia)::orderBy('id')->pluck('registrado_por_usuario_id')->all())
+        ->toBe([$this->fixtures['usuario']->id, $otro->id]);
+    $this->get(route('history.index', ['categoria' => strtolower($familia)]))->assertOk()
+        ->assertSeeText('Registró el lote: '.$otro->username)
+        ->assertSeeText('Registró el lote: '.$this->fixtures['usuario']->username);
+})->with(['Torta', 'Bocadito']);

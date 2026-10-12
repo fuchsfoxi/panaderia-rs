@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DetallePan extends Model
@@ -19,6 +20,7 @@ class DetallePan extends Model
 
     protected $fillable = [
         'produccion_id',
+        'registrado_por_usuario_id',
         'producto_id',
         'observacion',
         // Hora local del lote, sin asociar una fecha ficticia mediante un cast datetime.
@@ -30,6 +32,11 @@ class DetallePan extends Model
         // Valor usado en esta producción; no se recalcula al editar el producto.
         'panes_por_lata_usado',
     ];
+
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(Usuario::class, 'registrado_por_usuario_id');
+    }
 
     public function empleados(): BelongsToMany
     {
