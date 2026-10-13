@@ -46,6 +46,15 @@
         </a>
         @endcan
 
+        @can('administrar-sistema')
+        <a href="{{ route('productos.index') }}"
+           class="sidebar-link {{ request()->routeIs('productos.*') ? 'activo' : '' }}"
+           @if(request()->routeIs('productos.*')) aria-current="page" @endif>
+            <svg class="sidebar-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8Zm-9 5 9 5 9-5M12 13v8M7.5 5.5l9 5" /></svg>
+            <span class="sidebar-texto">Productos</span>
+        </a>
+        @endcan
+
     </nav>
 
     <form action="{{ route('logout') }}" method="POST" class="sidebar-salir">

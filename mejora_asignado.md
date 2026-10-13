@@ -173,6 +173,21 @@ Crear un usuario de prueba con un hash de coste menor al configurado, autenticar
 
 ### Problema 7: Roles persistidos sin autorización en rutas
 
+**Sprint 6 / Fase 3 — 2026-10-12: IMPLEMENTADO Y COMPROBADO.** Productos es el
+primer módulo administrativo real: seis rutas auth + can:administrar-sistema,
+listado/búsqueda/filtros/paginación, crear/editar y estado explícito sin DELETE.
+Administrador administra; Operador recibe 403 con payload y CSRF válidos y no ve
+el enlace. Requests limitan atributos y validan catálogo/factor; la Action comparte
+el orden categoría → producto con Producción y bloquea categoría/unidad si existe
+historia. Cambiar factor no toca snapshots; renombrar cambia su presentación histórica.
+Suite final **566/566, 5.267 aserciones, cero fallidas/omitidas**; incluye 127 casos
+nuevos y 18 carreras reales. Chrome **35/35** responsive más UX/teclado/fallback,
+19 JS, build/Pint/diff aprobados. Base operativa auditada solo en READ ONLY: esquema
+compatible, sin UNIQUE/nombres duplicados y Lata provisional; no hubo escrituras.
+Usuarios/Empleados/Configuración, temporadas y aceptación en dispositivos reales
+siguen PENDIENTES. Informe: [SPRINT_6_FASE_3_PRODUCTOS.md](SPRINT_6_FASE_3_PRODUCTOS.md).
+Los bloques inferiores conservan los cierres anteriores.
+
 **Reanudación comprobada — 2026-10-12:** el código de autorización y los cinco
 archivos nuevos ya estaban presentes tras el reinicio; se revisaron y conservaron
 sin reimplementarlos ni descartar cambios. Se repitieron autorización/seeders

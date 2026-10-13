@@ -95,9 +95,14 @@ test('un Operador con ID 1 no es Administrador y un Administrador con otro ID s�
 
 test('ambos roles acceden por URL directa a las páginas y al menú compartido', function (string $nombre, string $ruta) {
     $usuario = usuarioConRolDePrueba($this->fixtures, $nombre);
-    $this->actingAs($usuario)->get($ruta)->assertOk()
+    $response = $this->actingAs($usuario)->get($ruta)->assertOk()
         ->assertSeeText('Dashboard')->assertSeeText('Producción')->assertSeeText('Historial')
-        ->assertDontSeeText('Productos')->assertDontSeeText('Configuración');
+        ->assertDontSeeText('Configuración');
+    if ($nombre === Rol::ADMINISTRADOR) {
+        $response->assertSeeText('Productos');
+    } else {
+        $response->assertDontSeeText('Productos');
+    }
 })->with('roles funcionales')->with(['/dashboard', '/produccion', '/history']);
 
 test('las rutas deniegan roles inválidos antes de validar o escribir y logout sigue disponible', function (?string $nombre, string $metodo, string $ruta, bool $json) {

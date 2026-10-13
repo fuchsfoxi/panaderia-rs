@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProduccionController;
+use App\Http\Controllers\ProductoController;
 use Illuminate\Support\Facades\Route;
 
 // al entrar solo con el dominio, manda al login
@@ -18,6 +19,15 @@ Route::middleware('guest')->group(function () {
 // rutas protegidas: solo para quien ya inició sesión
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+    Route::middleware('can:administrar-sistema')->group(function () {
+        Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
+        Route::get('/productos/crear', [ProductoController::class, 'create'])->name('productos.create');
+        Route::post('/productos', [ProductoController::class, 'store'])->name('productos.store');
+        Route::get('/productos/{producto}/editar', [ProductoController::class, 'edit'])->name('productos.edit');
+        Route::match(['put', 'patch'], '/productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::patch('/productos/{producto}/estado', [ProductoController::class, 'estado'])->name('productos.estado');
+    });
 
     Route::middleware('can:acceder-operacion')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

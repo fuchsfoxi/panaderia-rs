@@ -1,5 +1,6 @@
 # Sprint 6 — Fase 2
 
+
 ## Autorización Administrador / Operador
 
 Fecha: 2026-10-12. Checkout inicial: `cec3407`, repositorio local `panaderia-rs`.
