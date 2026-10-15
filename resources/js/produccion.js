@@ -124,6 +124,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function actualizarTotal(detalle) {
+        if (inputCategoria.value !== 'pan') {
+            const cantidad = detalle.querySelector('[data-campo="cantidad"]');
+            const numero = cantidad.valueAsNumber;
+            const valido = !cantidad.validity.badInput && Number.isInteger(numero) && numero > 0 && numero <= 2147483647;
+            detalle.querySelector('[data-resultado-directo]').textContent = valido
+                ? `${numero} ${inputCategoria.value === 'torta' ? 'tortas' : 'unidades'}`
+                : 'Introduce una cantidad entera positiva.';
+            return;
+        }
         const coches = detalle.querySelector('[data-campo="coches"]');
         const latas = detalle.querySelector('[data-campo="latas_adicionales"]');
         const numeroCoches = coches.value === '' && !coches.validity.badInput ? 0 : coches.valueAsNumber;
@@ -131,12 +140,23 @@ document.addEventListener('DOMContentLoaded', function () {
         const total = numeroCoches * latasPorCoche + numeroLatas;
         const valido = Number.isSafeInteger(numeroCoches) && numeroCoches >= 0
             && Number.isSafeInteger(numeroLatas) && numeroLatas >= 0 && numeroLatas < latasPorCoche
-            && Number.isSafeInteger(total);
+            && Number.isSafeInteger(total) && total <= 2147483647;
 
         // Solo texto informativo: ningún total calculado se incorpora al POST.
         detalle.querySelector('[data-total-latas]').textContent = valido
             ? `${total} latas`
             : `Introduce coches enteros y de 0 a ${latasPorCoche - 1} latas.`;
+
+        const producto = detalle.querySelector('[data-campo="producto_id"]').selectedOptions[0];
+        const factor = Number(producto?.dataset.panesPorLata);
+        const factorValido = Number.isInteger(factor) && factor > 0;
+        detalle.querySelector('[data-panes-por-lata]').textContent = factorValido
+            ? String(factor) : (producto?.value ? 'Sin factor registrado' : 'Selecciona un producto');
+        const estimado = total * factor;
+        detalle.querySelector('[data-total-panes]').textContent = !factorValido
+            ? 'Estimación no disponible'
+            : (!valido || total <= 0 ? 'Introduce una cantidad válida de latas.'
+                : (Number.isSafeInteger(estimado) ? `${estimado} panes` : 'Estimación fuera del rango de precisión.'));
     }
 
     function mostrarCamposDe(categoria) {
@@ -165,10 +185,10 @@ document.addEventListener('DOMContentLoaded', function () {
             detalle.querySelector('[data-participantes]').replaceChildren();
             detalle.querySelector('[data-error-detalle]').textContent = '';
             actualizarParticipantes(detalle);
-            actualizarTotal(detalle);
         }
         actualizarForma();
         inputCategoria.value = categoria;
+        actualizarTotal(detalle);
         formulario.action = formulario.dataset[`${categoria}Url`];
         botonesCategoria.forEach(boton => {
             const activo = boton.dataset.categoria === categoria;
@@ -258,10 +278,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
     detalle.addEventListener('input', event => {
-        if (['coches', 'latas_adicionales'].includes(event.target.dataset.campo)) {
+        if (['coches', 'latas_adicionales', 'cantidad'].includes(event.target.dataset.campo)) {
             actualizarTotal(detalle);
         }
     });
+    detalle.querySelector('[data-campo="producto_id"]').addEventListener('change', () => actualizarTotal(detalle));
 
     document.getElementById('consultar-produccion').addEventListener('click', event => {
         if (!fecha.reportValidity() || !turno.reportValidity()) return;

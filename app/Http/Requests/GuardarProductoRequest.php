@@ -26,11 +26,16 @@ abstract class GuardarProductoRequest extends FormRequest
 
     public function rules(): array
     {
+        // Usar el mismo criterio que integer de Laravel, sin consultar arrays malformados.
+        $categoriaId = filter_var($this->input('categoria_id'), FILTER_VALIDATE_INT);
+        $esPan = $categoriaId !== false
+            && Categoria::whereKey($categoriaId)->where('nombre_categorias', 'Pan')->exists();
+
         return [
             'nombre_p' => ['required', 'string', 'max:100', 'not_regex:/[\x00-\x1F\x7F]/u'],
             'categoria_id' => ['required', 'integer', Rule::exists('categorias', 'id')->whereIn('nombre_categorias', ['Pan', 'Torta', 'Bocadito'])],
             'unidad_medida_id' => ['required', 'integer', 'exists:unidades_medida,id'],
-            'panes_por_lata' => ['nullable', function (string $attribute, mixed $value, Closure $fail): void {
+            'panes_por_lata' => [Rule::requiredIf($esPan), 'nullable', function (string $attribute, mixed $value, Closure $fail): void {
                 if ((! is_int($value) && ! is_string($value)) || ! preg_match('/^[0-9]+$/D', (string) $value)) {
                     $fail('Los panes por lata deben ser un número entero positivo.');
                 }
@@ -60,7 +65,8 @@ abstract class GuardarProductoRequest extends FormRequest
             'nombre_p.not_regex' => 'El nombre contiene caracteres no válidos.',
             'categoria_id.exists' => 'Selecciona una categoría disponible: Pan, Torta o Bocadito.',
             'unidad_medida_id.exists' => 'La unidad de medida seleccionada no existe.',
-            'panes_por_lata.min' => 'Los panes por lata deben ser positivos o dejarse vacíos.',
+            'panes_por_lata.required' => 'Debes indicar cuántos panes contiene una lata.',
+            'panes_por_lata.min' => 'Los panes por lata deben ser mayores que 0.',
             'panes_por_lata.max' => 'Los panes por lata no pueden superar 2147483647.',
         ];
     }

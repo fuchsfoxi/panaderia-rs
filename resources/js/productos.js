@@ -4,12 +4,17 @@ if (formulario) {
     const categoria = formulario.querySelector('[data-categoria-producto]');
     const grupo = formulario.querySelector('[data-factor-pan]');
     const factor = grupo?.querySelector('input');
+    const registroDirecto = formulario.querySelector('[data-registro-directo]');
 
     if (categoria && grupo && factor) {
         const actualizarFactor = () => {
             const esPan = categoria.selectedOptions[0]?.dataset.nombre === 'Pan';
             grupo.hidden = !esPan;
             factor.disabled = !esPan;
+            factor.required = esPan;
+            if (registroDirecto) {
+                registroDirecto.hidden = !['Torta', 'Bocadito'].includes(categoria.selectedOptions[0]?.dataset.nombre);
+            }
         };
         categoria.addEventListener('change', actualizarFactor);
         actualizarFactor();

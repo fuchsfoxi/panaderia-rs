@@ -42,10 +42,14 @@ function entorno(categoria = 'pan') {
     const empleado = elemento();
     const rol = elemento();
     const output = elemento();
+    const factorPan = elemento();
+    const totalPanes = elemento();
+    const resultado = elemento();
     const tags = elemento();
     tags.replaceChildren = () => {};
     const detalle = elemento();
     const selectores = new Map([
+        ['[data-campo="cantidad"]', cantidad], ['[data-panes-por-lata]', factorPan], ['[data-total-panes]', totalPanes], ['[data-resultado-directo]', resultado],
         ['#editor-participantes', editor], ['[data-abrir-participantes]', abrir],
         ['[data-campo="forma"]', forma], ['[data-campo="foto"]', foto], ['[data-campo="foto_camara"]', camara],
         ['[data-preview-foto]', preview], ['[data-nombre-foto]', nombreFoto], ['[data-icono-foto]', iconoFoto],
@@ -94,7 +98,7 @@ function entorno(categoria = 'pan') {
     runInNewContext(codigo, { document, window, URL: PreviewURL, queueMicrotask });
     document.emitir('DOMContentLoaded');
     const actualizar = () => detalle.emitir('input', { target: coches });
-    return { coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
+    return { factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
 }
 
 test('preview interpreta vacíos como cero y consume el factor de Blade', () => {
@@ -298,4 +302,54 @@ test('consulta sigue accesible y utiliza la categoría elegida después de cambi
         assert.equal(destino.searchParams.get('turno_id'), 'turno');
         assert.equal(destino.searchParams.get('categoria'), categoria === 'pan' ? null : categoria);
     }
+});
+
+
+test('Pan estima 12 por 30 y reacciona al cambio de producto sin enviar el total', () => {
+    const e = entorno();
+    e.producto.selectedOptions = [{ value: '905', dataset: { familia: 'pan', panesPorLata: '30' } }];
+    e.latas.value = '5';
+    e.coches.value = '1'; // El fixture publica 7 latas por coche.
+    e.actualizar();
+    assert.equal(e.factorPan.textContent, '30');
+    assert.equal(e.output.textContent, '12 latas');
+    assert.equal(e.totalPanes.textContent, '360 panes');
+    e.producto.selectedOptions[0].dataset.panesPorLata = '32';
+    e.producto.emitir('change');
+    assert.equal(e.totalPanes.textContent, '384 panes');
+    delete e.producto.selectedOptions[0].dataset.panesPorLata;
+    e.producto.emitir('change');
+    assert.equal(e.factorPan.textContent, 'Sin factor registrado');
+    assert.equal(e.totalPanes.textContent, 'Estimación no disponible');
+});
+
+for (const [familia, cantidad, texto] of [['torta', '8', '8 tortas'], ['bocadito', '150', '150 unidades']]) {
+    test(`${familia} muestra cantidad directa aunque el producto tenga un factor ajeno`, () => {
+        const e = entorno(familia);
+        e.producto.selectedOptions = [{ value: '904', dataset: { panesPorLata: '30' } }];
+        e.cantidad.value = cantidad;
+        e.detalle.emitir('input', { target: e.cantidad });
+        assert.equal(e.resultado.textContent, texto);
+        assert.equal(e.factorPan.textContent, '');
+        assert.equal(e.totalPanes.textContent, '');
+        for (const valor of ['', '0', '-1', '1.5', '2147483648']) {
+            e.cantidad.value = valor;
+            e.detalle.emitir('input', { target: e.cantidad });
+            assert.equal(e.resultado.textContent, 'Introduce una cantidad entera positiva.');
+        }
+    });
+}
+
+test('preview Pan rechaza cantidades fuera de INT y evita estimaciones imprecisas', () => {
+    const e = entorno();
+    e.producto.selectedOptions = [{ value: '905', dataset: { panesPorLata: '2147483647' } }];
+    e.coches.value = '306783378';
+    e.latas.value = '1'; // INT_MAX con el factor 7 del fixture.
+    e.actualizar();
+    assert.equal(e.output.textContent, '2147483647 latas');
+    assert.equal(e.totalPanes.textContent, 'Estimación fuera del rango de precisión.');
+    e.latas.value = '2';
+    e.actualizar();
+    assert.match(e.output.textContent, /^Introduce coches enteros/);
+    assert.equal(e.totalPanes.textContent, 'Introduce una cantidad válida de latas.');
 });

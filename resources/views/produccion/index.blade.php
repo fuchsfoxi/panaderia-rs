@@ -146,7 +146,7 @@
                                 <option value="">Selecciona un producto</option>
                                 @foreach ($productosPorFamilia as $familia => $productos)
                                     @foreach ($productos as $producto)
-                                        <option value="{{ $producto->id }}" data-familia="{{ $familia }}" @disabled($categoriaSeleccionada !== $familia) @selected($categoriaSeleccionada === $familia && (string) $detalle['producto_id'] === (string) $producto->id)>{{ $producto->nombre_p }}</option>
+                                        <option value="{{ $producto->id }}" data-familia="{{ $familia }}" @if ($familia === 'pan') data-panes-por-lata="{{ $producto->panes_por_lata }}" @endif @disabled($categoriaSeleccionada !== $familia) @selected($categoriaSeleccionada === $familia && (string) $detalle['producto_id'] === (string) $producto->id)>{{ $producto->nombre_p }}</option>
                                     @endforeach
                                 @endforeach
                             </select>
@@ -172,6 +172,8 @@
                             <span class="total-latas-etiqueta">Total de latas</span>
                             <output data-total-latas aria-live="polite">0 latas</output>
                             <small>1 coche = {{ $latasPorCoche }} latas</small>
+                            <span>Panes por lata: <output data-panes-por-lata>Selecciona un producto</output></span>
+                            <span>Total estimado: <output data-total-panes aria-live="polite">Selecciona un producto</output></span>
                         </div>
                         <div class="campo campo-ancho campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
                             <label for="detalle-hora-finalizacion">Hora de finalización</label>
@@ -181,11 +183,13 @@
                             @enderror
                         </div>
                         <div class="campo campo-condicional" data-mostrar-en="torta bocadito" style="display:{{ $categoriaSeleccionada !== 'pan' ? 'flex' : 'none' }}">
-                            <label for="detalle-cantidad">Cantidad (unidades)</label>
+                            <label for="detalle-cantidad">Cantidad</label>
                             <input type="number" data-campo="cantidad" id="detalle-cantidad" name="detalles[0][cantidad]" min="1" max="2147483647" step="1" required @disabled($categoriaSeleccionada === 'pan') value="{{ $detalle['cantidad'] }}">
                             @error('detalles.0.cantidad')
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
+                            <small>Introduce la cantidad producida.</small>
+                            <output data-resultado-directo aria-live="polite">{{ $detalle['cantidad'] ? $detalle['cantidad'].' '.($categoriaSeleccionada === 'torta' ? 'tortas' : 'unidades') : 'Introduce una cantidad entera positiva.' }}</output>
                         </div>
                         <div class="campo campo-ancho">
                             <span class="campo-etiqueta">Participantes</span>
@@ -323,6 +327,10 @@
                                 <h3>{{ $registro->producto->nombre_p }}</h3>
                                 @if ($categoriaSeleccionada === 'pan')
                                     <p>{{ intdiv($registro->cantidad, $latasPorCoche) }} coches + {{ $registro->cantidad % $latasPorCoche }} latas ({{ $registro->cantidad }} latas en total)</p>
+                                    <p>Panes por lata utilizado: {{ $registro->panes_por_lata_usado ?? 'Sin factor registrado' }}</p>
+                                    @if ($registro->panes_por_lata_usado > 0)
+                                        <p>Total estimado de panes: {{ $registro->cantidad * $registro->panes_por_lata_usado }}</p>
+                                    @endif
                                     <p>Finalización: {{ $registro->hora_finalizacion !== null ? substr($registro->hora_finalizacion, 0, 5) : 'Sin hora registrada' }}</p>
                                 @else
                                     <p>{{ $registro->cantidad }} unidades</p>
