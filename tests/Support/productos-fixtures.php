@@ -9,7 +9,7 @@ use Tests\Support\IsolatedMariaDb;
 function datosProductoDePrueba(array $fixtures, string $familia = 'Pan'): array
 {
     return ['nombre_p' => 'Producto nuevo', 'categoria_id' => $fixtures['productos'][$familia]->categoria_id,
-        'unidad_medida_id' => $fixtures['unidad']->id, 'panes_por_lata' => $familia === 'Pan' ? 24 : null];
+        'unidad_medida_id' => $fixtures['productos'][$familia]->unidad_medida_id, 'panes_por_lata' => $familia === 'Pan' ? 24 : null];
 }
 
 function datosProduccionProducto(array $fixtures, string $familia = 'Pan'): array

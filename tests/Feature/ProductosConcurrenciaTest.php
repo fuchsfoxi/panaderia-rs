@@ -2,6 +2,7 @@
 
 use App\Models\Producto;
 use App\Models\UnidadMedida;
+use Database\Seeders\UnidadMedidaSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\IsolatedMariaDb;
@@ -15,14 +16,16 @@ test('edición estado y primera producción se serializan preservando historia',
     IsolatedMariaDb::connect();
     expect(Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
     $fixtures = IsolatedMariaDb::fixtures();
+    (new UnidadMedidaSeeder)->run();
     $producto = $fixtures['productos'][$familia];
     $datosEdicion = datosProductoDePrueba($fixtures, $familia);
     if ($campo === 'categoria_id') {
         $destino = $familia === 'Pan' ? 'Torta' : 'Pan';
         $datosEdicion['categoria_id'] = $fixtures['productos'][$destino]->categoria_id;
         $datosEdicion['panes_por_lata'] = null;
+        unset($datosEdicion['unidad_medida_id']);
     } elseif ($campo === 'unidad_medida_id') {
-        $datosEdicion['unidad_medida_id'] = UnidadMedida::create(['nombre_unidades_medida' => 'Unidad nueva', 'equivalencia_unidades' => 1])->id;
+        $datosEdicion['unidad_medida_id'] = UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole()->id;
     } else {
         $datosEdicion = ['activo' => false];
     }

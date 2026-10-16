@@ -4,6 +4,7 @@ use App\Models\DetalleBocadito;
 use App\Models\DetallePan;
 use App\Models\DetalleTorta;
 use App\Models\Produccion;
+use Database\Seeders\UnidadMedidaSeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -19,7 +20,8 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     $familyPath = database_path('migrations/2026_10_02_180000_add_categoria_and_turno_to_produccion.php');
     $panUnitsPath = database_path('migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php');
     $horaPanPath = database_path('migrations/2026_10_11_100000_add_hora_finalizacion_to_detalle_pan.php');
-    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, database_path('migrations/2026_10_11_120000_add_registrador_to_production_details.php'), database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
+    $codigoPath = database_path('migrations/2026_10_15_100000_add_codigo_to_unidades_medida.php');
+    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, $codigoPath, database_path('migrations/2026_10_11_120000_add_registrador_to_production_details.php'), database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
     expect($originals)->toHaveCount(21);
     expect(Artisan::call('migrate', [
         '--database' => 'sprint4_test', '--path' => $originals, '--realpath' => true, '--force' => true,
@@ -269,4 +271,32 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
             ->and(DB::table($tabla)->get()->map(fn ($fila) => (array) $fila)->all())->toBe($antes[$tabla]);
     }
     $migration->up();
+
+    // Identidad canónica aditiva sobre unidades/productos/detalles ya existentes.
+    $tablasCanonicas = ['unidades_medida', 'productos', 'detalle_pan', 'detalle_torta', 'detalle_bocadito'];
+    $filasLegacy = [];
+    foreach ($tablasCanonicas as $tabla) {
+        $filasLegacy[$tabla] = DB::table($tabla)->orderBy('id')->get()->toJson();
+    }
+    $codigoMigration = require $codigoPath;
+    $codigoMigration->up();
+    expect(DB::table('unidades_medida')->whereNotNull('codigo')->count())->toBe(0);
+    foreach ($tablasCanonicas as $tabla) {
+        $filas = DB::table($tabla)->orderBy('id')->get();
+        if ($tabla === 'unidades_medida') {
+            $filas->each(function ($fila) {
+                unset($fila->codigo);
+            });
+        }
+        expect($filas->toJson())->toBe($filasLegacy[$tabla]);
+    }
+    (new UnidadMedidaSeeder)->run();
+    expect(fn () => $codigoMigration->down())->toThrow(RuntimeException::class, 'identidades canónicas');
+    expect(Schema::hasColumn('unidades_medida', 'codigo'))->toBeTrue();
+    // Borrar únicamente códigos ficticios para ensayar reversión sin datos canónicos.
+    DB::table('unidades_medida')->update(['codigo' => null]);
+    $codigoMigration->down();
+    expect(Schema::hasColumn('unidades_medida', 'codigo'))->toBeFalse();
+    $codigoMigration->up();
+    (new UnidadMedidaSeeder)->run();
 });

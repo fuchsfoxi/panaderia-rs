@@ -9,16 +9,17 @@ const codigo = readFileSync(new URL('../../resources/js/productos.js', import.me
 function entorno(nombre, valor = '') {
     const factor = { value: valor, disabled: false, required: false };
     const grupo = { hidden: false, querySelector: () => factor };
+    const forma = { value: '' };
     const registroDirecto = { hidden: true };
     const eventos = new Map();
     const categoria = {
         selectedOptions: nombre ? [{ value: '701', dataset: { nombre } }] : [],
         addEventListener: (tipo, callback) => eventos.set(tipo, callback),
     };
-    const formulario = { querySelector: selector => selector === '[data-categoria-producto]' ? categoria : selector === '[data-factor-pan]' ? grupo : registroDirecto };
+    const formulario = { querySelector: selector => selector === '[data-categoria-producto]' ? categoria : selector === '[data-factor-pan]' ? grupo : selector === '[data-forma-registro]' ? forma : registroDirecto };
     runInNewContext(codigo, { document: { querySelector: () => formulario } });
     return {
-        factor, grupo, registroDirecto,
+        factor, grupo, registroDirecto, forma,
         cambiar(nombre) {
             categoria.selectedOptions = [{ value: '402', dataset: { nombre } }];
             eventos.get('change')();
@@ -28,7 +29,8 @@ function entorno(nombre, valor = '') {
 
 for (const nombre of ['Pan', 'Torta', 'Bocadito', '']) {
     test(`al cargar ${nombre || 'sin categoría'} el factor tiene visibilidad y obligatoriedad correctas`, () => {
-        const { factor, grupo, registroDirecto } = entorno(nombre, nombre === 'Pan' ? '30' : '');
+        const { factor, grupo, registroDirecto, forma } = entorno(nombre, nombre === 'Pan' ? '30' : '');
+        assert.equal(forma.value, nombre === 'Pan' ? 'Latas' : (nombre ? 'Unidad / cantidad directa' : 'Selecciona una categoría'));
         assert.equal(registroDirecto.hidden, !['Torta', 'Bocadito'].includes(nombre));
         assert.equal(grupo.hidden, nombre !== 'Pan');
         assert.equal(factor.disabled, nombre !== 'Pan');

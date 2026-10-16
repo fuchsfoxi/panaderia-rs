@@ -11,7 +11,7 @@ use RuntimeException;
 
 /**
  * Datos provisionales para desarrollar el formulario de Producción.
- * Lata es una UNIDAD PROVISIONAL DE DESARROLLO hasta recibir el catálogo real.
+ * Utiliza el catálogo canónico; los productos de ejemplo siguen siendo provisionales.
  * No registrar este seeder en DatabaseSeeder ni usarlo en producción.
  */
 class ProduccionDesarrolloSeeder extends Seeder
@@ -26,14 +26,16 @@ class ProduccionDesarrolloSeeder extends Seeder
             // Requiere CategoriaSeeder aplicado; no inventar una categoría o su ID.
             $categoria = Categoria::where('nombre_categorias', 'Pan')->firstOrFail();
 
-            // UNIDAD PROVISIONAL DE DESARROLLO; no acredita la unidad definitiva.
-            $unidad = UnidadMedida::updateOrCreate(
-                ['nombre_unidades_medida' => 'Lata'],
-                ['equivalencia_unidades' => '1.00'],
-            );
+            $this->call(UnidadMedidaSeeder::class);
+            $unidad = UnidadMedida::where('codigo', UnidadMedida::LATA)->sole();
 
             // Repetir este seeder restablece estos valores del producto de desarrollo.
             // Pan Yema = 12 panes/lata es un factor confirmado, no un ID de catálogo.
+            $existente = Producto::where('nombre_p', 'Pan Yema')->first();
+            if ($existente && ($existente->detallesPan()->exists() || $existente->detallesTorta()->exists() || $existente->detallesBocadito()->exists())
+                && ($existente->categoria_id !== $categoria->id || $existente->unidad_medida_id !== $unidad->id)) {
+                throw new RuntimeException('Pan Yema tiene historial con otra asociación; no se reasignará.');
+            }
             Producto::updateOrCreate(
                 ['nombre_p' => 'Pan Yema'],
                 [

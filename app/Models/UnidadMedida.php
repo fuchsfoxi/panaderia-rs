@@ -6,11 +6,25 @@ use Illuminate\Database\Eloquent\Model;
 
 class UnidadMedida extends Model
 {
+    public const LATA = 'LATA';
+
+    public const UNIDAD = 'UNIDAD';
+
+    public static function codigoParaFamilia(string $familia): ?string
+    {
+        return match ($familia) {
+            'Pan' => self::LATA,
+            'Torta', 'Bocadito' => self::UNIDAD,
+            default => null,
+        };
+    }
+
     protected $table = 'unidades_medida';
 
     public $timestamps = false;
 
     protected $fillable = [
+        'codigo',
         'nombre_unidades_medida',
         'equivalencia_unidades',
     ];

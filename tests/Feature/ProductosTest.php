@@ -7,6 +7,7 @@ use App\Models\DetalleTorta;
 use App\Models\Producto;
 use App\Models\Rol;
 use App\Models\UnidadMedida;
+use Database\Seeders\UnidadMedidaSeeder;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +26,11 @@ beforeEach(function () {
     expect(Artisan::call('migrate', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
     DB::beginTransaction();
     $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR);
+    $this->seed(UnidadMedidaSeeder::class);
+    foreach ($this->fixtures['productos'] as $familia => $producto) {
+        $producto->update(['unidad_medida_id' => UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole()->id]);
+    }
+    $this->fixtures['unidad'] = $this->fixtures['productos']['Pan']->unidadMedida;
     $this->withoutVite();
     $this->actingAs($this->fixtures['usuario']);
     Storage::fake('public');
@@ -204,11 +210,10 @@ test('nombres de 100 caracteres y repetidos se permiten de forma consistente', f
 test('producto sin producción cambia categoría unidad y limpia su factor preservando temporada', function () {
     $producto = $this->fixtures['productos']['Pan'];
     $producto->update(['panes_por_lata' => 20, 'temporada_fe' => '2026-12-01']);
-    $unidad = UnidadMedida::create(['nombre_unidades_medida' => 'Otra unidad', 'equivalencia_unidades' => 1]);
     $datos = datosProductoDePrueba($this->fixtures, 'Torta');
-    $datos['unidad_medida_id'] = $unidad->id;
+    unset($datos['unidad_medida_id']);
     $this->put('/productos/'.$producto->id, $datos + ['temporada_fe' => '2027-01-01', 'activo' => false])->assertRedirect()->assertSessionHasNoErrors();
-    expect($producto->fresh()->categoria_id)->toBe($datos['categoria_id'])->and($producto->fresh()->unidad_medida_id)->toBe($unidad->id)
+    expect($producto->fresh()->categoria_id)->toBe($datos['categoria_id'])->and($producto->fresh()->unidad_medida_id)->toBe(UnidadMedida::where('codigo', UnidadMedida::UNIDAD)->sole()->id)
         ->and($producto->fresh()->panes_por_lata)->toBeNull()->and($producto->fresh()->temporada_fe)->toBe('2026-12-01')
         ->and($producto->fresh()->activo)->toBeTrue();
 });
@@ -280,9 +285,9 @@ test('formulario de edición protege selects históricos y conserva nombre facto
     $dom = new DOMDocument;
     @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($dom);
-    expect($xpath->query('//select[@disabled]')->length)->toBe(2)
+    expect($xpath->query('//select[@disabled]')->length)->toBe(1)
         ->and($xpath->query('//input[@type="hidden" and @name="categoria_id"]')->length)->toBe(1)
-        ->and($xpath->query('//input[@type="hidden" and @name="unidad_medida_id"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@name="unidad_medida_id"]')->length)->toBe(0)
         ->and($xpath->query('//input[@name="nombre_p" and not(@disabled)]')->length)->toBe(1)
         ->and($xpath->query('//input[@name="panes_por_lata" and not(@disabled)]')->length)->toBe(1);
     $response->assertSeeText('Editar el nombre también cambia el nombre visible en producciones anteriores.');
@@ -433,7 +438,7 @@ test('old input malformado no rompe el formulario y los errores tienen labels y 
 });
 
 test('formulario avisa cuando el catálogo no permite crear y no presupone unidad Lata', function () {
-    $this->get('/productos/crear')->assertOk()->assertSeeText('Unidad ficticia');
+    $this->get('/productos/crear')->assertOk()->assertSeeText('La categoría determina la unidad automáticamente');
     Producto::query()->delete(); // Solo fixtures aisladas sin historia, para simular catálogo incompleto.
     UnidadMedida::query()->delete();
     $this->get('/productos/crear')->assertOk()->assertSeeText('Para guardar un producto necesitas categorías y unidades de medida disponibles.');
@@ -462,37 +467,29 @@ test('listado mantiene conteo de consultas al crecer y carga categoría y unidad
         ->and(collect($final)->filter(fn ($q) => str_contains($q['query'], 'from `categorias`') && str_contains($q['query'], ' in ')))->toHaveCount(1);
 });
 
-test('formulario distingue registro directo y advierte catálogo ausente ambiguo o incompatible', function (string $familia, string $catalogo) {
-    if ($catalogo !== 'ausente') {
-        UnidadMedida::create(['nombre_unidades_medida' => 'Unidad', 'equivalencia_unidades' => $catalogo === 'incompatible' ? 30 : 1]);
-    }
-    if ($catalogo === 'duplicado') {
-        UnidadMedida::create(['nombre_unidades_medida' => ' unidad ', 'equivalencia_unidades' => 1]);
-    }
+test('formulario usa código canónico aunque existan nombres históricos duplicados', function (string $familia) {
+    UnidadMedida::create(['nombre_unidades_medida' => 'Unidad', 'equivalencia_unidades' => 30]);
     $producto = $this->fixtures['productos'][$familia];
     $response = $this->get(route('productos.edit', $producto))->assertOk()
-        ->assertSeeText('Forma de registro')->assertSeeText('Unidad / cantidad directa');
-    $catalogo === 'unico'
-        ? $response->assertDontSeeText('El catálogo no permite identificar')
-        : $response->assertSeeText('El catálogo no permite identificar');
+        ->assertSeeText('Forma de registro')->assertSee('Unidad / cantidad directa');
     $dom = new DOMDocument;
     @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($dom);
     expect($xpath->query('//*[@data-registro-directo and not(@hidden)]')->length)->toBe(1)
         ->and($xpath->query('//*[@data-factor-pan and @hidden]')->length)->toBe(1)
-        ->and($xpath->query('//select[@name="unidad_medida_id" and @required]')->length)->toBe(1);
-    // La inspección del catálogo no crea, elige ni reasigna unidades.
-    expect($producto->fresh()->unidad_medida_id)->toBe($this->fixtures['unidad']->id);
-})->with(['Torta', 'Bocadito'])->with(['ausente', 'unico', 'duplicado', 'incompatible']);
+        ->and($xpath->query('//*[@name="unidad_medida_id"]')->length)->toBe(0);
+    expect($producto->fresh()->unidad_medida_id)->toBe($producto->unidad_medida_id);
+})->with(['Torta', 'Bocadito']);
 
 test('cantidad directa atraviesa Producto Producción e Historial sin factores ni IDs fijos', function (string $familia, int $cantidad) {
-    $unidad = UnidadMedida::create(['nombre_unidades_medida' => 'Catálogo ficticio distinto', 'equivalencia_unidades' => 30]);
+    $unidad = UnidadMedida::where('codigo', UnidadMedida::UNIDAD)->sole();
+    $unidad->update(['equivalencia_unidades' => 30]);
     expect($unidad->id)->not->toBe(1);
     $datos = datosProductoDePrueba($this->fixtures, $familia);
-    $datos['unidad_medida_id'] = $unidad->id;
+    unset($datos['unidad_medida_id']);
     $this->post(route('productos.store'), $datos)->assertRedirect()->assertSessionHasNoErrors();
     $producto = Producto::where('nombre_p', $datos['nombre_p'])->sole();
-    expect($producto->panes_por_lata)->toBeNull()->and($producto->unidad_medida_id)->toBe($unidad->id);
+    expect($producto->panes_por_lata)->toBeNull()->and($producto->unidadMedida->codigo)->toBe(UnidadMedida::UNIDAD);
     // Simular configuración antigua inconsistente solo en la BD desechable.
     $producto->update(['panes_por_lata' => 99]);
     $this->fixtures['productos'][$familia] = $producto;
@@ -523,7 +520,7 @@ test('cantidad directa atraviesa Producto Producción e Historial sin factores n
         ->assertDontSeeText('latas')->assertDontSeeText('Panes por lata')->assertDontSeeText('Total estimado de panes');
 })->with([['Torta', 8], ['Bocadito', 150]]);
 
-test('Nuevo producto conserva estado inicial por familia sin asignar unidad automáticamente', function (string $familia) {
+test('Nuevo producto presenta forma de registro derivada de categoría sin selector de unidad', function (string $familia) {
     $response = $this->withSession(['_old_input' => ['categoria_id' => $this->fixtures['productos'][$familia]->categoria_id]])
         ->get(route('productos.create'))->assertOk();
     $dom = new DOMDocument;
@@ -532,5 +529,5 @@ test('Nuevo producto conserva estado inicial por familia sin asignar unidad auto
     expect($xpath->query('//*[@data-registro-directo and not(@hidden)]')->length)->toBe($familia === 'Pan' ? 0 : 1)
         ->and($xpath->query('//*[@data-factor-pan and @hidden]')->length)->toBe($familia === 'Pan' ? 0 : 1)
         ->and($xpath->query('//input[@name="panes_por_lata" and @required]')->length)->toBe($familia === 'Pan' ? 1 : 0)
-        ->and($xpath->query('//select[@name="unidad_medida_id"]/option[@selected and @value!=""]')->length)->toBe(0);
+        ->and($xpath->query('//*[@name="unidad_medida_id"]')->length)->toBe(0);
 })->with(['Pan', 'Torta', 'Bocadito']);

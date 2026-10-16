@@ -34,7 +34,7 @@ abstract class GuardarProductoRequest extends FormRequest
         return [
             'nombre_p' => ['required', 'string', 'max:100', 'not_regex:/[\x00-\x1F\x7F]/u'],
             'categoria_id' => ['required', 'integer', Rule::exists('categorias', 'id')->whereIn('nombre_categorias', ['Pan', 'Torta', 'Bocadito'])],
-            'unidad_medida_id' => ['required', 'integer', 'exists:unidades_medida,id'],
+            'unidad_medida_id' => ['sometimes', 'integer', 'exists:unidades_medida,id'],
             'panes_por_lata' => [Rule::requiredIf($esPan), 'nullable', function (string $attribute, mixed $value, Closure $fail): void {
                 if ((! is_int($value) && ! is_string($value)) || ! preg_match('/^[0-9]+$/D', (string) $value)) {
                     $fail('Los panes por lata deben ser un número entero positivo.');

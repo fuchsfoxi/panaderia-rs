@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\Productos\ActualizarProducto;
+use App\Actions\Productos\CrearProducto;
 use App\Http\Requests\ActualizarProductoRequest;
 use App\Http\Requests\CambiarEstadoProductoRequest;
 use App\Http\Requests\ConsultarProductosRequest;
@@ -51,10 +52,10 @@ class ProductoController extends Controller
         return $this->formulario($producto);
     }
 
-    public function store(CrearProductoRequest $request): RedirectResponse
+    public function store(CrearProductoRequest $request, CrearProducto $crear): RedirectResponse
     {
         try {
-            Producto::create($request->validated());
+            $crear->ejecutar($request->validated());
         } catch (QueryException $exception) {
             return $this->falloGuardado($exception);
         }
@@ -89,7 +90,7 @@ class ProductoController extends Controller
     private function formulario(Producto $producto): View
     {
         $categorias = Categoria::whereIn('nombre_categorias', ['Pan', 'Torta', 'Bocadito'])->orderBy('nombre_categorias')->get();
-        $unidades = UnidadMedida::orderBy('nombre_unidades_medida')->get();
+        $unidades = UnidadMedida::whereIn('codigo', [UnidadMedida::LATA, UnidadMedida::UNIDAD])->get()->keyBy('codigo');
         $tieneHistoria = $producto->exists && ($producto->detallesPan()->exists() || $producto->detallesTorta()->exists() || $producto->detallesBocadito()->exists());
         $valores = [];
         foreach (['nombre_p', 'categoria_id', 'unidad_medida_id', 'panes_por_lata'] as $campo) {

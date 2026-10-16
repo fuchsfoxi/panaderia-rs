@@ -9,6 +9,8 @@ use Illuminate\Validation\ValidationException;
 
 class ActualizarProducto
 {
+    public function __construct(private ResolverUnidadProducto $unidades) {}
+
     public function ejecutar(int $productoId, array $datos): Producto
     {
         return DB::transaction(function () use ($productoId, $datos): Producto {
@@ -23,6 +25,9 @@ class ActualizarProducto
             }
             if (! in_array((int) $categoriaDestino, $categoriasBloqueadas, true)) {
                 throw ValidationException::withMessages(['categoria_id' => 'La categoría seleccionada ya no está disponible.']);
+            }
+            if (array_key_exists('categoria_id', $datos) || array_key_exists('unidad_medida_id', $datos)) {
+                $datos = $this->unidades->ejecutar($datos, $producto);
             }
             $cambiaCategoria = isset($datos['categoria_id']) && $producto->categoria_id !== (int) $datos['categoria_id'];
             $cambiaUnidad = isset($datos['unidad_medida_id']) && $producto->unidad_medida_id !== (int) $datos['unidad_medida_id'];
