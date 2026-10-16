@@ -21,7 +21,7 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     $panUnitsPath = database_path('migrations/2026_10_02_200000_add_panes_por_lata_to_productos_and_detalle_pan.php');
     $horaPanPath = database_path('migrations/2026_10_11_100000_add_hora_finalizacion_to_detalle_pan.php');
     $codigoPath = database_path('migrations/2026_10_15_100000_add_codigo_to_unidades_medida.php');
-    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, $codigoPath, database_path('migrations/2026_10_11_120000_add_registrador_to_production_details.php'), database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php')]));
+    $originals = array_values(array_diff(glob(database_path('migrations/*.php')), [$new, $familyPath, $panUnitsPath, $horaPanPath, $codigoPath, database_path('migrations/2026_10_11_120000_add_registrador_to_production_details.php'), database_path('migrations/2026_10_10_120000_add_cantidad_to_detalle_torta.php'), database_path('migrations/2026_10_16_100000_add_access_fields_to_usuarios_sistema.php')]));
     expect($originals)->toHaveCount(21);
     expect(Artisan::call('migrate', [
         '--database' => 'sprint4_test', '--path' => $originals, '--realpath' => true, '--force' => true,

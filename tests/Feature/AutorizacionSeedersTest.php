@@ -10,6 +10,8 @@ use Database\Seeders\UsuarioSeeder;
 use Illuminate\Database\MultipleRecordsFoundException;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Tests\Support\IsolatedMariaDb;
 
 beforeEach(function () {
@@ -19,6 +21,7 @@ beforeEach(function () {
     IsolatedMariaDb::connect();
     expect(Artisan::call('migrate', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
     DB::beginTransaction();
+    config(['auth.initial_admin_password' => Str::random(32)]);
 });
 
 afterEach(function () {
@@ -76,16 +79,20 @@ test('UsuarioSeeder resuelve rol y empleado por identidad y preserva la cuenta a
     ]);
     $this->seed(UsuarioSeeder::class);
     $usuario = Usuario::where('username', 'admin')->sole();
-    expect($usuario->rol_id)->toBe(85)->and($usuario->empleado_id)->toBe(63);
+    expect($usuario->rol_id)->toBe(85)->and($usuario->empleado_id)->toBe(63)
+        ->and(Hash::check(config('auth.initial_admin_password'), $usuario->password_hash))->toBeTrue();
     $anterior = $usuario->getRawOriginal();
+    config(['auth.initial_admin_password' => Str::random(32)]);
     $this->seed(UsuarioSeeder::class);
     expect(Usuario::count())->toBe(1)
         ->and($usuario->fresh()->getRawOriginal())->toBe($anterior);
 
     // Sembrar no vuelve a promover ni a revincular una cuenta ya administrada.
     $usuario->update(['rol_id' => 1, 'empleado_id' => 1]);
+    config(['auth.initial_admin_password' => null]);
     $this->seed(UsuarioSeeder::class);
-    expect($usuario->fresh()->rol_id)->toBe(1)->and($usuario->fresh()->empleado_id)->toBe(1);
+    expect($usuario->fresh()->rol_id)->toBe(1)->and($usuario->fresh()->empleado_id)->toBe(1)
+        ->and($usuario->fresh()->password_hash)->toBe($anterior['password_hash']);
 });
 
 test('UsuarioSeeder rechaza una identidad de rol ambigua sin crear cuentas', function () {
@@ -94,3 +101,21 @@ test('UsuarioSeeder rechaza una identidad de rol ambigua sin crear cuentas', fun
     expect(fn () => $this->seed(UsuarioSeeder::class))->toThrow(MultipleRecordsFoundException::class);
     expect(Usuario::count())->toBe(0);
 });
+
+test('UsuarioSeeder sin credencial segura no crea ninguna cuenta ni imprime secretos', function (mixed $password) {
+    config(['auth.initial_admin_password' => $password]);
+    // Debe fallar antes de resolver relaciones o crear el usuario.
+    expect(fn () => $this->seed(UsuarioSeeder::class))->toThrow(
+        RuntimeException::class,
+        'Configura INITIAL_ADMIN_PASSWORD con al menos 16 caracteres y un máximo de 72 bytes para crear el administrador inicial.',
+    );
+    expect(Usuario::count())->toBe(0);
+})->with([
+    'ausente' => null,
+    'vacía' => '',
+    'corta' => 'ficticia',
+    'espacios' => str_repeat(' ', 20),
+    'exceso bcrypt' => str_repeat('x', 73),
+    'multibyte exceso bcrypt' => str_repeat('á', 37),
+    'tipo incorrecto' => [['ficticio']],
+]);

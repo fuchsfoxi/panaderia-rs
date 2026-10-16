@@ -292,19 +292,46 @@ body {
     transition: opacity 0.2s ease;
 }
 
-.btn-enviar:hover {
+.btn-enviar:hover:not(:disabled) {
     opacity: 0.9;
 }
 
-.olvido-contrasena {
-    font-family: 'Quicksand', sans-serif;
-    font-weight: 600;
+.btn-enviar:disabled {
+    background-color: var(--color-sage);
+    color: var(--color-dark);
+    cursor: not-allowed;
+}
+
+.mensaje-login,
+.ayuda-espera {
     font-size: 13px;
-    color: var(--color-medium);
-    text-decoration: underline;
-    background: none;
-    border: none;
-    cursor: pointer;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.mensaje-login {
+    color: #7a312b;
+}
+
+.grupo-input > .mensaje-login {
+    margin-top: 6px;
+}
+
+.acciones > .mensaje-login,
+.acciones > noscript {
+    width: 100%;
+}
+
+.ayuda-espera {
+    color: var(--color-dark);
+}
+
+[data-login-seconds] {
+    font-variant-numeric: tabular-nums;
+}
+
+.caja-input:has(input[aria-invalid="true"]) {
+    border-color: #7a312b;
 }
 
 @media (max-width: 480px) {

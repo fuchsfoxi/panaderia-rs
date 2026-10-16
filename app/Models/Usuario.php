@@ -17,12 +17,24 @@ class Usuario extends Authenticatable
         'password_hash',
         'empleado_id',
         'rol_id',
+        'turno_id',
+        'activo',
     ];
 
     // este borra  el campo password_hash de la respuesta cuando se devuelve un usuario, para no exponerlo (json, api, etc)
     protected $hidden = [
         'password_hash',
     ];
+
+    protected function casts(): array
+    {
+        return ['activo' => 'boolean'];
+    }
+
+    public function turno()
+    {
+        return $this->belongsTo(Turno::class, 'turno_id');
+    }
 
     // llama a la relación con el modelo Empleado y Rol, para poder acceder a los datos del empleado y rol desde el usuario
     public function empleado()

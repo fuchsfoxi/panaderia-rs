@@ -89,7 +89,7 @@ test('Operador con CSRF real válido sigue recibiendo 403 en las mutaciones', fu
     expect(Producto::count())->toBe(3)->and($this->fixtures['productos']['Pan']->fresh()->activo)->toBeTrue();
 })->with([['POST', ''], ['PATCH', '/%s'], ['PATCH', '/%s/estado']]);
 
-test('sidebar tiene cuatro módulos para Admin y tres para Operador', function (string $rol, int $cantidad) {
+test('sidebar tiene cinco módulos para Admin y tres para Operador', function (string $rol, int $cantidad) {
     $this->fixtures['rol']->update(['nombre_roles' => $rol]);
     $ruta = $rol === Rol::ADMINISTRADOR ? '/productos' : '/dashboard';
     $response = $this->get($ruta)->assertOk();
@@ -102,8 +102,13 @@ test('sidebar tiene cuatro módulos para Admin y tres para Operador', function (
     if ($links->length) {
         expect($links->item(0)->getAttribute('aria-current'))->toBe('page');
     }
-    $response->assertDontSeeText('Configuración')->assertDontSeeText('Empleados')->assertDontSeeText('Usuarios');
-})->with([[Rol::ADMINISTRADOR, 4], [Rol::OPERADOR, 3]]);
+    $response->assertDontSeeText('Configuración')->assertDontSeeText('Empleados');
+    if ($rol === Rol::ADMINISTRADOR) {
+        $response->assertSeeText('Usuarios');
+    } else {
+        $response->assertDontSeeText('Usuarios');
+    }
+})->with([[Rol::ADMINISTRADOR, 5], [Rol::OPERADOR, 3]]);
 
 test('crea Pan con factor positivo y normaliza nombre sin aceptar atributos extra', function (mixed $factor) {
     $datos = datosProductoDePrueba($this->fixtures);

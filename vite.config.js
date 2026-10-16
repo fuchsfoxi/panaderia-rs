@@ -10,6 +10,8 @@ export default defineConfig({
                     'resources/css/app.css',
                     'resources/css/errores.css',
                     'resources/css/productos.css',
+                    'resources/css/usuarios.css',
+                    'resources/js/usuarios.js',
                     'resources/js/productos.js',
                     'resources/js/app.js',
                     'resources/css/login.css',

@@ -57,12 +57,12 @@ class IsolatedMariaDb
             'nombre_empleados' => 'Empleado ficticio '.$n, 'cargo_id' => $cargo->id,
         ]));
         $rol = Rol::create(['nombre_roles' => $nombreRol]);
+        $turno = Turno::create(['nombre_turnos' => 'Mañana']);
         $usuario = Usuario::create([
             'username' => 'sprint4.ficticio', 'password_hash' => Hash::make('clave-ficticia-sprint4'),
             'empleado_id' => $empleados->first()->id, 'rol_id' => $rol->id,
-        ]);
+        ] + (Schema::hasColumn('usuarios_sistema', 'turno_id') ? ['turno_id' => $nombreRol === Rol::OPERADOR ? $turno->id : null] : []))->refresh();
         $unidad = UnidadMedida::create(['nombre_unidades_medida' => 'Unidad ficticia', 'equivalencia_unidades' => '1.00']);
-        $turno = Turno::create(['nombre_turnos' => 'Mañana']);
         $roles = collect(['Maestro', 'Ayudante', 'Practicante'])->mapWithKeys(fn ($nombre) => [
             $nombre => RolProduccion::create(['nombre_roles_produccion' => $nombre]),
         ]);

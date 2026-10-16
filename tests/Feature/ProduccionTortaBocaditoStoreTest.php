@@ -9,6 +9,7 @@ use App\Models\DetallePan;
 use App\Models\DetalleTorta;
 use App\Models\DetalleTortaEmpleado;
 use App\Models\Produccion;
+use App\Models\Rol;
 use App\Models\RolProduccion;
 use App\Models\Turno;
 use App\Models\Usuario;
@@ -31,7 +32,8 @@ beforeEach(function () {
     Categoria::create(['nombre_categorias' => 'Familia anterior ficticia']);
     RolProduccion::create(['nombre_roles_produccion' => 'Rol anterior ficticio']);
     Turno::create(['nombre_turnos' => 'Turno anterior ficticio']);
-    $this->fixtures = IsolatedMariaDb::fixtures();
+    // Estos escenarios de negocio registran o consultan cualquier turno.
+    $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR);
     $this->withoutVite();
     Storage::fake('public');
 });

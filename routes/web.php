@@ -5,6 +5,8 @@ use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ProductoController;
+use App\Http\Controllers\UsuarioController;
+use App\Http\Middleware\EnsureUsuarioActivo;
 use Illuminate\Support\Facades\Route;
 
 // al entrar solo con el dominio, manda al login
@@ -17,10 +19,16 @@ Route::middleware('guest')->group(function () {
 });
 
 // rutas protegidas: solo para quien ya inició sesión
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', EnsureUsuarioActivo::class, 'auth.session'])->group(function () {
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::middleware('can:administrar-sistema')->group(function () {
+        Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+        Route::get('/usuarios/crear', [UsuarioController::class, 'create'])->name('usuarios.create');
+        Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
+        Route::patch('/usuarios/{usuario}/estado', [UsuarioController::class, 'estado'])->name('usuarios.estado');
+        Route::get('/usuarios/{usuario}/password', [UsuarioController::class, 'password'])->name('usuarios.password');
+        Route::patch('/usuarios/{usuario}/password', [UsuarioController::class, 'cambiarPassword'])->name('usuarios.password.update');
         Route::get('/productos', [ProductoController::class, 'index'])->name('productos.index');
         Route::get('/productos/crear', [ProductoController::class, 'create'])->name('productos.create');
         Route::post('/productos', [ProductoController::class, 'store'])->name('productos.store');

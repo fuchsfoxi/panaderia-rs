@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\TurnoPermitidoUsuario;
 use Closure;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -13,7 +14,7 @@ abstract class RegistrarProduccionPorCantidadRequest extends FormRequest
 
     public function authorize(): bool
     {
-        return true; // Acceso autenticado; permisos por rol fuera de este alcance.
+        return true; // La ruta aplica auth y el Gate acceder-operacion.
     }
 
     protected function failedValidation(Validator $validator): void
@@ -28,7 +29,7 @@ abstract class RegistrarProduccionPorCantidadRequest extends FormRequest
         return [
             'categoria' => ['required', 'string', Rule::in([$this->familia()])],
             'fecha' => ['required', 'date_format:Y-m-d'],
-            'turno_id' => ['required', 'integer', 'exists:turnos,id'],
+            'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user())],
             'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
             'detalles.*' => ['required', 'array'],
             'detalles.*.producto_id' => ['required', 'integer', 'exists:productos,id'],

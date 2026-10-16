@@ -9,6 +9,7 @@ use App\Models\DetallePan;
 use App\Models\DetallePanEmpleado;
 use App\Models\DetalleTorta;
 use App\Models\Produccion;
+use App\Models\Rol;
 use App\Models\RolProduccion;
 use App\Models\Turno;
 use Illuminate\Support\Facades\Artisan;
@@ -26,7 +27,8 @@ beforeEach(function () {
     Categoria::create(['nombre_categorias' => 'Otra familia ficticia']);
     RolProduccion::create(['nombre_roles_produccion' => 'Otro rol ficticio']);
     Turno::create(['nombre_turnos' => 'Otro turno ficticio']);
-    $this->fixtures = IsolatedMariaDb::fixtures();
+    // Estos escenarios de negocio registran o consultan cualquier turno.
+    $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR);
     $this->noche = Turno::create(['nombre_turnos' => 'Noche']);
     $this->payload = [
         'categoria' => 'pan', 'fecha' => '2026-10-05', 'turno_id' => $this->fixtures['turno']->id,

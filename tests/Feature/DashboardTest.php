@@ -6,6 +6,7 @@ use App\Models\DetalleBocadito;
 use App\Models\DetallePan;
 use App\Models\DetalleTorta;
 use App\Models\Produccion;
+use App\Models\Rol;
 use App\Models\RolProduccion;
 use App\Models\Turno;
 use Illuminate\Support\Carbon;
@@ -29,7 +30,8 @@ beforeEach(function () {
     foreach (['Primer turno ficticio', 'Segundo turno ficticio'] as $nombre) {
         Turno::create(['nombre_turnos' => $nombre]);
     }
-    $this->fixtures = IsolatedMariaDb::fixtures();
+    // Estos escenarios de negocio registran o consultan cualquier turno.
+    $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR);
     $this->noche = Turno::create(['nombre_turnos' => 'Noche']);
     $this->withoutVite();
 });

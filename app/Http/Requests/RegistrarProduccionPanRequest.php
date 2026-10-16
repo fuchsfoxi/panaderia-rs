@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\DetallePan;
+use App\Rules\TurnoPermitidoUsuario;
 use Closure;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -15,7 +16,7 @@ class RegistrarProduccionPanRequest extends FormRequest
 
     public function authorize(): bool
     {
-        // Las rutas conservan auth; la matriz de permisos por rol sigue pendiente.
+        // Las rutas aplican auth y el Gate acceder-operacion.
         return true;
     }
 
@@ -54,7 +55,7 @@ class RegistrarProduccionPanRequest extends FormRequest
         return [
             'categoria' => ['required', 'string', Rule::in(['pan'])],
             'fecha' => ['required', 'date_format:Y-m-d'],
-            'turno_id' => ['required', 'integer', 'exists:turnos,id'],
+            'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user())],
             'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
             'detalles.*' => ['required', 'array'],
             'detalles.*.producto_id' => ['required', 'integer', 'exists:productos,id'],

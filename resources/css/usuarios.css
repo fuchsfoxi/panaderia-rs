@@ -1,0 +1,59 @@
+@import './productos.css';
+
+.usuario-caja-contrasena {
+    position: relative;
+    min-width: 0;
+}
+
+.usuario-caja-contrasena input {
+    padding-right: 56px;
+}
+
+.usuario-caja-contrasena .alternar-contrasena {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--verde-medio);
+    cursor: pointer;
+}
+
+.usuario-caja-contrasena .alternar-contrasena svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.usuario-detalles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px 24px;
+    margin-top: 12px;
+    color: var(--color-dark, #33403a);
+}
+
+.usuario-detalles dt {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.usuario-detalles dd {
+    margin: 4px 0 0;
+    overflow-wrap: anywhere;
+}
+
+.producto-nombre-estado h2 {
+    font-size: 18px;
+    overflow-wrap: anywhere;
+}

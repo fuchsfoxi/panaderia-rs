@@ -25,6 +25,10 @@ class ConsultarProduccionRequest extends FormRequest
             'fecha' => $this->old('fecha', $this->query('fecha', now()->toDateString())),
             'turno_id' => $this->old('turno_id', $this->query('turno_id')),
         ];
+        if ($this->user()?->esOperador()) {
+            // El contexto de registro de una cuenta compartida siempre usa su relación real.
+            $this->contexto['turno_id'] = $this->user()->turno_id;
+        }
     }
 
     public function validationData(): array

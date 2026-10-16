@@ -204,7 +204,7 @@ test('login conserva el acceso al dashboard y el destino solicitado', function (
     // controlador y sesión son reales. No se usa una base de datos compartida.
     $provider = Mockery::mock(EloquentUserProvider::class, [app('hash'), Usuario::class])->makePartial();
     $provider->shouldReceive('retrieveByCredentials')->once()
-        ->with(['username' => 'usuario.prueba', 'password' => 'clave-de-prueba'])
+        ->with(['username' => 'usuario.prueba', 'password' => 'clave-de-prueba', 'activo' => true])
         ->andReturn($this->usuario);
     Auth::guard()->setProvider($provider);
 
@@ -236,7 +236,7 @@ test('login formularios y logout conservan el esquema público con HTTP interno'
 
     $provider = Mockery::mock(EloquentUserProvider::class, [app('hash'), Usuario::class])->makePartial();
     $provider->shouldReceive('retrieveByCredentials')->once()
-        ->with(['username' => 'usuario.prueba', 'password' => 'clave-de-prueba'])
+        ->with(['username' => 'usuario.prueba', 'password' => 'clave-de-prueba', 'activo' => true])
         ->andReturn($this->usuario);
     Auth::guard()->setProvider($provider);
 

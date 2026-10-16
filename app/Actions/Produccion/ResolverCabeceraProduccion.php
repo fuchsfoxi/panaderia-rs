@@ -8,8 +8,12 @@ use Illuminate\Validation\ValidationException;
 
 class ResolverCabeceraProduccion
 {
+    public function __construct(private ValidarTurnoUsuario $turnos) {}
+
     public function resolver(string $fecha, int $turnoId, Categoria $categoria, int $usuarioId): Produccion
     {
+        $this->turnos->comprobar($usuarioId, $turnoId);
+
         $producciones = Produccion::where('fecha', $fecha)
             ->where('categoria_id', $categoria->id)
             ->where('turno_id', $turnoId)

@@ -1,8 +1,11 @@
 <?php
 
-use App\Models\User;
+use App\Models\Usuario;
 
 return [
+
+    // Solo para crear la cuenta inicial; nunca reemplaza una credencial existente.
+    'initial_admin_password' => env('INITIAL_ADMIN_PASSWORD'),
 
     /*
     |--------------------------------------------------------------------------
@@ -64,7 +67,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\Usuario::class),
+            'model' => env('AUTH_MODEL', Usuario::class),
         ],
 
         // 'users' => [

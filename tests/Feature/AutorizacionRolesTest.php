@@ -160,11 +160,12 @@ test('la página 403 ofrece solo destinos autorizados y logout POST con protecci
         ->and($xpath->query('.//input[@name="_token"]', $form)->length)->toBe(1);
 })->with([Rol::ADMINISTRADOR, Rol::OPERADOR, 'Encargado', 'Desconocido', null]);
 
-test('ambos roles registran las tres familias sin inferir turno ni aceptar autor del cliente', function (string $nombre, string $familia) {
+test('ambos roles registran las tres familias con turno asignado sin inferirlo del username ni aceptar autor cliente', function (string $nombre, string $familia) {
     $usuario = usuarioConRolDePrueba($this->fixtures, $nombre);
-    // Una cuenta con nombre de mañana puede registrar producción del turno noche.
+    // El nombre no decide el turno: la relación asignada sí lo hace para Operador.
     $usuario->update(['username' => 'cuenta_manana_ficticia']);
     $noche = Turno::create(['nombre_turnos' => 'Noche']);
+    $usuario->update(['turno_id' => $nombre === Rol::OPERADOR ? $noche->id : null]);
     $this->fixtures['productos']['Pan']->update(['panes_por_lata' => 12]);
     $detalle = [
         'producto_id' => $this->fixtures['productos'][$familia]->id,

@@ -128,6 +128,14 @@
                         </div>
 
                         <div class="campo" id="campo-turno">
+                            @if (auth()->user()->esOperador())
+                            <label for="turno-asignado">Turno asignado</label>
+                            <input id="turno-asignado" type="text" value="{{ auth()->user()->turno?->nombre_turnos ?? 'Sin turno asignado' }}" readonly>
+                            <input id="turno" type="hidden" name="turno_id" value="{{ auth()->user()->turno_id }}">
+                            @if (! auth()->user()->turno)
+                                <p class="error-campo" role="alert">Tu cuenta no tiene un turno asignado. Solicita su configuración al Administrador.</p>
+                            @endif
+                            @else
                             <label for="turno">Turno</label>
                             <select id="turno" name="turno_id" required>
                                 <option value="">Selecciona un turno</option>
@@ -135,6 +143,7 @@
                                     <option value="{{ $turno->id }}" @selected((string) $turnoSeleccionadoId === (string) $turno->id)>{{ $turno->nombre_turnos }}</option>
                                 @endforeach
                             </select>
+                            @endif
                             @error('turno_id')
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
@@ -258,7 +267,7 @@
                     </div>
                     <div class="formulario-botones">
                         <button type="button" id="btn-cancelar-form">Cancelar</button>
-                        <button type="submit">Guardar</button>
+                        <button type="submit" @disabled(auth()->user()->esOperador() && ! auth()->user()->turno_id)>Guardar</button>
                     </div>
                 </div>
                 <aside class="panel-info campo-condicional" data-mostrar-en="torta" style="display:{{ $categoriaSeleccionada === 'torta' ? 'block' : 'none' }}" aria-labelledby="titulo-info-torta">
