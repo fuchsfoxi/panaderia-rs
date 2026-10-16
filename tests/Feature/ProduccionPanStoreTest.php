@@ -431,7 +431,7 @@ test('registra cantidades por coches y latas sin depender del cálculo del naveg
     expect($dashboard->viewData('totalLotesHoy'))->toBe(1)
         ->and($dashboard->viewData('totalLatasHoy'))->toBe($detalle->cantidad);
     $historial = $this->get(route('history.index'))->assertOk()
-        ->assertSeeText('Cantidad: '.$detalle->cantidad.' latas en total');
+        ->assertSeeText('Cantidad: '.$detalle->cantidad.' latas');
     expect($historial->viewData('detalles')->sole()->id)->toBe($detalle->id);
 })->with([
     [0, 1], [0, 9], [1, 0], [1, 5], [2, 3],

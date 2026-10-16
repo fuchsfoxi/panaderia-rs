@@ -15,38 +15,35 @@
             <p class="descripcion-pagina">Consulta Pan, Torta y Bocadito por fecha, turno y categoría.</p>
         </div>
 
-        <form action="{{ route('history.index') }}" method="GET">
-            <div class="campo campo-condicional filtro-categoria">
-                <label for="categoria">Tipo de producción</label>
-                <select id="categoria" name="categoria" @if ($erroresFiltros->has('categoria')) aria-invalid="true" aria-describedby="error-categoria" @endif>
-                    <option value="">Todos</option>
-                    @foreach (['pan' => 'Pan', 'torta' => 'Torta', 'bocadito' => 'Bocadito'] as $clave => $nombre)
-                        <option value="{{ $clave }}" @selected($filtros['categoria'] === $clave)>{{ $nombre }}</option>
-                    @endforeach
-                </select>
-                @if ($erroresFiltros->has('categoria'))
-                    <p class="error-filtro" id="error-categoria" role="alert">{{ $erroresFiltros->first('categoria') }}</p>
-                @endif
-            </div>
-            <div class="filtro-fecha-general">
-                <div class="sub-titulo"><h2>Rango de fechas</h2></div>
-                <div class="filtro-fecha-principal">
-                    <div class="filtro-fecha-desde">
-                        <label for="fecha_inicio">Desde</label>
-                        <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ $filtros['fecha_inicio'] }}" @if ($erroresFiltros->has('fecha_inicio')) aria-invalid="true" aria-describedby="error-fecha-inicio" @endif>
-                        @if ($erroresFiltros->has('fecha_inicio'))
-                            <p class="error-filtro" id="error-fecha-inicio" role="alert">{{ $erroresFiltros->first('fecha_inicio') }}</p>
-                        @endif
-                    </div>
-                    <div class="filtro-fecha-hasta">
-                        <label for="fecha_fin">Hasta</label>
-                        <input type="date" id="fecha_fin" name="fecha_fin" value="{{ $filtros['fecha_fin'] }}" @if ($erroresFiltros->has('fecha_fin')) aria-invalid="true" aria-describedby="error-fecha-fin" @endif>
-                        @if ($erroresFiltros->has('fecha_fin'))
-                            <p class="error-filtro" id="error-fecha-fin" role="alert">{{ $erroresFiltros->first('fecha_fin') }}</p>
-                        @endif
-                    </div>
+        <form class="filtros-historial" action="{{ route('history.index') }}" method="GET" aria-label="Filtros del historial">
+            <div class="campos-filtros">
+                <div class="campo filtro-categoria">
+                    <label for="categoria">Tipo de producción</label>
+                    <select id="categoria" name="categoria" @if ($erroresFiltros->has('categoria')) aria-invalid="true" aria-describedby="error-categoria" @endif>
+                        <option value="">Todos</option>
+                        @foreach (['pan' => 'Pan', 'torta' => 'Torta', 'bocadito' => 'Bocadito'] as $clave => $nombre)
+                            <option value="{{ $clave }}" @selected($filtros['categoria'] === $clave)>{{ $nombre }}</option>
+                        @endforeach
+                    </select>
+                    @if ($erroresFiltros->has('categoria'))
+                        <p class="error-filtro" id="error-categoria" role="alert">{{ $erroresFiltros->first('categoria') }}</p>
+                    @endif
                 </div>
-                <div class="campo campo-condicional" id="campo-turno">
+                <div class="campo filtro-fecha-desde">
+                    <label for="fecha_inicio">Desde</label>
+                    <input type="date" id="fecha_inicio" name="fecha_inicio" value="{{ $filtros['fecha_inicio'] }}" @if ($erroresFiltros->has('fecha_inicio')) aria-invalid="true" aria-describedby="error-fecha-inicio" @endif>
+                    @if ($erroresFiltros->has('fecha_inicio'))
+                        <p class="error-filtro" id="error-fecha-inicio" role="alert">{{ $erroresFiltros->first('fecha_inicio') }}</p>
+                    @endif
+                </div>
+                <div class="campo filtro-fecha-hasta">
+                    <label for="fecha_fin">Hasta</label>
+                    <input type="date" id="fecha_fin" name="fecha_fin" value="{{ $filtros['fecha_fin'] }}" @if ($erroresFiltros->has('fecha_fin')) aria-invalid="true" aria-describedby="error-fecha-fin" @endif>
+                    @if ($erroresFiltros->has('fecha_fin'))
+                        <p class="error-filtro" id="error-fecha-fin" role="alert">{{ $erroresFiltros->first('fecha_fin') }}</p>
+                    @endif
+                </div>
+                <div class="campo filtro-turno" id="campo-turno">
                     <label for="turno">Turno</label>
                     <select id="turno" name="turno_id" @if ($erroresFiltros->has('turno_id')) aria-invalid="true" aria-describedby="error-turno" @endif>
                         <option value="">Todos los turnos</option>
@@ -71,7 +68,12 @@
                 <p class="error-filtro" role="alert">{{ $erroresFiltros->first('page') }}</p>
             @endif
         @else
-            <div class="datos-encontrados" role="status">{{ $detalles->total() }} registros encontrados</div>
+            <div class="cabecera-resultados">
+                <p class="datos-encontrados" role="status">{{ $detalles->total() }} registros encontrados</p>
+                @if ($detalles->isNotEmpty())
+                    <h2 class="fecha-dia"><time datetime="{{ $detalles->first()->produccion->fecha->format('Y-m-d') }}">{{ $detalles->first()->produccion->fecha->format('d/m/Y') }}</time></h2>
+                @endif
+            </div>
             @php
                 $fechaAnterior = null;
                 $latasPorCoche = \App\Models\DetallePan::LATAS_POR_COCHE;
@@ -86,45 +88,71 @@
                     $ayudantes = $detalle->empleados->filter(fn ($empleado) => $empleado->pivot->rolProduccion?->nombre_roles_produccion === 'Ayudante');
                 @endphp
                 @if ($fecha !== $fechaAnterior)
-                    <div class="fecha-dia"><time datetime="{{ $fecha }}">{{ $detalle->produccion->fecha->format('d/m/Y') }}</time></div>
+                    @if ($fechaAnterior !== null)
+                        <h2 class="fecha-dia fecha-dia-siguiente"><time datetime="{{ $fecha }}">{{ $detalle->produccion->fecha->format('d/m/Y') }}</time></h2>
+                    @endif
                     @php $fechaAnterior = $fecha; @endphp
                 @endif
                 <article class="carta-historial" data-familia="{{ strtolower($familia) }}" data-detalle-id="{{ $detalle->id }}">
-                    <div class="info-carta">
-                        <span class="etiqueta-familia">{{ $familia }}</span>
-                        <h3>{{ $detalle->producto?->nombre_p ?? 'Producto no disponible' }}</h3>
-                        <p><time datetime="{{ $fecha }}">{{ $detalle->produccion->fecha->format('d/m/Y') }}</time></p>
-                        <p>Turno: {{ $detalle->produccion->turno?->nombre_turnos ?? 'Sin turno registrado' }}</p>
-                        <p>Cantidad: {{ $detalle->cantidad }} {{ $esPan ? 'latas en total' : 'unidades' }}</p>
-                        <p>Maestro: {{ $maestros->pluck('nombre_empleados')->implode(', ') ?: 'Sin Maestro registrado' }}</p>
-                    </div>
+                    <header class="cabecera-carta">
+                        <div class="identidad-producto">
+                            <span class="etiqueta-familia">{{ $familia }}</span>
+                            <h3>{{ $detalle->producto?->nombre_p ?? 'Producto no disponible' }}</h3>
+                        </div>
+                        <p class="turno-carta"><span>Turno: </span><strong>{{ $detalle->produccion->turno?->nombre_turnos ?? 'Sin turno registrado' }}</strong></p>
+                    </header>
+                    <dl class="resumen-carta">
+                        <div class="dato-cantidad">
+                            <dt>Cantidad: </dt><dd>{{ $detalle->cantidad }} <span>{{ $esPan ? 'latas' : ($esTorta ? 'tortas' : 'bocaditos') }}</span></dd>
+                        </div>
+                        <div>
+                            <dt>Maestro: </dt><dd>{{ $maestros->pluck('nombre_empleados')->implode(', ') ?: 'Sin Maestro registrado' }}</dd>
+                        </div>
+                    </dl>
                     <details class="detalles-produccion">
                         <summary>Ver detalles <span aria-hidden="true">→</span></summary>
                         <div class="contenido-detalles">
                             @if ($esPan)
-                                <p>{{ intdiv($detalle->cantidad, $latasPorCoche) }} coches + {{ $detalle->cantidad % $latasPorCoche }} latas adicionales</p>
-                                <p>Total de latas: {{ $detalle->cantidad }}</p>
-                                <p>Unidad de medida: {{ $detalle->unidadMedida?->nombre_unidades_medida ?? 'Sin unidad registrada' }}</p>
-                                <p>Panes por lata utilizado: {{ $detalle->panes_por_lata_usado ?? 'Sin factor registrado' }}</p>
-                                @if ($detalle->panes_por_lata_usado > 0)
-                                    <p>Total estimado de panes: {{ $detalle->cantidad * $detalle->panes_por_lata_usado }}</p>
-                                @endif
-                                <p>Hora de finalización: {{ $detalle->hora_finalizacion !== null ? substr($detalle->hora_finalizacion, 0, 5) : 'Sin hora registrada' }}</p>
+                                <section class="grupo-detalles">
+                                    <h4>Producción</h4>
+                                    <p>{{ intdiv($detalle->cantidad, $latasPorCoche) }} coches + {{ $detalle->cantidad % $latasPorCoche }} latas adicionales</p>
+                                    <p>Total de latas: <strong>{{ $detalle->cantidad }}</strong></p>
+                                    <p>Unidad de medida: {{ $detalle->unidadMedida?->nombre_unidades_medida ?? 'Sin unidad registrada' }}</p>
+                                    <p>Panes por lata utilizado: <strong>{{ $detalle->panes_por_lata_usado ?? 'Sin factor registrado' }}</strong></p>
+                                    @if ($detalle->panes_por_lata_usado > 0)
+                                        <p>Total estimado de panes: <strong>{{ $detalle->cantidad * $detalle->panes_por_lata_usado }}</strong></p>
+                                    @endif
+                                    <p>Hora de finalización: {{ $detalle->hora_finalizacion !== null ? substr($detalle->hora_finalizacion, 0, 5) : 'Sin hora registrada' }}</p>
+                                </section>
                             @elseif ($esTorta)
-                                <p>Forma: {{ $detalle->forma }}</p>
-                                @if ($detalle->foto)
-                                    <a href="{{ asset('storage/'.$detalle->foto) }}" target="_blank" rel="noopener">
-                                        <img class="foto-torta" src="{{ asset('storage/'.$detalle->foto) }}" alt="Foto de {{ $detalle->producto?->nombre_p ?? 'la torta' }}" loading="lazy" width="480" height="320">
-                                    </a>
-                                @endif
+                                <section class="grupo-detalles">
+                                    <h4>Producción</h4>
+                                    <p>Forma: {{ $detalle->forma }}</p>
+                                    @if ($detalle->foto)
+                                        <a href="{{ asset('storage/'.$detalle->foto) }}" target="_blank" rel="noopener">
+                                            <img class="foto-torta" src="{{ asset('storage/'.$detalle->foto) }}" alt="Foto de {{ $detalle->producto?->nombre_p ?? 'la torta' }}" loading="lazy" width="480" height="320">
+                                        </a>
+                                    @endif
+                                </section>
                             @endif
-                            <p>Ayudantes: {{ $ayudantes->pluck('nombre_empleados')->implode(', ') ?: 'Sin Ayudantes registrados' }}</p>
-                            <p class="observacion">Observación: {{ $detalle->observacion ?? 'Sin observación' }}</p>
-                            @if ($detalle->registrado_por_usuario_id !== null)
-                                <p>Registró el lote: {{ $detalle->usuario?->username ?? 'Usuario no disponible' }}</p>
-                            @else
-                                <p>Registrador del lote: desconocido (registro histórico).</p>
-                                <p>Registró la sesión: {{ $detalle->produccion->usuario?->username ?? 'Usuario no disponible' }}</p>
+                            <section class="grupo-detalles">
+                                <h4>Equipo</h4>
+                                <p>Ayudantes: {{ $ayudantes->pluck('nombre_empleados')->implode(', ') ?: 'Sin Ayudantes registrados' }}</p>
+                            </section>
+                            <section class="grupo-detalles">
+                                <h4>Información general</h4>
+                                @if ($detalle->registrado_por_usuario_id !== null)
+                                    <p>Registró el lote: {{ $detalle->usuario?->username ?? 'Usuario no disponible' }}</p>
+                                @else
+                                    <p>Registrador del lote: desconocido (registro histórico).</p>
+                                    <p>Registró la sesión: {{ $detalle->produccion->usuario?->username ?? 'Usuario no disponible' }}</p>
+                                @endif
+                            </section>
+                            @if ($detalle->observacion !== null && $detalle->observacion !== '')
+                                <section class="grupo-detalles grupo-observacion">
+                                    <h4>Observaciones</h4>
+                                    <p class="observacion">{{ $detalle->observacion }}</p>
+                                </section>
                             @endif
                         </div>
                     </details>

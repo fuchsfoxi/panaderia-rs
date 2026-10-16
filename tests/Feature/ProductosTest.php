@@ -516,7 +516,7 @@ test('cantidad directa atraviesa Producto Producción e Historial sin factores n
         expect($campoPan->getAttribute('style'))->toContain('display:none');
     }
     $this->get(route('history.index', ['categoria' => strtolower($familia)]))->assertOk()
-        ->assertSeeText('Cantidad: '.$cantidad.' unidades')
+        ->assertSeeText('Cantidad: '.$cantidad.($familia === 'Torta' ? ' tortas' : ' bocaditos'))
         ->assertDontSeeText('latas')->assertDontSeeText('Panes por lata')->assertDontSeeText('Total estimado de panes');
 })->with([['Torta', 8], ['Bocadito', 150]]);
 

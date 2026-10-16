@@ -93,7 +93,7 @@ test('login dashboard producción registro e historial funcionan con datos persi
     foreach ([[], ['fecha_inicio' => '2026-10-05', 'fecha_fin' => '2026-10-05'], ['turno_id' => $this->payload['turno_id']]] as $filtros) {
         $response = $this->get(route('history.index', $filtros))->assertOk()
             ->assertSeeText('Pan ficticio')->assertSeeText('Turno: Mañana')
-            ->assertSeeText('Cantidad: '.$cantidad.' latas en total')->assertSeeText('2 coches + 4 latas')
+            ->assertSeeText('Cantidad: '.$cantidad.' latas')->assertSeeText('2 coches + 4 latas')
             ->assertSeeText('Nota real del lote de prueba')
             ->assertSeeText('Maestro: Empleado ficticio 1')
             ->assertSeeText('Ayudantes: Empleado ficticio 2, Empleado ficticio 3')

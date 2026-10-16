@@ -21,13 +21,15 @@ body {
 }
 
 .pagina-historial {
-  max-width: 700px;
+  width: 100%;
+  max-width: 1080px;
+  min-width: 0;
   margin: 0 auto;
 }
 
 .titulo-historal {
-  padding-bottom: 28px;
-  margin-bottom: 32px;
+  padding-bottom: 24px;
+  margin-bottom: 24px;
   border-bottom: 1px solid var(--verde-claro);
 }
 
@@ -37,87 +39,67 @@ body {
   margin: 8px 0;
 }
 
-.sub-titulo h2,
-.filtro-categoria h2 {
-  font-size: 1rem;
-  font-weight: 400;
-  color: var(--verde-medio);
-  margin-bottom: 8px;
+/* Un solo bloque reúne los cuatro filtros y sus acciones nativas. */
+.filtros-historial {
+  padding: 20px;
+  border: 1px solid var(--verde-claro);
+  border-radius: 16px;
+  margin-bottom: 28px;
 }
 
-.filtro-categoria {
-  margin-bottom: 24px;
-}
-
-/* Filtro de fecha */
-.filtro-fecha-general {
-  margin-bottom: 20px;
-}
-
-.filtro-fecha-principal {
-  display: flex;
+.campos-filtros {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) repeat(2, minmax(0, 1fr)) minmax(0, 1.25fr);
   gap: 16px;
-  margin-bottom: 20px;
+  align-items: start;
 }
 
-.filtro-fecha-desde,
-.filtro-fecha-hasta {
+.campo {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  min-width: 0;
+  gap: 8px;
 }
 
-.filtro-fecha-desde label,
-.filtro-fecha-hasta label,
 .campo label {
-  font-size: 0.85rem;
   color: var(--verde-medio);
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
-input[type="date"],
-select {
+.campo input,
+.campo select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 44px;
   border: 1px solid var(--verde-claro);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   background-color: var(--crema);
   color: var(--verde-oscuro);
   font-size: 1rem;
-  min-height: 44px;
-  min-width: 0;
-  max-width: 100%;
 }
 
-.campo-condicional {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 260px;
-}
-
-.campo-condicional.oculto {
-  display: none;
-}
-
-/* Botones de acción */
 .btn-filtro {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
 }
 
 .btn-limpiar,
 .btn-filtrar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
   border: 1px solid var(--verde-claro);
   border-radius: 20px;
   padding: 10px 24px;
   cursor: pointer;
   font-size: 0.95rem;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  text-decoration: none;
 }
 
 .btn-limpiar {
@@ -138,77 +120,225 @@ select {
   background-color: var(--verde-medio);
 }
 
-/* Resultados */
-.datos-encontrados {
-  color: var(--verde-medio);
-  font-size: 0.95rem;
-  margin-bottom: 16px;
-}
-
-.fecha-dia {
-  text-align: center;
-  color: var(--verde-medio);
-  font-size: 0.9rem;
-  margin: 24px 0 12px;
-  position: relative;
-}
-
-.carta-historial {
+/* La primera fecha comparte cabecera con el conteo; las demás separan grupos. */
+.cabecera-resultados {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: var(--beige);
-  border-radius: 16px;
-  padding: 16px 20px;
-  margin-bottom: 16px;
-  gap: 16px;
-}
-
-.info-carta {
-  flex-grow: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-
-.info-carta h3 {
-  margin: 0 0 4px;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.info-carta p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--verde-medio);
-}
-
-.filtro-fecha-principal {
+  gap: 12px;
   flex-wrap: wrap;
+  margin-bottom: 16px;
 }
 
-.btn-limpiar {
-  text-decoration: none;
+.datos-encontrados {
+  color: var(--verde-medio);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.fecha-dia {
+  color: var(--verde-medio);
+  font-size: 0.9rem;
+  font-weight: 400;
+  margin: 0;
+}
+
+.fecha-dia-siguiente {
+  padding-top: 8px;
+  margin: 24px 0 16px;
+  text-align: right;
+  border-top: 1px solid var(--verde-claro);
 }
 
 .carta-historial {
-  align-items: flex-start;
-  flex-wrap: wrap;
+  min-width: 0;
+  background-color: var(--beige);
+  border: 1px solid rgb(79 99 85 / 12%);
+  border-radius: 16px;
+  padding: 22px 24px 16px;
+  margin-bottom: 16px;
+  overflow-wrap: anywhere;
 }
 
-.info-carta p {
-  margin-top: 6px;
+.cabecera-carta,
+.identidad-producto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cabecera-carta {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.identidad-producto {
+  flex: 1;
+}
+
+.identidad-producto h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.etiqueta-familia {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  background-color: var(--verde-oscuro);
+  color: var(--crema);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.turno-carta {
+  flex-shrink: 0;
+  max-width: 40%;
+  margin: 0;
+  border: 1px solid rgb(79 99 85 / 24%);
+  border-radius: 12px;
+  padding: 6px 10px;
+  color: var(--verde-oscuro);
+  font-size: 0.85rem;
   line-height: 1.5;
+}
+
+.turno-carta strong {
+  color: var(--verde-oscuro);
+  font-weight: 400;
+}
+
+.resumen-carta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: 24px;
+  margin: 24px 0 12px;
+}
+
+.resumen-carta > div {
+  min-width: 0;
+}
+
+.resumen-carta dt {
+  color: var(--verde-oscuro);
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.resumen-carta dd {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.dato-cantidad dd {
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.dato-cantidad dd span {
+  font-size: 1rem;
+}
+
+.detalles-produccion {
+  min-width: 0;
+}
+
+.detalles-produccion summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 10px 14px;
+  border: 1px solid rgb(79 99 85 / 35%);
+  border-radius: 20px;
+  color: var(--verde-oscuro);
+  font-size: 0.85rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.detalles-produccion summary::-webkit-details-marker {
+  display: none;
+}
+
+.detalles-produccion summary:hover,
+.detalles-produccion[open] summary {
+  background-color: var(--verde-claro);
+}
+
+.detalles-produccion[open] summary span {
+  transform: rotate(90deg);
+}
+
+.detalles-produccion summary:focus-visible {
+  outline: 2px solid var(--verde-medio);
+  outline-offset: 3px;
+}
+
+.contenido-detalles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 32px;
+  border-top: 1px solid rgb(79 99 85 / 24%);
+  margin-top: 16px;
+  padding-top: 20px;
+  color: var(--verde-oscuro);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.grupo-detalles {
+  min-width: 0;
+}
+
+.grupo-detalles h4 {
+  color: var(--verde-oscuro);
+  margin: 0 0 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.grupo-detalles p {
+  margin: 4px 0;
+}
+
+.grupo-detalles strong {
+  font-weight: 400;
+  color: var(--verde-oscuro);
+}
+
+.grupo-observacion {
+  grid-column: 1 / -1;
 }
 
 .observacion {
   white-space: pre-wrap;
 }
 
+.foto-torta {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: 12px;
+  margin-top: 12px;
+}
+
 .error-filtro {
   color: #8a3030;
-  max-width: 260px;
   font-size: 0.85rem;
   line-height: 1.5;
+  margin: 0;
   overflow-wrap: anywhere;
 }
 
@@ -231,6 +361,8 @@ select {
   margin: 24px 0;
   flex-wrap: wrap;
   align-items: center;
+  color: var(--verde-medio);
+  font-size: 0.9rem;
 }
 
 .paginacion-historial a {
@@ -247,59 +379,80 @@ select {
   background-color: var(--verde-claro);
 }
 
-@media (max-width: 767px) {
-  .filtro-fecha-desde,
-  .filtro-fecha-hasta,
-  .campo-condicional {
-    width: 100%;
-    max-width: none;
+@media (max-width: 1023px) {
+  .campos-filtros {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.detalles-produccion {
-  width: 100%;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
+@media (max-width: 599px) {
+  .filtros-historial {
+    padding: 16px;
+  }
 
-.detalles-produccion summary {
-  cursor: pointer;
-  min-height: 44px;
-  padding: 12px 0;
-  color: var(--verde-oscuro);
-  text-underline-offset: 3px;
-}
+  .campos-filtros {
+    gap: 16px 10px;
+  }
 
-.detalles-produccion summary:focus-visible {
-  outline: 2px solid var(--verde-medio);
-  outline-offset: 3px;
-  border-radius: 8px;
-}
+  .filtro-categoria,
+  .filtro-turno {
+    grid-column: 1 / -1;
+  }
 
-.contenido-detalles {
-  border-top: 1px solid var(--verde-claro);
-  color: var(--verde-medio);
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
+  .campo input,
+  .campo select {
+    padding-inline: 8px;
+  }
 
-.etiqueta-familia {
-  display: inline-block;
-  font-size: 0.75rem;
-  background-color: var(--verde-oscuro);
-  color: var(--crema);
-  border-radius: 999px;
-  padding: 4px 10px;
-  margin-bottom: 8px;
-}
+  .campo input[type="date"] {
+    padding-inline: 4px;
+  }
 
-.foto-torta {
-  display: block;
-  width: 100%;
-  max-width: 480px;
-  height: auto;
-  max-height: 320px;
-  object-fit: contain;
-  border-radius: 12px;
-  margin: 16px 0;
+  .campo input[type="date"]::-webkit-calendar-picker-indicator {
+    margin-inline-start: 0;
+    padding: 0;
+  }
+
+  .btn-filtro > * {
+    flex: 1;
+    padding-inline: 12px;
+  }
+
+  .carta-historial {
+    padding: 16px;
+  }
+
+  .cabecera-carta {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .identidad-producto {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .turno-carta {
+    max-width: 100%;
+    padding: 0;
+    border: 0;
+  }
+
+  .resumen-carta {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    gap: 16px;
+    margin-top: 20px;
+  }
+
+  .contenido-detalles {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .paginacion-historial > span:nth-child(2) {
+    order: -1;
+    width: 100%;
+    text-align: center;
+  }
 }

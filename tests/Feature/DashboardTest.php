@@ -280,7 +280,7 @@ test('login dashboard registro de Pan y regreso actualizan métricas e historial
     expect($actualizado->viewData('totalLotesHoy'))->toBe(1)
         ->and($actualizado->viewData('totalLatasHoy'))->toBe(DetallePan::LATAS_POR_COCHE + 4);
     $this->get(route('history.index'))->assertOk()->assertSeeText('Pan ficticio')
-        ->assertSeeText((DetallePan::LATAS_POR_COCHE + 4).' latas en total');
+        ->assertSeeText((DetallePan::LATAS_POR_COCHE + 4).' latas');
 });
 
 test('dashboard mantiene consultas acotadas al pasar de uno a varios lotes recientes', function () {
