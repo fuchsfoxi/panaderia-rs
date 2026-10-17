@@ -55,6 +55,12 @@ afterEach(function () {
 test('la Action registra sin Request y deriva turno unidad y snapshot del contexto real', function (?int $factor) {
     $producto = $this->fixtures['productos']['Pan'];
     $producto->update(['panes_por_lata' => $factor]);
+    if ($factor === null) {
+        expect(fn () => $this->registrar->ejecutar($this->datos, $this->fixtures['usuario']->id))->toThrow(ValidationException::class);
+        expect(Produccion::count())->toBe(0)->and(DetallePan::count())->toBe(0);
+
+        return;
+    }
     $produccion = $this->registrar->ejecutar($this->datos, $this->fixtures['usuario']->id);
     $detalle = $produccion->detallesPan()->sole();
 

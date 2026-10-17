@@ -107,6 +107,10 @@
                             && is_scalar($participante['rol_produccion_id'] ?? null);
                     })) : [];
                 $indice = 0;
+                $productoAnterior = $categoriaSeleccionada === 'pan' ? $productosPan->firstWhere('id', $detalle['producto_id']) : null;
+                $codigoPan = $productoAnterior?->unidadMedida?->codigo;
+                $panLata = $categoriaSeleccionada === 'pan' && ($codigoPan === 'LATA' || ! $productoAnterior);
+                $cantidadDirecta = $categoriaSeleccionada !== 'pan' || $codigoPan === 'UNIDAD';
             @endphp
             <fieldset class="detalle-pan contenido-produccion" data-indice="0">
                 <legend class="solo-lectores">Producto terminado</legend>
@@ -155,7 +159,7 @@
                                 <option value="">Selecciona un producto</option>
                                 @foreach ($productosPorFamilia as $familia => $productos)
                                     @foreach ($productos as $producto)
-                                        <option value="{{ $producto->id }}" data-familia="{{ $familia }}" @if ($familia === 'pan') data-panes-por-lata="{{ $producto->panes_por_lata }}" @endif @disabled($categoriaSeleccionada !== $familia) @selected($categoriaSeleccionada === $familia && (string) $detalle['producto_id'] === (string) $producto->id)>{{ $producto->nombre_p }}</option>
+                                        <option value="{{ $producto->id }}" data-familia="{{ $familia }}" @if ($familia === 'pan') data-unidad-codigo="{{ $producto->unidadMedida?->codigo }}" @if ($producto->unidadMedida?->codigo === 'LATA') data-panes-por-lata="{{ $producto->panes_por_lata }}" @endif @endif @disabled($categoriaSeleccionada !== $familia) @selected($categoriaSeleccionada === $familia && (string) $detalle['producto_id'] === (string) $producto->id)>{{ $producto->nombre_p }}</option>
                                     @endforeach
                                 @endforeach
                             </select>
@@ -163,41 +167,42 @@
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="campo campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
+                        <p class="campo campo-ancho" data-tipo-registro>Tipo de registro: {{ $cantidadDirecta ? 'Por unidades' : 'Por latas' }}</p>
+                        <div class="campo campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <label data-label="coches" for="detalle-{{ $indice }}-coches">Coches</label>
-                            <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" @disabled($categoriaSeleccionada !== 'pan') min="0" step="1" value="{{ $detalle['coches'] ?? '0' }}">
+                            <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" @disabled(! $panLata) min="0" step="1" value="{{ $detalle['coches'] ?? '0' }}">
                             @error("detalles.$indice.coches")
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="campo campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
+                        <div class="campo campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas adicionales</label>
-                            <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" @disabled($categoriaSeleccionada !== 'pan') min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '0' }}">
+                            <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" @disabled(! $panLata) min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '0' }}">
                             @error("detalles.$indice.latas_adicionales")
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="campo campo-ancho resumen-latas campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
+                        <div class="campo campo-ancho resumen-latas campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <span class="total-latas-etiqueta">Total de latas</span>
                             <output data-total-latas aria-live="polite">0 latas</output>
                             <small>1 coche = {{ $latasPorCoche }} latas</small>
                             <span>Panes por lata: <output data-panes-por-lata>Selecciona un producto</output></span>
                             <span>Total estimado: <output data-total-panes aria-live="polite">Selecciona un producto</output></span>
                         </div>
-                        <div class="campo campo-ancho campo-condicional" data-mostrar-en="pan" style="display:{{ $categoriaSeleccionada === 'pan' ? 'flex' : 'none' }}">
+                        <div class="campo campo-ancho campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <label for="detalle-hora-finalizacion">Hora de finalización</label>
-                            <input type="time" data-campo="hora_finalizacion" id="detalle-hora-finalizacion" name="detalles[0][hora_finalizacion]" step="60" required @disabled($categoriaSeleccionada !== 'pan') value="{{ $detalle['hora_finalizacion'] }}">
+                            <input type="time" data-campo="hora_finalizacion" id="detalle-hora-finalizacion" name="detalles[0][hora_finalizacion]" step="60" required @disabled(! $panLata) value="{{ $detalle['hora_finalizacion'] }}">
                             @error('detalles.0.hora_finalizacion')
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="campo campo-condicional" data-mostrar-en="torta bocadito" style="display:{{ $categoriaSeleccionada !== 'pan' ? 'flex' : 'none' }}">
-                            <label for="detalle-cantidad">Cantidad</label>
-                            <input type="number" data-campo="cantidad" id="detalle-cantidad" name="detalles[0][cantidad]" min="1" max="2147483647" step="1" required @disabled($categoriaSeleccionada === 'pan') value="{{ $detalle['cantidad'] }}">
+                        <div class="campo campo-condicional" data-mostrar-en="pan torta bocadito" data-pan-registro="UNIDAD" style="display:{{ $cantidadDirecta ? 'flex' : 'none' }}">
+                            <label for="detalle-cantidad">Cantidad producida</label>
+                            <input type="number" data-campo="cantidad" id="detalle-cantidad" name="detalles[0][cantidad]" min="1" max="2147483647" step="1" required @disabled(! $cantidadDirecta) value="{{ $detalle['cantidad'] }}">
                             @error('detalles.0.cantidad')
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
-                            <small>Introduce la cantidad producida.</small>
+                            <small>Unidad: {{ $categoriaSeleccionada === 'torta' ? 'tortas' : 'UNIDAD' }}. Introduce la cantidad producida.</small>
                             <output data-resultado-directo aria-live="polite">{{ $detalle['cantidad'] ? $detalle['cantidad'].' '.($categoriaSeleccionada === 'torta' ? 'tortas' : 'unidades') : 'Introduce una cantidad entera positiva.' }}</output>
                         </div>
                         <div class="campo campo-ancho">
@@ -334,7 +339,7 @@
                             </div>
                             <div class="tarjeta-body">
                                 <h3>{{ $registro->producto->nombre_p }}</h3>
-                                @if ($categoriaSeleccionada === 'pan')
+                                @if ($categoriaSeleccionada === 'pan' && $registro->unidadMedida?->codigo === 'LATA')
                                     <p>{{ intdiv($registro->cantidad, $latasPorCoche) }} coches + {{ $registro->cantidad % $latasPorCoche }} latas ({{ $registro->cantidad }} latas en total)</p>
                                     <p>Panes por lata utilizado: {{ $registro->panes_por_lata_usado ?? 'Sin factor registrado' }}</p>
                                     @if ($registro->panes_por_lata_usado > 0)

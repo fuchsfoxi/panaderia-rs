@@ -6,7 +6,7 @@ import { runInNewContext } from 'node:vm';
 const codigo = readFileSync(new URL('../../resources/js/produccion.js', import.meta.url), 'utf8');
 
 // Ejecutar el script completo y sus eventos con dobles del DOM; no simular diseño/navegador.
-function entorno(categoria = 'pan') {
+function entorno(categoria = 'pan', capacidad = 7) {
     const elemento = (value = '', dataset = {}) => ({
         value, dataset, textContent: '', options: [], selectedOptions: [],
         validity: { badInput: false }, eventos: new Map(), classList: { toggle() {}, remove() {} },
@@ -22,7 +22,7 @@ function entorno(categoria = 'pan') {
     const latas = elemento('0', { campo: 'latas_adicionales' });
     const producto = elemento('producto', { campo: 'producto_id' });
     producto.options = ['', 'pan', 'torta', 'bocadito'].map(familia => ({
-        value: familia, dataset: familia ? { familia } : {}, disabled: false, hidden: false,
+        value: familia, dataset: familia ? { familia, ...(familia === 'pan' ? { unidadCodigo: 'LATA' } : {}) } : {}, disabled: false, hidden: false,
     }));
     const cantidad = elemento('4', { campo: 'cantidad' });
     const forma = elemento('circular', { campo: 'forma' });
@@ -49,7 +49,7 @@ function entorno(categoria = 'pan') {
     tags.replaceChildren = () => {};
     const detalle = elemento();
     const selectores = new Map([
-        ['[data-campo="cantidad"]', cantidad], ['[data-panes-por-lata]', factorPan], ['[data-total-panes]', totalPanes], ['[data-resultado-directo]', resultado],
+        ['[data-campo="cantidad"]', cantidad], ['output[data-panes-por-lata]', factorPan], ['[data-total-panes]', totalPanes], ['[data-resultado-directo]', resultado],
         ['#editor-participantes', editor], ['[data-abrir-participantes]', abrir],
         ['[data-campo="forma"]', forma], ['[data-campo="foto"]', foto], ['[data-campo="foto_camara"]', camara],
         ['[data-preview-foto]', preview], ['[data-nombre-foto]', nombreFoto], ['[data-icono-foto]', iconoFoto],
@@ -65,7 +65,7 @@ function entorno(categoria = 'pan') {
             ? [cantidad, forma, foto, observacion]
             : [coches, latas, producto, cantidad, forma, foto, camara, hora, observacion, empleado, rol];
     // Factor deliberadamente distinto: demostrar que el JS consume el dato publicado por Blade.
-    const factor = 7;
+    const factor = capacidad;
     const formulario = elemento('', { latasPorCoche: String(factor), panUrl: '/produccion', tortaUrl: '/produccion/torta', bocaditoUrl: '/produccion/bocadito' });
     formulario.querySelector = selector => selector === '.detalle-pan' ? detalle : elemento();
     const ids = new Map([
@@ -77,11 +77,11 @@ function entorno(categoria = 'pan') {
     const document = elemento();
     document.getElementById = id => ids.get(id);
     const botones = ['pan', 'torta', 'bocadito'].map(categoria => elemento('', { categoria }));
-    const condicional = (mostrarEn, controles) => ({
-        dataset: { mostrarEn }, style: {}, classList: { contains: () => true },
+    const condicional = (mostrarEn, controles, panRegistro = null) => ({
+        dataset: { mostrarEn, panRegistro }, style: {}, classList: { contains: () => true },
         querySelectorAll: () => controles,
     });
-    const campos = [condicional('pan', [coches, latas, hora]), condicional('torta bocadito', [cantidad]), condicional('torta', [forma, foto, camara, quitarFoto, ...formas])];
+    const campos = [condicional('pan', [coches, latas, hora], 'LATA'), condicional('pan torta bocadito', [cantidad], 'UNIDAD'), condicional('torta', [forma, foto, camara, quitarFoto, ...formas])];
     const error = elemento('', { errorFamilia: categoria });
     const registros = elemento('', { registrosFamilia: categoria });
     document.querySelectorAll = selector => selector === '.btn-categoria' ? botones
@@ -307,11 +307,12 @@ test('consulta sigue accesible y utiliza la categoría elegida después de cambi
 
 test('Pan estima 12 por 30 y reacciona al cambio de producto sin enviar el total', () => {
     const e = entorno();
-    e.producto.selectedOptions = [{ value: '905', dataset: { familia: 'pan', panesPorLata: '30' } }];
+    e.producto.selectedOptions = [{ value: '905', textContent: 'Pan ficticio', dataset: { familia: 'pan', unidadCodigo: 'LATA', panesPorLata: '30' } }];
     e.latas.value = '5';
     e.coches.value = '1'; // El fixture publica 7 latas por coche.
     e.actualizar();
     assert.equal(e.factorPan.textContent, '30');
+    assert.equal(e.producto.selectedOptions[0].textContent, 'Pan ficticio');
     assert.equal(e.output.textContent, '12 latas');
     assert.equal(e.totalPanes.textContent, '360 panes');
     e.producto.selectedOptions[0].dataset.panesPorLata = '32';
@@ -326,7 +327,7 @@ test('Pan estima 12 por 30 y reacciona al cambio de producto sin enviar el total
 for (const [familia, cantidad, texto] of [['torta', '8', '8 tortas'], ['bocadito', '150', '150 unidades']]) {
     test(`${familia} muestra cantidad directa aunque el producto tenga un factor ajeno`, () => {
         const e = entorno(familia);
-        e.producto.selectedOptions = [{ value: '904', dataset: { panesPorLata: '30' } }];
+        e.producto.selectedOptions = [{ value: '904', dataset: { unidadCodigo: 'LATA', panesPorLata: '30' } }];
         e.cantidad.value = cantidad;
         e.detalle.emitir('input', { target: e.cantidad });
         assert.equal(e.resultado.textContent, texto);
@@ -342,7 +343,7 @@ for (const [familia, cantidad, texto] of [['torta', '8', '8 tortas'], ['bocadito
 
 test('preview Pan rechaza cantidades fuera de INT y evita estimaciones imprecisas', () => {
     const e = entorno();
-    e.producto.selectedOptions = [{ value: '905', dataset: { panesPorLata: '2147483647' } }];
+    e.producto.selectedOptions = [{ value: '905', textContent: 'Pan ficticio', dataset: { unidadCodigo: 'LATA', panesPorLata: '2147483647' } }];
     e.coches.value = '306783378';
     e.latas.value = '1'; // INT_MAX con el factor 7 del fixture.
     e.actualizar();
@@ -352,4 +353,42 @@ test('preview Pan rechaza cantidades fuera de INT y evita estimaciones imprecisa
     e.actualizar();
     assert.match(e.output.textContent, /^Introduce coches enteros/);
     assert.equal(e.totalPanes.textContent, 'Introduce una cantidad válida de latas.');
+});
+
+test('seleccionar Pan UNIDAD muestra cantidad y limpia/deshabilita coches latas y hora', () => {
+    const ui = entorno();
+    ui.coches.value = '1'; ui.latas.value = '4'; ui.hora.value = '19:30';
+    ui.producto.selectedOptions = [{value: 'pan-unidad', dataset: {familia: 'pan', unidadCodigo: 'UNIDAD'}}];
+    ui.producto.emitir('change');
+    assert.equal(ui.cantidad.disabled, false);
+    for (const campo of [ui.coches, ui.latas, ui.hora]) {
+        assert.equal(campo.disabled, true);
+        assert.equal(campo.value, '');
+    }
+    ui.cantidad.value = '20'; ui.actualizar();
+    assert.equal(ui.resultado.textContent, '20 unidades');
+    assert.equal(ui.factorPan.textContent, '');
+    assert.equal(ui.totalPanes.textContent, '');
+    assert.equal(ui.campos[0].style.display, 'none');
+    assert.equal(ui.campos[1].style.display, 'flex');
+});
+
+test('volver de UNIDAD a LATA activa hora y cálculo de 18 latas por coche', () => {
+    const ui = entorno('pan', 18);
+    // El script usa el valor de Blade al inicializar: comprobar también la fuente real.
+    const blade = readFileSync(new URL('../../resources/views/produccion/index.blade.php', import.meta.url), 'utf8');
+    assert.match(blade, /DetallePan::LATAS_POR_COCHE/);
+    const modelo = readFileSync(new URL('../../app/Models/DetallePan.php', import.meta.url), 'utf8');
+    assert.match(modelo, /LATAS_POR_COCHE = 18/);
+    ui.producto.selectedOptions = [{value:'pan-unidad', dataset:{unidadCodigo:'UNIDAD'}}];
+    ui.producto.emitir('change');
+    ui.cantidad.value = '20';
+    ui.producto.selectedOptions = [{value:'pan-lata', dataset:{unidadCodigo:'LATA',panesPorLata:'30'}}];
+    ui.producto.emitir('change');
+    assert.equal(ui.cantidad.disabled, true);
+    assert.equal(ui.cantidad.value, '');
+    for (const campo of [ui.coches, ui.latas, ui.hora]) assert.equal(campo.disabled, false);
+    ui.coches.value='1'; ui.latas.value='4'; ui.actualizar();
+    assert.equal(ui.output.textContent, `${ui.factor + 4} latas`);
+    assert.equal(ui.totalPanes.textContent, `${(ui.factor + 4) * 30} panes`);
 });

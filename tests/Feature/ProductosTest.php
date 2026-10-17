@@ -28,7 +28,7 @@ beforeEach(function () {
     $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR);
     $this->seed(UnidadMedidaSeeder::class);
     foreach ($this->fixtures['productos'] as $familia => $producto) {
-        $producto->update(['unidad_medida_id' => UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole()->id]);
+        $producto->update(['unidad_medida_id' => UnidadMedida::where('codigo', ($familia === 'Pan' ? UnidadMedida::LATA : UnidadMedida::UNIDAD))->sole()->id]);
     }
     $this->fixtures['unidad'] = $this->fixtures['productos']['Pan']->unidadMedida;
     $this->withoutVite();
@@ -276,7 +276,9 @@ test('cualquier familia con historia bloquea categoría y unidad antes de escrib
         if ($datos[$campo] === $producto->categoria_id) {
             $datos[$campo] = $this->fixtures['productos']['Pan']->categoria_id;
         }
-        $datos['panes_por_lata'] = $datos[$campo] === $this->fixtures['productos']['Pan']->categoria_id ? 24 : null;
+        $esPan = $datos[$campo] === $this->fixtures['productos']['Pan']->categoria_id;
+        $datos['panes_por_lata'] = $esPan ? 24 : null;
+        $datos['unidad_registro'] = $esPan ? 'LATA' : 'UNIDAD';
     } else {
         $datos[$campo] = UnidadMedida::create(['nombre_unidades_medida' => 'Otra unidad', 'equivalencia_unidades' => 1])->id;
     }
@@ -290,7 +292,7 @@ test('formulario de edición protege selects históricos y conserva nombre facto
     $dom = new DOMDocument;
     @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($dom);
-    expect($xpath->query('//select[@disabled]')->length)->toBe(1)
+    expect($xpath->query('//select[@disabled]')->length)->toBe(2)
         ->and($xpath->query('//input[@type="hidden" and @name="categoria_id"]')->length)->toBe(1)
         ->and($xpath->query('//*[@name="unidad_medida_id"]')->length)->toBe(0)
         ->and($xpath->query('//input[@name="nombre_p" and not(@disabled)]')->length)->toBe(1)
@@ -443,7 +445,7 @@ test('old input malformado no rompe el formulario y los errores tienen labels y 
 });
 
 test('formulario avisa cuando el catálogo no permite crear y no presupone unidad Lata', function () {
-    $this->get('/productos/crear')->assertOk()->assertSeeText('La categoría determina la unidad automáticamente');
+    $this->get('/productos/crear')->assertOk()->assertSeeText('Pan permite registrar por latas o por unidades.');
     Producto::query()->delete(); // Solo fixtures aisladas sin historia, para simular catálogo incompleto.
     UnidadMedida::query()->delete();
     $this->get('/productos/crear')->assertOk()->assertSeeText('Para guardar un producto necesitas categorías y unidades de medida disponibles.');
@@ -513,7 +515,7 @@ test('cantidad directa atraviesa Producto Producción e Historial sin factores n
     $dom = new DOMDocument;
     @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($dom);
-    expect(trim($xpath->query('//label[@for="detalle-cantidad"]')->item(0)->textContent))->toBe('Cantidad')
+    expect(trim($xpath->query('//label[@for="detalle-cantidad"]')->item(0)->textContent))->toBe('Cantidad producida')
         ->and($xpath->query('//input[@data-campo="cantidad" and not(@disabled)]')->length)->toBe(1)
         ->and($xpath->query('//input[@data-campo="coches" and @disabled]')->length)->toBe(1)
         ->and($xpath->query('//input[@data-campo="latas_adicionales" and @disabled]')->length)->toBe(1);

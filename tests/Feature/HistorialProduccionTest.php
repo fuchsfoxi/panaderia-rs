@@ -314,7 +314,7 @@ test('pagina globalmente las familias sin cargar más de quince lotes y conserva
 
 test('históricos no inventan autor hora ni factor y las fotos de Torta usan el disco public', function () {
     $pan = registrarLoteHistorial($this->payload, $this->fixtures);
-    $pan->update(['registrado_por_usuario_id' => null, 'hora_finalizacion' => null]);
+    $pan->update(['registrado_por_usuario_id' => null, 'hora_finalizacion' => null, 'panes_por_lata_usado' => null]);
     $cabecera = Produccion::create([
         'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
         'categoria_id' => $this->fixtures['productos']['Torta']->categoria_id,

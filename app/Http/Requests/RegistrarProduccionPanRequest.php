@@ -2,7 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Actions\Produccion\ValidarParticipantesProduccion;
+use App\Actions\Produccion\ValidarRegistroPan;
 use App\Models\DetallePan;
+use App\Models\Producto;
+use App\Models\RolProduccion;
+use App\Models\UnidadMedida;
 use App\Rules\TurnoPermitidoUsuario;
 use Closure;
 use Illuminate\Contracts\Validation\Validator;
@@ -32,6 +37,11 @@ class RegistrarProduccionPanRequest extends FormRequest
             if (! is_array($detalle)) {
                 continue;
             }
+            $id = $detalle['producto_id'] ?? null;
+            $producto = is_scalar($id) && filter_var($id, FILTER_VALIDATE_INT) !== false ? Producto::with('unidadMedida')->find($id) : null;
+            if ($producto?->unidadMedida?->codigo !== UnidadMedida::LATA) {
+                continue;
+            }
             foreach (['coches', 'latas_adicionales'] as $campo) {
                 $valor = $detalle[$campo] ?? null;
                 if ($valor === null || $valor === '') {
@@ -58,10 +68,11 @@ class RegistrarProduccionPanRequest extends FormRequest
             'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user())],
             'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
             'detalles.*' => ['required', 'array'],
+            'detalles.*.cantidad' => ['sometimes'],
+            'detalles.*.coches' => ['sometimes'],
+            'detalles.*.latas_adicionales' => ['sometimes'],
+            'detalles.*.hora_finalizacion' => ['sometimes'],
             'detalles.*.producto_id' => ['required', 'integer', 'exists:productos,id'],
-            'detalles.*.hora_finalizacion' => ['required', 'date_format:H:i'],
-            'detalles.*.coches' => ['required', 'integer', 'min:0', 'max:'.intdiv(DetallePan::MAX_CANTIDAD_LATAS, DetallePan::LATAS_POR_COCHE)],
-            'detalles.*.latas_adicionales' => ['required', 'integer', 'min:0', 'max:'.(DetallePan::LATAS_POR_COCHE - 1)],
             'detalles.*.observacion' => ['nullable', 'string', function (string $attribute, mixed $value, Closure $fail): void {
                 if (is_string($value) && strlen($value) > self::MAX_OBSERVACION_BYTES) {
                     $fail('La observación no puede superar '.self::MAX_OBSERVACION_BYTES.' bytes.');
@@ -72,6 +83,41 @@ class RegistrarProduccionPanRequest extends FormRequest
             'detalles.*.participantes.*.empleado_id' => ['required', 'integer', 'exists:empleados,id'],
             'detalles.*.participantes.*.rol_produccion_id' => ['required', 'integer', 'exists:roles_produccion,id'],
         ];
+    }
+
+    public function after(): array
+    {
+        return [function (\Illuminate\Validation\Validator $validator): void {
+            $detalles = $this->input('detalles');
+            if (! is_array($detalles)) {
+                return;
+            }
+            foreach ($detalles as $indice => $detalle) {
+                if (! is_array($detalle) || $validator->errors()->has("detalles.$indice.producto_id")) {
+                    continue;
+                }
+                $producto = Producto::with(['unidadMedida', 'categoria'])->find($detalle['producto_id'] ?? null);
+                if (! $producto || ! $producto->activo || $producto->categoria?->nombre_categorias !== 'Pan') {
+                    $validator->errors()->add("detalles.$indice.producto_id", 'Debe seleccionar un producto activo de la categoría Pan.');
+
+                    continue;
+                }
+                $erroresEquipo = collect($validator->errors()->keys())->contains(fn ($campo) => str_starts_with($campo, "detalles.$indice.participantes"));
+                if (! $erroresEquipo && isset($detalle['participantes'])) {
+                    $roles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])->get()->keyBy('id');
+                    foreach (app(ValidarParticipantesProduccion::class)->errores($detalle['participantes'], $roles, 'Pan') as $campo => $mensajes) {
+                        foreach ((array) $mensajes as $mensaje) {
+                            $validator->errors()->add($campo, $mensaje);
+                        }
+                    }
+                }
+                foreach (app(ValidarRegistroPan::class)->errores($detalle, $producto) as $campo => $mensajes) {
+                    foreach ($mensajes as $mensaje) {
+                        $validator->errors()->add("detalles.$indice.$campo", $mensaje);
+                    }
+                }
+            }
+        }];
     }
 
     public function messages(): array

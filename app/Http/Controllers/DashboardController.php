@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DetallePan;
 use App\Models\Produccion;
 use App\Models\Turno;
+use App\Models\UnidadMedida;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -19,9 +20,10 @@ class DashboardController extends Controller
         // Agregar por turno de cabecera, sin cargar los lotes del día en memoria.
         $resumenHoy = (clone $lotesPan)
             ->join('produccion', 'produccion.id', '=', 'detalle_pan.produccion_id')
+            ->leftJoin('unidades_medida as unidad_historica', 'unidad_historica.id', '=', 'detalle_pan.unidad_medida_id')
             ->where('produccion.fecha', $fechaHoy->toDateString())
             ->select('produccion.turno_id')
-            ->selectRaw('COUNT(*) as lotes, SUM(detalle_pan.cantidad) as latas')
+            ->selectRaw('COUNT(*) as lotes, SUM(CASE WHEN unidad_historica.codigo = ? THEN detalle_pan.cantidad ELSE 0 END) as latas', [UnidadMedida::LATA])
             ->groupBy('produccion.turno_id')
             ->get();
 
@@ -49,7 +51,7 @@ class DashboardController extends Controller
         }
 
         $ultimasProducciones = (clone $lotesPan)
-            ->with(['producto', 'produccion.turno', 'produccion.usuario'])
+            ->with(['producto', 'unidadMedida', 'produccion.turno', 'produccion.usuario'])
             ->orderByDesc(Produccion::select('fecha')->whereColumn('produccion.id', 'detalle_pan.produccion_id'))
             ->orderByDesc('detalle_pan.id')
             ->limit(5)->get();

@@ -14,7 +14,7 @@
             <div>
                 <p class="dashboard-etiqueta">Panadería RS</p>
                 <h1>Dashboard</h1>
-                <p class="dashboard-descripcion">Resumen de los lotes y las latas de Pan.</p>
+                <p class="dashboard-descripcion">Resumen de lotes de Pan y latas producidas.</p>
             </div>
             <nav class="dashboard-accesos" aria-label="Accesos rápidos">
                 <a class="dashboard-boton dashboard-boton-principal" href="{{ route('produccion.index') }}">Registrar producción</a>
@@ -80,7 +80,7 @@
                             <tr>
                                 <th scope="col">Producto</th>
                                 <th scope="col">Turno</th>
-                                <th scope="col" class="dashboard-cantidad">Cantidad (latas)</th>
+                                <th scope="col" class="dashboard-cantidad">Cantidad</th>
                                 <th scope="col">Fecha</th>
                                 <th scope="col">Registró la sesión</th>
                             </tr>
@@ -90,7 +90,7 @@
                                 <tr data-detalle-id="{{ $detalle->id }}">
                                     <th scope="row">{{ $detalle->producto?->nombre_p ?? 'Producto no disponible' }}</th>
                                     <td>{{ $detalle->produccion->turno?->nombre_turnos ?? 'Sin turno registrado' }}</td>
-                                    <td class="dashboard-cantidad">{{ number_format($detalle->cantidad, 0, ',', '.') }} latas</td>
+                                    <td class="dashboard-cantidad">{{ number_format($detalle->cantidad, 0, ',', '.') }} {{ $detalle->unidadMedida?->codigo === 'LATA' ? 'latas' : ($detalle->unidadMedida?->codigo === 'UNIDAD' ? 'unidades' : 'de unidad no identificada') }}</td>
                                     <td><time datetime="{{ $detalle->produccion->fecha->format('Y-m-d') }}">{{ $detalle->produccion->fecha->format('d/m/Y') }}</time></td>
                                     <td>{{ $detalle->produccion->usuario?->username ?? 'Usuario no disponible' }}</td>
                                 </tr>

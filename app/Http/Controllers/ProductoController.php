@@ -101,6 +101,10 @@ class ProductoController extends Controller
             $valores[$campo] = is_scalar($valor) ? (string) $valor : '';
         }
 
+        $codigo = $producto->unidadMedida?->codigo ?? ($producto->exists ? '' : UnidadMedida::LATA);
+        $registro = $tieneHistoria ? $codigo : old('unidad_registro', $codigo);
+        $valores['unidad_registro'] = is_string($registro) ? $registro : '';
+
         return view('productos.form', compact('producto', 'categorias', 'unidades', 'tieneHistoria', 'valores'));
     }
 
@@ -109,6 +113,6 @@ class ProductoController extends Controller
         report($exception);
 
         return back()->withErrors(['producto' => 'No se pudo guardar el producto. Vuelve a intentarlo.'])
-            ->withInput(request()->only(['nombre_p', 'categoria_id', 'unidad_medida_id', 'panes_por_lata']));
+            ->withInput(request()->only(['nombre_p', 'categoria_id', 'unidad_medida_id', 'unidad_registro', 'panes_por_lata']));
     }
 }

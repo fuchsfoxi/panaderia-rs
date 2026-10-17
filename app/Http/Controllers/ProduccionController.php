@@ -26,7 +26,7 @@ class ProduccionController extends Controller
     public function index(ConsultarProduccionRequest $request): View
     {
         $categorias = Categoria::whereIn('nombre_categorias', ['Pan', 'Torta', 'Bocadito'])->get()->keyBy('nombre_categorias');
-        $productosPorCategoria = Producto::whereIn('categoria_id', $categorias->modelKeys())
+        $productosPorCategoria = Producto::with('unidadMedida')->whereIn('categoria_id', $categorias->modelKeys())
             ->where('activo', true)->orderBy('nombre_p')->get()->groupBy('categoria_id');
         $productosPan = $productosPorCategoria->get($categorias->get('Pan')?->id, collect());
         $productosTorta = $productosPorCategoria->get($categorias->get('Torta')?->id, collect());
@@ -58,7 +58,7 @@ class ProduccionController extends Controller
                     'pan' => 'detallesPan', 'torta' => 'detallesTorta', 'bocadito' => 'detallesBocadito',
                 };
                 $detallesRegistrados = $producciones->first()->$relacion()
-                    ->with(['producto', 'empleados', 'usuario'])->orderBy('id')->get();
+                    ->with($categoriaSeleccionada === 'pan' ? ['producto', 'empleados', 'usuario', 'unidadMedida'] : ['producto', 'empleados', 'usuario'])->orderBy('id')->get();
             }
         }
 

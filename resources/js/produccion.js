@@ -123,14 +123,44 @@ document.addEventListener('DOMContentLoaded', function () {
             tags.length ? `${maestros} Maestro · ${ayudantes} Ayudante(s)` : '1 Maestro y mínimo 1 Ayudante.';
     }
 
+    function codigoPan() {
+        const opcion = detalle.querySelector('[data-campo="producto_id"]').selectedOptions[0];
+        return opcion?.value ? opcion.dataset.unidadCodigo : 'LATA';
+    }
+
+    function actualizarCamposProducto(limpiar = false) {
+        const categoria = inputCategoria.value;
+        const codigo = codigoPan();
+        document.querySelectorAll('.campo-condicional').forEach(campo => {
+            const activo = campo.dataset.mostrarEn.split(' ').includes(categoria)
+                && (categoria !== 'pan' || !campo.dataset.panRegistro || campo.dataset.panRegistro === codigo);
+            campo.style.display = activo ? (campo.classList.contains('campo') ? 'flex' : 'block') : 'none';
+            campo.querySelectorAll('input, select, textarea, button').forEach(control => {
+                control.disabled = !activo;
+                if (limpiar && !activo && control.dataset.campo && !['foto', 'foto_camara'].includes(control.dataset.campo)) control.value = '';
+            });
+        });
+        const tipo = detalle.querySelector('[data-tipo-registro]');
+        if (tipo) tipo.textContent = categoria !== 'pan' || codigo === 'UNIDAD'
+            ? 'Tipo de registro: Por unidades' : (codigo === 'LATA' ? 'Tipo de registro: Por latas' : 'Unidad de registro no disponible');
+    }
+
     function actualizarTotal(detalle) {
-        if (inputCategoria.value !== 'pan') {
+        if (inputCategoria.value !== 'pan' || codigoPan() === 'UNIDAD') {
+            detalle.querySelector('output[data-panes-por-lata]').textContent = '';
+            detalle.querySelector('[data-total-panes]').textContent = '';
             const cantidad = detalle.querySelector('[data-campo="cantidad"]');
             const numero = cantidad.valueAsNumber;
             const valido = !cantidad.validity.badInput && Number.isInteger(numero) && numero > 0 && numero <= 2147483647;
             detalle.querySelector('[data-resultado-directo]').textContent = valido
                 ? `${numero} ${inputCategoria.value === 'torta' ? 'tortas' : 'unidades'}`
                 : 'Introduce una cantidad entera positiva.';
+            return;
+        }
+        if (codigoPan() !== 'LATA') {
+            detalle.querySelector('[data-total-latas]').textContent = 'Unidad de registro no disponible';
+            detalle.querySelector('output[data-panes-por-lata]').textContent = '';
+            detalle.querySelector('[data-total-panes]').textContent = '';
             return;
         }
         const coches = detalle.querySelector('[data-campo="coches"]');
@@ -150,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const producto = detalle.querySelector('[data-campo="producto_id"]').selectedOptions[0];
         const factor = Number(producto?.dataset.panesPorLata);
         const factorValido = Number.isInteger(factor) && factor > 0;
-        detalle.querySelector('[data-panes-por-lata]').textContent = factorValido
+        detalle.querySelector('output[data-panes-por-lata]').textContent = factorValido
             ? String(factor) : (producto?.value ? 'Sin factor registrado' : 'Selecciona un producto');
         const estimado = total * factor;
         detalle.querySelector('[data-total-panes]').textContent = !factorValido
@@ -163,13 +193,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const nombres = { pan: 'Pan', torta: 'Torta', bocadito: 'Bocadito' };
         if (!Object.hasOwn(nombres, categoria)) categoria = 'pan';
         const cambio = inputCategoria.value !== categoria;
-        document.querySelectorAll('.campo-condicional').forEach(campo => {
-            const activo = campo.dataset.mostrarEn.split(' ').includes(categoria);
-            campo.style.display = activo ? (campo.classList.contains('campo') ? 'flex' : 'block') : 'none';
-            campo.querySelectorAll('input, select, textarea, button').forEach(control => {
-                control.disabled = !activo;
-            });
-        });
         const producto = detalle.querySelector('[data-campo="producto_id"]');
         Array.from(producto.options).forEach(option => {
             if (!option.dataset.familia) return;
@@ -188,6 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         actualizarForma();
         inputCategoria.value = categoria;
+        actualizarCamposProducto(true);
         actualizarTotal(detalle);
         formulario.action = formulario.dataset[`${categoria}Url`];
         botonesCategoria.forEach(boton => {
@@ -282,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function () {
             actualizarTotal(detalle);
         }
     });
-    detalle.querySelector('[data-campo="producto_id"]').addEventListener('change', () => actualizarTotal(detalle));
+    detalle.querySelector('[data-campo="producto_id"]').addEventListener('change', () => { actualizarCamposProducto(true); actualizarTotal(detalle); });
 
     document.getElementById('consultar-produccion').addEventListener('click', event => {
         if (!fecha.reportValidity() || !turno.reportValidity()) return;

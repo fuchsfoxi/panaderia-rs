@@ -19,7 +19,7 @@ beforeEach(function () {
     IsolatedMariaDb::connect();
     expect(Artisan::call('migrate', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
     DB::beginTransaction();
-    $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR);
+    $this->fixtures = IsolatedMariaDb::fixtures(Rol::ADMINISTRADOR, false);
     $this->actingAs($this->fixtures['usuario']);
     $this->withoutVite();
 });
@@ -75,7 +75,7 @@ test('crea y edita por código con IDs generados y nombres modificados sin envia
         UnidadMedida::create(['nombre_unidades_medida' => 'Legacy '.$n]);
     }
     (new UnidadMedidaSeeder)->run();
-    $unidad = UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole();
+    $unidad = UnidadMedida::where('codigo', ($familia === 'Pan' ? UnidadMedida::LATA : UnidadMedida::UNIDAD))->sole();
     $unidad->update(['nombre_unidades_medida' => 'Etiqueta modificada', 'equivalencia_unidades' => 30]);
     expect($unidad->id)->toBeGreaterThan(2);
     $datos = datosProductoDePrueba($this->fixtures, $familia);
@@ -84,13 +84,13 @@ test('crea y edita por código con IDs generados y nombres modificados sin envia
     $producto = Producto::where('nombre_p', $datos['nombre_p'])->sole();
     expect($producto->unidad_medida_id)->toBe($unidad->id);
     $this->patch('/productos/'.$producto->id, $datos)->assertRedirect()->assertSessionHasNoErrors();
-    expect($producto->fresh()->unidadMedida->codigo)->toBe(UnidadMedida::codigoParaFamilia($familia));
+    expect($producto->fresh()->unidadMedida->codigo)->toBe(($familia === 'Pan' ? UnidadMedida::LATA : UnidadMedida::UNIDAD));
 })->with(['Pan', 'Torta', 'Bocadito']);
 
 test('POST y PATCH manipulados no persisten unidad de otra familia', function (string $familia, bool $editar) {
     (new UnidadMedidaSeeder)->run();
     $producto = $this->fixtures['productos'][$familia];
-    $unidad = UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole();
+    $unidad = UnidadMedida::where('codigo', ($familia === 'Pan' ? UnidadMedida::LATA : UnidadMedida::UNIDAD))->sole();
     $producto->update(['unidad_medida_id' => $unidad->id]);
     $otra = UnidadMedida::where('codigo', $familia === 'Pan' ? UnidadMedida::UNIDAD : UnidadMedida::LATA)->sole();
     $datos = datosProductoDePrueba($this->fixtures, $familia);
@@ -115,12 +115,12 @@ test('edición histórica conserva asociación legacy y advierte sin alterar nin
     $tabla = 'detalle_'.strtolower($familia);
     $antes = DB::table($tabla)->get()->toJson();
     $datos = datosProductoDePrueba($this->fixtures, $familia);
-    unset($datos['unidad_medida_id']);
+    unset($datos['unidad_medida_id'], $datos['unidad_registro']);
     $this->get(route('productos.edit', $producto))->assertOk()->assertSeeText('Asociación histórica conservada');
     $this->patch('/productos/'.$producto->id, $datos)->assertRedirect()->assertSessionHasNoErrors();
     expect($producto->fresh()->unidad_medida_id)->toBe($this->fixtures['unidad']->id)
         ->and(DB::table($tabla)->get()->toJson())->toBe($antes);
-    $datos['unidad_medida_id'] = UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole()->id;
+    $datos['unidad_medida_id'] = UnidadMedida::where('codigo', ($familia === 'Pan' ? UnidadMedida::LATA : UnidadMedida::UNIDAD))->sole()->id;
     $this->patchJson('/productos/'.$producto->id, $datos)->assertUnprocessable()->assertJsonValidationErrors('unidad_medida_id');
 })->with(['Pan', 'Torta', 'Bocadito']);
 

@@ -31,7 +31,7 @@ beforeEach(function () {
     IsolatedMariaDb::connect();
     expect(Artisan::call('migrate', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
     DB::beginTransaction();
-    $this->fixtures = IsolatedMariaDb::fixtures();
+    $this->fixtures = IsolatedMariaDb::fixtures(canonicas: false);
     $this->produccion = Produccion::create([
         'fecha' => '2026-10-03', 'registrado_por_usuario_id' => $this->fixtures['usuario']->id,
     ]);

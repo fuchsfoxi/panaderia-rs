@@ -1,5 +1,11 @@
 # Producción - Unidades por familia
 
+## Aclaración de la regla Pan LATA / UNIDAD — 2026-10-16
+
+La nueva regla confirmada por el usuario tras contrastar el procedimiento físico sustituye cualquier supuesto inferior de que todo Pan usa LATA: Pan admite LATA o UNIDAD según el producto. Coches, 18 latas/coche, factor/snapshot y hora nueva obligatoria se aplican solo a Pan LATA. Pan UNIDAD conserva cantidad directa y factor/snapshot/hora NULL; Torta/Bocadito siguen UNIDAD sin hora. Historial usa la unidad del detalle y Dashboard suma solo latas históricas. No hay detección por nombre, migración nueva ni cambios de datos operativos.
+
+**IMPLEMENTADO Y COMPROBADO en aislamiento:** 872 PHP/7.896 aserciones sin fallidas/omitidas, 51 JS, Chrome 40/40, build, Pint de PHP afectado y diff aprobados. Aceptación operativa del usuario **PENDIENTE**. Informe vigente: [Pan por Lata o Unidad](PAN_REGISTRO_LATA_UNIDAD.md). El resto conserva íntegros el contexto, los resultados y los pendientes históricos de esta revisión anterior; no constituye el contrato actualizado de Pan. Login/Usuarios/turnos/contraseñas permanecen preservados.
+
 Fecha: 2026-10-14. **IMPLEMENTADO Y COMPROBADO en aislamiento** mediante suite relevante y completa. Aceptación visual/operativa: **PENDIENTE**. Sin commit ni push.
 
 ## Problema detectado

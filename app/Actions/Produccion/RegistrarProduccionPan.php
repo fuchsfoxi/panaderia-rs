@@ -7,8 +7,10 @@ use App\Models\DetallePan;
 use App\Models\Produccion;
 use App\Models\Producto;
 use App\Models\RolProduccion;
+use App\Models\UnidadMedida;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class RegistrarProduccionPan
@@ -16,6 +18,7 @@ class RegistrarProduccionPan
     public function __construct(
         private ResolverCabeceraProduccion $cabeceras,
         private ValidarParticipantesProduccion $participantes,
+        private ValidarRegistroPan $registro,
     ) {}
 
     /**
@@ -24,18 +27,25 @@ class RegistrarProduccionPan
     public function ejecutar(array $datos, int $usuarioId): Produccion
     {
         return DB::transaction(function () use ($datos, $usuarioId): Produccion {
+            Validator::make($datos, [
+                'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
+                'detalles.0' => ['required', 'array'],
+                'detalles.0.producto_id' => ['required', 'integer'],
+                'detalles.0.participantes' => ['required', 'array'],
+            ])->validate();
             // Conservar el orden de adquisición de locks del escritor original.
             $categoriaPan = $this->obtenerCategoriaPan();
             $roles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])
                 ->get()->keyBy('id');
             $detalle = $datos['detalles'][0];
             $producto = $this->obtenerProducto((int) $detalle['producto_id']);
-            $totalLatas = (int) $detalle['coches'] * DetallePan::LATAS_POR_COCHE + (int) $detalle['latas_adicionales'];
-
-            $this->validarReglas($detalle, $categoriaPan, $producto, $roles, $totalLatas);
+            $this->validarReglas($detalle, $categoriaPan, $producto, $roles);
+            $cantidad = $producto->unidadMedida->codigo === UnidadMedida::LATA
+                ? (int) $detalle['coches'] * DetallePan::LATAS_POR_COCHE + (int) $detalle['latas_adicionales']
+                : (int) $detalle['cantidad'];
 
             $produccion = $this->cabeceras->resolver($datos['fecha'], (int) $datos['turno_id'], $categoriaPan, $usuarioId);
-            $detallePan = $this->registrarDetalle($produccion, $producto, $detalle, $totalLatas, $usuarioId);
+            $detallePan = $this->registrarDetalle($produccion, $producto, $detalle, $cantidad, $usuarioId);
             $this->registrarParticipantes($detallePan, $detalle['participantes']);
 
             return $produccion;
@@ -54,7 +64,7 @@ class RegistrarProduccionPan
         return Producto::with('unidadMedida')->where('id', $productoId)->lockForUpdate()->first();
     }
 
-    private function validarReglas(array $detalle, ?Categoria $categoriaPan, ?Producto $producto, Collection $roles, int $totalLatas): void
+    private function validarReglas(array $detalle, ?Categoria $categoriaPan, ?Producto $producto, Collection $roles): void
     {
         $errores = [];
         if (! $categoriaPan) {
@@ -67,14 +77,8 @@ class RegistrarProduccionPan
             $errores['detalles.0.producto_id'] = 'El producto no tiene una unidad de medida válida. Revise su catálogo.';
         }
 
-        if ($producto?->panes_por_lata !== null && $producto->panes_por_lata <= 0) {
-            $errores['detalles.0.producto_id'] = 'El valor de panes por lata del producto debe ser positivo o desconocido.';
-        }
-
-        if ($totalLatas <= 0) {
-            $errores['detalles.0.coches'] = 'Ingresa al menos un coche o una lata adicional.';
-        } elseif ($totalLatas > DetallePan::MAX_CANTIDAD_LATAS) {
-            $errores['detalles.0.coches'] = 'El total de latas no puede exceder '.DetallePan::MAX_CANTIDAD_LATAS.'.';
+        foreach ($this->registro->errores($detalle, $producto) as $campo => $mensajes) {
+            $errores['detalles.0.'.$campo] = $mensajes;
         }
 
         $errores = array_merge($errores, $this->participantes->errores($detalle['participantes'], $roles, 'Pan'));
@@ -85,18 +89,18 @@ class RegistrarProduccionPan
         }
     }
 
-    private function registrarDetalle(Produccion $produccion, Producto $producto, array $detalle, int $totalLatas, int $usuarioId): DetallePan
+    private function registrarDetalle(Produccion $produccion, Producto $producto, array $detalle, int $cantidad, int $usuarioId): DetallePan
     {
         // Un envío crea un lote independiente, aunque su producto ya figure en la sesión.
         return $produccion->detallesPan()->create([
             'producto_id' => $producto->id,
             'registrado_por_usuario_id' => $usuarioId,
-            'cantidad' => $totalLatas,
+            'cantidad' => $cantidad,
             'unidad_medida_id' => $producto->unidad_medida_id,
             'turno_id' => $produccion->turno_id,
             'panes_por_lata_usado' => $producto->panes_por_lata,
             'observacion' => $detalle['observacion'] ?? null,
-            'hora_finalizacion' => $detalle['hora_finalizacion'],
+            'hora_finalizacion' => $producto->unidadMedida->codigo === UnidadMedida::LATA ? $detalle['hora_finalizacion'] : null,
         ]);
     }
 

@@ -26,7 +26,7 @@ class ActualizarProducto
             if (! in_array((int) $categoriaDestino, $categoriasBloqueadas, true)) {
                 throw ValidationException::withMessages(['categoria_id' => 'La categoría seleccionada ya no está disponible.']);
             }
-            if (array_key_exists('categoria_id', $datos) || array_key_exists('unidad_medida_id', $datos)) {
+            if (array_key_exists('categoria_id', $datos) || array_key_exists('unidad_medida_id', $datos) || array_key_exists('unidad_registro', $datos) || array_key_exists('panes_por_lata', $datos)) {
                 $datos = $this->unidades->ejecutar($datos, $producto);
             }
             $cambiaCategoria = isset($datos['categoria_id']) && $producto->categoria_id !== (int) $datos['categoria_id'];

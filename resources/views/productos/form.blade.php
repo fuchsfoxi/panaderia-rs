@@ -9,10 +9,10 @@
 @section('contenido')
     @php
         $familiaActual = $categorias->first(fn ($categoria) => $valores['categoria_id'] === (string) $categoria->id)?->nombre_categorias;
-        $cantidadDirecta = in_array($familiaActual, ['Torta', 'Bocadito'], true);
-        $codigoActual = \App\Models\UnidadMedida::codigoParaFamilia($familiaActual ?? '');
+        $esPan = $familiaActual === 'Pan';
+        $esLata = $esPan && $valores['unidad_registro'] === \App\Models\UnidadMedida::LATA;
         $unidadHistorica = $tieneHistoria ? $producto->unidadMedida : null;
-        $asociacionLegacy = $tieneHistoria && $unidadHistorica?->codigo !== $codigoActual;
+        $asociacionLegacy = $tieneHistoria && ! in_array($unidadHistorica?->codigo, \App\Models\UnidadMedida::codigosParaFamilia($familiaActual ?? ''), true);
     @endphp
     @if ($categorias->isEmpty() || ! $unidades->has(\App\Models\UnidadMedida::LATA) || ! $unidades->has(\App\Models\UnidadMedida::UNIDAD))
         <p class="productos-aviso" role="status">Para guardar un producto necesitas categorías y unidades de medida disponibles. Revisa el catálogo con el responsable del sistema.</p>
@@ -38,30 +38,38 @@
             @if ($tieneHistoria) <input type="hidden" name="categoria_id" value="{{ $producto->categoria_id }}"> @endif
             @error('categoria_id') <p class="productos-error-campo" id="error-categoria">{{ $message }}</p> @enderror
         </div>
-        <div class="productos-campo">
+        <div class="productos-campo" data-grupo-unidad-pan @if (! $esPan) hidden @endif>
             <label for="unidad-producto">Forma de registro</label>
-            <input id="unidad-producto" type="text" readonly data-forma-registro
-                   value="{{ $familiaActual === 'Pan' ? 'Latas' : ($cantidadDirecta ? 'Unidad / cantidad directa' : 'Selecciona una categoría') }}"
-                   aria-describedby="ayuda-unidad @if ($errors->has('unidad_medida_id')) error-unidad @endif" @if ($errors->has('unidad_medida_id')) aria-invalid="true" @endif>
-            @error('unidad_medida_id') <p class="productos-error-campo" id="error-unidad">{{ $message }}</p> @enderror
-            <p class="productos-ayuda" id="ayuda-unidad">La categoría determina la unidad automáticamente: Pan usa LATA; Torta y Bocadito usan UNIDAD, sin conversiones.</p>
-            @if ($asociacionLegacy)
-                <p class="productos-aviso" role="status">Asociación histórica conservada: {{ $unidadHistorica?->nombre_unidades_medida }}. Difiere de la unidad canónica de esta categoría. Requiere revisión manual; guardar no la reasigna.</p>
+            <select id="unidad-producto" name="unidad_registro" data-unidad-registro required @disabled(! $esPan || $tieneHistoria)
+                    aria-describedby="ayuda-unidad @if ($errors->has('unidad_registro')) error-registro @endif @if ($errors->has('unidad_medida_id')) error-unidad @endif" @if ($errors->has('unidad_registro') || $errors->has('unidad_medida_id')) aria-invalid="true" @endif>
+                @if ($asociacionLegacy) <option value="">Unidad histórica pendiente de revisión</option> @endif
+                <option value="LATA" @selected($valores['unidad_registro'] === 'LATA')>Por latas</option>
+                <option value="UNIDAD" @selected($valores['unidad_registro'] === 'UNIDAD')>Por unidades</option>
+            </select>
+            @if ($tieneHistoria && $esPan && ! $asociacionLegacy)
+                <input type="hidden" name="unidad_registro" value="{{ $unidadHistorica->codigo }}">
             @endif
+            @error('unidad_registro') <p class="productos-error-campo" id="error-registro">{{ $message }}</p> @enderror
+            <p class="productos-ayuda" id="ayuda-unidad">Pan permite registrar por latas o por unidades. Elige la forma que utiliza el producto en producción.</p>
         </div>
-        <div class="productos-campo productos-campo-completo" data-registro-directo @if (! $cantidadDirecta) hidden @endif>
-            <span>Forma de registro</span>
-            <p>Unidad / cantidad directa</p>
-            <p class="productos-ayuda">Torta: cantidad de tortas. Bocadito: cantidad de bocaditos. La unidad del catálogo no aplica conversiones a la cantidad producida.</p>
+        <div class="productos-campo" data-registro-directo @if ($esPan) hidden @endif>
+            <label for="registro-directo-producto">Forma de registro</label>
+            <input id="registro-directo-producto" type="text" readonly data-forma-registro value="Unidad / cantidad directa">
+            <p class="productos-ayuda">Torta y Bocadito siempre usan UNIDAD, sin conversiones.</p>
         </div>
-        <p class="productos-ayuda productos-campo-completo" id="ayuda-estructura">{{ $tieneHistoria ? 'Este producto tiene producción registrada: su categoría y unidad permanecen protegidas.' : 'La categoría determina la unidad. Solo puedes cambiar la categoría mientras el producto no tenga producción registrada.' }}</p>
-        <div class="productos-campo productos-campo-completo" data-factor-pan @if ($familiaActual !== 'Pan') hidden @endif>
+        @error('unidad_medida_id') <p class="productos-error-campo productos-campo-completo" id="error-unidad">{{ $message }}</p> @enderror
+        @if ($asociacionLegacy)
+            <p class="productos-aviso productos-campo-completo" role="status">Asociación histórica conservada: {{ $unidadHistorica?->nombre_unidades_medida }}. Requiere revisión manual; guardar no la reasigna ni habilita nuevos lotes con una unidad no canónica.</p>
+        @endif
+        <p class="productos-ayuda productos-campo-completo" data-no-factor @if ($esLata) hidden @endif>Panes por lata: no aplica al registro por unidades.</p>
+        <p class="productos-ayuda productos-campo-completo" id="ayuda-estructura">{{ $tieneHistoria ? 'Este producto tiene producción registrada: su categoría y unidad permanecen protegidas.' : 'Puedes cambiar categoría y forma de registro mientras el producto no tenga producción registrada.' }}</p>
+        <div class="productos-campo productos-campo-completo" data-factor-pan @if (! $esLata) hidden @endif>
             <label for="factor-producto">Panes por lata</label>
             <input id="factor-producto" name="panes_por_lata" type="number" inputmode="numeric" min="1" max="2147483647" step="1" value="{{ $valores['panes_por_lata'] }}"
-                   @disabled($familiaActual !== 'Pan')
-                   @required($categorias->contains(fn ($categoria) => $categoria->nombre_categorias === 'Pan' && $valores['categoria_id'] === (string) $categoria->id))
+                   @disabled(! $esLata)
+                   @required($esLata)
                    aria-describedby="ayuda-factor @if ($errors->has('panes_por_lata')) error-factor @endif" @if ($errors->has('panes_por_lata')) aria-invalid="true" @endif>
-            <p class="productos-ayuda" id="ayuda-factor">Obligatorio para Pan: indica cuántos panes contiene una lata. Para Torta y Bocadito debe estar vacío. La cantidad de latas se registra en Producción; los lotes anteriores conservan su factor registrado.</p>
+            <p class="productos-ayuda" id="ayuda-factor">Obligatorio para Pan por latas: indica cuántos panes contiene una lata. Para registro por unidades no aplica y debe estar vacío. La cantidad de latas se registra en Producción; los lotes anteriores conservan su factor registrado.</p>
             @error('panes_por_lata') <p class="productos-error-campo" id="error-factor">{{ $message }}</p> @enderror
         </div>
         <p class="productos-ayuda productos-campo-completo">{{ $producto->exists ? 'Editar el nombre también cambia el nombre visible en producciones anteriores. El estado se administra desde el listado.' : 'El producto se creará activo y estará disponible para producción.' }}</p>

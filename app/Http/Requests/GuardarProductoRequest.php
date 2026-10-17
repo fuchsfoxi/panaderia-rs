@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\Categoria;
+use App\Models\Producto;
+use App\Models\UnidadMedida;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -31,11 +33,16 @@ abstract class GuardarProductoRequest extends FormRequest
         $esPan = $categoriaId !== false
             && Categoria::whereKey($categoriaId)->where('nombre_categorias', 'Pan')->exists();
 
+        $producto = $this->route('producto');
+        $codigo = $this->input('unidad_registro', $producto instanceof Producto ? $producto->unidadMedida?->codigo : null);
+        $esLata = $esPan && $codigo === UnidadMedida::LATA;
+
         return [
             'nombre_p' => ['required', 'string', 'max:100', 'not_regex:/[\x00-\x1F\x7F]/u'],
             'categoria_id' => ['required', 'integer', Rule::exists('categorias', 'id')->whereIn('nombre_categorias', ['Pan', 'Torta', 'Bocadito'])],
+            'unidad_registro' => ['sometimes', 'required', 'string', Rule::in([UnidadMedida::LATA, UnidadMedida::UNIDAD])],
             'unidad_medida_id' => ['sometimes', 'integer', 'exists:unidades_medida,id'],
-            'panes_por_lata' => [Rule::requiredIf($esPan), 'nullable', function (string $attribute, mixed $value, Closure $fail): void {
+            'panes_por_lata' => [Rule::requiredIf($esLata), 'nullable', function (string $attribute, mixed $value, Closure $fail): void {
                 if ((! is_int($value) && ! is_string($value)) || ! preg_match('/^[0-9]+$/D', (string) $value)) {
                     $fail('Los panes por lata deben ser un número entero positivo.');
                 }
@@ -49,8 +56,8 @@ abstract class GuardarProductoRequest extends FormRequest
             if ($validator->errors()->has('categoria_id') || $this->input('panes_por_lata') === null) {
                 return;
             }
-            if (Categoria::find($this->input('categoria_id'))?->nombre_categorias !== 'Pan') {
-                $validator->errors()->add('panes_por_lata', 'Solo los productos de categoría Pan pueden tener panes por lata. Déjalo vacío para Torta o Bocadito.');
+            if (Categoria::find($this->input('categoria_id'))?->nombre_categorias !== 'Pan' || $this->input('unidad_registro') === UnidadMedida::UNIDAD) {
+                $validator->errors()->add('panes_por_lata', 'Los panes por lata solo se aplican a Pan registrado por latas. Déjalo vacío para cantidad directa.');
             }
         }];
     }

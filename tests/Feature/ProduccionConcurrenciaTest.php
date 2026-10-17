@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\Produccion;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\IsolatedMariaDb;
 
@@ -11,7 +10,7 @@ test('dos conexiones simultáneas reutilizan una cabecera y conservan ambos lote
     }
     IsolatedMariaDb::connect();
     // DDL exclusivamente sobre la base ficticia cuya identidad se verificó arriba.
-    expect(Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
+    expect(IsolatedMariaDb::migrateInNewDatabase())->toBe(0);
     $fixtures = IsolatedMariaDb::fixtures();
     $datos = [
         'categoria' => strtolower($familia), 'fecha' => '2026-10-11', 'turno_id' => $fixtures['turno']->id,
@@ -25,6 +24,9 @@ test('dos conexiones simultáneas reutilizan una cabecera y conservan ambos lote
             ],
         ]],
     ];
+    if ($familia === 'Pan') {
+        unset($datos['detalles'][0]['cantidad']);
+    }
     $procesos = [];
     try {
         DB::beginTransaction();
@@ -71,6 +73,6 @@ test('dos conexiones simultáneas reutilizan una cabecera y conservan ambos lote
                 }
             }
         }
-        Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]);
+        IsolatedMariaDb::restoreDatabase();
     }
 })->with(['Pan', 'Torta', 'Bocadito']);

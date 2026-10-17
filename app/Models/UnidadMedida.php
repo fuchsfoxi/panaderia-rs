@@ -10,12 +10,12 @@ class UnidadMedida extends Model
 
     public const UNIDAD = 'UNIDAD';
 
-    public static function codigoParaFamilia(string $familia): ?string
+    public static function codigosParaFamilia(string $familia): array
     {
         return match ($familia) {
-            'Pan' => self::LATA,
-            'Torta', 'Bocadito' => self::UNIDAD,
-            default => null,
+            'Pan' => [self::LATA, self::UNIDAD],
+            'Torta', 'Bocadito' => [self::UNIDAD],
+            default => [],
         };
     }
 

@@ -2,7 +2,6 @@
 
 use App\Models\Rol;
 use App\Models\Usuario;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -13,7 +12,7 @@ test('dos administradores desactivándose simultáneamente conservan uno activo'
         $this->markTestSkipped('Requiere MariaDB desechable.');
     }
     IsolatedMariaDb::connect();
-    expect(Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
+    expect(IsolatedMariaDb::migrateInNewDatabase())->toBe(0);
     $rol = Rol::create(['nombre_roles' => Rol::ADMINISTRADOR]);
     $usuarios = collect(['admin_ficticio_a', 'admin_ficticio_b'])->map(fn ($username) => Usuario::create([
         'username' => $username, 'rol_id' => $rol->id, 'password_hash' => Hash::make(Str::random(32)), 'activo' => true,
@@ -59,6 +58,6 @@ test('dos administradores desactivándose simultáneamente conservan uno activo'
                 }
             }
         }
-        Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]);
+        IsolatedMariaDb::restoreDatabase();
     }
 });

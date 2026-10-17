@@ -211,6 +211,7 @@ test('cabeceras duplicadas bloquean cada familia sin seleccionar una arbitraria'
 test('los tres registros conviven y la consulta solo carga la familia seleccionada', function () {
     $this->actingAs($this->fixtures['usuario']);
     $pan = cantidadPayload($this->fixtures, 'Pan');
+    unset($pan['detalles'][0]['cantidad']);
     $pan['detalles'][0] += ['coches' => 1, 'latas_adicionales' => 2, 'hora_finalizacion' => '08:35'];
     $this->post(route('produccion.store'), $pan)->assertSessionHasNoErrors();
     foreach (['Torta', 'Bocadito'] as $familia) {

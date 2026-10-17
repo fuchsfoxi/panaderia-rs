@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DetallePan extends Model
 {
-    // La cantidad canónica se guarda en latas; un coche representa estas latas.
+    // Solo Pan por LATA usa coches; la unidad histórica decide la magnitud.
     public const LATAS_POR_COCHE = 18;
 
     // Capacidad positiva de cantidad (INT firmado) en el esquema existente.
@@ -27,7 +27,7 @@ class DetallePan extends Model
         'hora_finalizacion',
         'unidad_medida_id',
         'turno_id',
-        // Cantidad canónica de Pan: total de latas producidas, siempre entero.
+        // Cantidad positiva en la unidad histórica: latas o unidades, siempre entero.
         'cantidad',
         // Valor usado en esta producción; no se recalcula al editar el producto.
         'panes_por_lata_usado',

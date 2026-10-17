@@ -4,7 +4,6 @@ use App\Models\Cargo;
 use App\Models\Empleado;
 use App\Models\Rol;
 use Illuminate\Database\QueryException;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
@@ -18,7 +17,7 @@ test('migración de cuentas conserva filas FK UNIQUE y activa cuentas existentes
     IsolatedMariaDb::connect('sprint4_migration_test');
     $path = database_path('migrations/2026_10_16_100000_add_access_fields_to_usuarios_sistema.php');
     $anteriores = array_values(array_diff(glob(database_path('migrations/*.php')), [$path]));
-    expect(Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--path' => $anteriores, '--realpath' => true, '--force' => true]))->toBe(0);
+    expect(IsolatedMariaDb::migrateInNewDatabase($anteriores))->toBe(0);
     try {
         $cargo = Cargo::create(['nombre_cargos' => 'Cargo de migración ficticio']);
         $empleado = Empleado::create(['nombre_empleados' => 'Persona ficticia', 'cargo_id' => $cargo->id]);
@@ -70,6 +69,6 @@ test('migración de cuentas conserva filas FK UNIQUE y activa cuentas existentes
             ->and(Schema::getForeignKeys('usuarios_sistema'))->toEqualCanonicalizing($foreignAntes)
             ->and(Schema::getIndexes('usuarios_sistema'))->toEqualCanonicalizing($indexesAntes);
     } finally {
-        Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]);
+        IsolatedMariaDb::restoreDatabase();
     }
 });

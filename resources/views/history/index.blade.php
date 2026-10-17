@@ -103,7 +103,7 @@
                     </header>
                     <dl class="resumen-carta">
                         <div class="dato-cantidad">
-                            <dt>Cantidad: </dt><dd>{{ $detalle->cantidad }} <span>{{ $esPan ? 'latas' : ($esTorta ? 'tortas' : 'bocaditos') }}</span></dd>
+                            <dt>Cantidad: </dt><dd>{{ $detalle->cantidad }} <span>{{ $esPan ? ($detalle->unidadMedida?->codigo === 'LATA' ? 'latas' : ($detalle->unidadMedida?->codigo === 'UNIDAD' ? 'unidades' : 'de unidad no identificada')) : ($esTorta ? 'tortas' : 'bocaditos') }}</span></dd>
                         </div>
                         <div>
                             <dt>Maestro: </dt><dd>{{ $maestros->pluck('nombre_empleados')->implode(', ') ?: 'Sin Maestro registrado' }}</dd>
@@ -112,7 +112,7 @@
                     <details class="detalles-produccion">
                         <summary>Ver detalles <span aria-hidden="true">→</span></summary>
                         <div class="contenido-detalles">
-                            @if ($esPan)
+                            @if ($esPan && $detalle->unidadMedida?->codigo === 'LATA')
                                 <section class="grupo-detalles">
                                     <h4>Producción</h4>
                                     <p>{{ intdiv($detalle->cantidad, $latasPorCoche) }} coches + {{ $detalle->cantidad % $latasPorCoche }} latas adicionales</p>
@@ -123,6 +123,11 @@
                                         <p>Total estimado de panes: <strong>{{ $detalle->cantidad * $detalle->panes_por_lata_usado }}</strong></p>
                                     @endif
                                     <p>Hora de finalización: {{ $detalle->hora_finalizacion !== null ? substr($detalle->hora_finalizacion, 0, 5) : 'Sin hora registrada' }}</p>
+                                </section>
+                            @elseif ($esPan)
+                                <section class="grupo-detalles">
+                                    <h4>Producción</h4>
+                                    <p>Unidad de medida: {{ $detalle->unidadMedida?->codigo === 'UNIDAD' ? 'UNIDAD' : 'Unidad histórica no identificada' }}</p>
                                 </section>
                             @elseif ($esTorta)
                                 <section class="grupo-detalles">

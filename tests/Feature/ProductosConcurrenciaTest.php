@@ -3,7 +3,6 @@
 use App\Models\Producto;
 use App\Models\UnidadMedida;
 use Database\Seeders\UnidadMedidaSeeder;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\IsolatedMariaDb;
 
@@ -14,7 +13,7 @@ test('edición estado y primera producción se serializan preservando historia',
         $this->markTestSkipped('Requiere MariaDB temporal y dos procesos reales.');
     }
     IsolatedMariaDb::connect();
-    expect(Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]))->toBe(0);
+    expect(IsolatedMariaDb::migrateInNewDatabase())->toBe(0);
     $fixtures = IsolatedMariaDb::fixtures();
     (new UnidadMedidaSeeder)->run();
     $producto = $fixtures['productos'][$familia];
@@ -22,10 +21,16 @@ test('edición estado y primera producción se serializan preservando historia',
     if ($campo === 'categoria_id') {
         $destino = $familia === 'Pan' ? 'Torta' : 'Pan';
         $datosEdicion['categoria_id'] = $fixtures['productos'][$destino]->categoria_id;
-        $datosEdicion['panes_por_lata'] = null;
+        $datosEdicion['panes_por_lata'] = $destino === 'Pan' ? 24 : null;
+        $datosEdicion['unidad_registro'] = $destino === 'Pan' ? 'LATA' : 'UNIDAD';
         unset($datosEdicion['unidad_medida_id']);
     } elseif ($campo === 'unidad_medida_id') {
-        $datosEdicion['unidad_medida_id'] = UnidadMedida::where('codigo', UnidadMedida::codigoParaFamilia($familia))->sole()->id;
+        $datosEdicion['unidad_medida_id'] = UnidadMedida::where('codigo', ($familia === 'Pan' ? UnidadMedida::LATA : UnidadMedida::UNIDAD))->sole()->id;
+        if ($familia === 'Pan') {
+            $datosEdicion['unidad_medida_id'] = UnidadMedida::where('codigo', UnidadMedida::UNIDAD)->sole()->id;
+            $datosEdicion['unidad_registro'] = UnidadMedida::UNIDAD;
+            $datosEdicion['panes_por_lata'] = null;
+        }
     } else {
         $datosEdicion = ['activo' => false];
     }
@@ -73,19 +78,22 @@ test('edición estado y primera producción se serializan preservando historia',
         }
         $procesos = [];
         expect($resultados[0]['resultado'])->toBe('GUARDADO');
-        if ($produccionPrimero && $campo !== 'activo') {
+        if ($produccionPrimero && ($campo === 'categoria_id' || ($campo === 'unidad_medida_id' && $familia === 'Pan'))) {
             expect($resultados[1]['resultado'])->toBe('RECHAZADO')->and($resultados[1]['campos'])->toContain($campo)
                 ->and($producto->fresh()->categoria_id)->toBe($producto->categoria_id)
                 ->and($producto->fresh()->unidad_medida_id)->toBe($producto->unidad_medida_id);
         } elseif ($produccionPrimero) {
-            expect($resultados[1]['resultado'])->toBe('GUARDADO')->and($producto->fresh()->activo)->toBeFalse();
+            expect($resultados[1]['resultado'])->toBe('GUARDADO');
+            if ($campo === 'activo') {
+                expect($producto->fresh()->activo)->toBeFalse();
+            }
         } else {
             expect($producto->fresh()->getAttribute($campo))->toBe($datosEdicion[$campo]);
-            expect($resultados[1]['resultado'])->toBe($campo === 'unidad_medida_id' ? 'GUARDADO' : 'RECHAZADO');
+            expect($resultados[1]['resultado'])->toBe($campo === 'unidad_medida_id' && $familia !== 'Pan' ? 'GUARDADO' : 'RECHAZADO');
         }
-        expect(DB::table('detalle_'.strtolower($familia))->count())->toBe(! $produccionPrimero && $campo !== 'unidad_medida_id' ? 0 : 1);
-        if ($familia === 'Pan' && ! $produccionPrimero && $campo === 'unidad_medida_id') {
-            expect(DB::table('detalle_pan')->sole()->unidad_medida_id)->toBe($datosEdicion['unidad_medida_id']);
+        expect(DB::table('detalle_'.strtolower($familia))->count())->toBe($produccionPrimero || ($campo === 'unidad_medida_id' && $familia !== 'Pan') ? 1 : 0);
+        if ($familia === 'Pan' && $produccionPrimero && $campo === 'unidad_medida_id') {
+            expect(DB::table('detalle_pan')->sole()->unidad_medida_id)->toBe($producto->unidad_medida_id);
         }
     } finally {
         foreach ($procesos as [$proceso, $pipes]) {
@@ -99,6 +107,6 @@ test('edición estado y primera producción se serializan preservando historia',
                 proc_close($proceso);
             }
         }
-        Artisan::call('migrate:fresh', ['--database' => 'sprint4_test', '--force' => true]);
+        IsolatedMariaDb::restoreDatabase();
     }
 })->with(['Pan', 'Torta', 'Bocadito'])->with(['categoria_id', 'unidad_medida_id', 'activo'])->with([true, false]);

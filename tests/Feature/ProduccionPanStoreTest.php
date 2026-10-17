@@ -157,7 +157,7 @@ test('guarda Pan con cabecera derivada cantidad snapshot y participantes reales'
     $this->payload['registrado_por_usuario_id'] = $otroUsuario->id;
     $this->payload['categoria_id'] = $this->fixtures['productos']['Torta']->categoria_id;
     $this->payload['detalles'][0] += [
-        'cantidad' => 999, 'total_latas' => 999, 'unidad_medida_id' => $otraUnidad->id,
+        'total_latas' => 999, 'unidad_medida_id' => $otraUnidad->id,
         'panes_por_lata_usado' => 999, 'turno_id' => $otroTurno->id, 'produccion_id' => 999,
     ];
 
@@ -188,12 +188,16 @@ test('guarda Pan con cabecera derivada cantidad snapshot y participantes reales'
     expect($detalle->empleados->where('pivot.rol_produccion_id', $this->fixtures['roles']['Maestro']->id))->toHaveCount(1);
 });
 
-test('conserva snapshot NULL y observación opcional', function () {
-    $this->fixtures['productos']['Pan']->update(['panes_por_lata' => null]);
+test('Pan LATA rechaza factor NULL y conserva observación opcional con factor válido', function () {
+    $producto = $this->fixtures['productos']['Pan'];
+    $producto->update(['panes_por_lata' => null]);
     unset($this->payload['detalles'][0]['observacion']);
-    $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
-        ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
-    expect(DetallePan::sole()->panes_por_lata_usado)->toBeNull()
+    $this->actingAs($this->fixtures['usuario'])->postJson(route('produccion.store'), $this->payload)
+        ->assertUnprocessable()->assertJsonValidationErrors('detalles.0.producto_id');
+    assertNoPanStoreWrites();
+    $producto->update(['panes_por_lata' => 12]);
+    $this->post(route('produccion.store'), $this->payload)->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
+    expect(DetallePan::sole()->panes_por_lata_usado)->toBe(12)
         ->and(DetallePan::sole()->observacion)->toBeNull();
     $this->get(panContextUrl($this->payload))->assertOk()->assertDontSee('tarjeta-observacion', false);
 });
