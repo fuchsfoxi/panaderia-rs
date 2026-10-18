@@ -234,6 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectEmpleado = detalle.querySelector('[data-control="empleado"]');
         const selectRol = detalle.querySelector('[data-control="rol"]');
         const empleado = selectEmpleado.selectedOptions[0];
+        selectRol.value = empleado?.dataset.rolId || '';
         const rol = selectRol.selectedOptions[0];
         const error = detalle.querySelector('[data-error-detalle]');
         if (!empleado?.value || !rol?.value) {
@@ -279,6 +280,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     botonesCategoria.forEach(boton => {
         boton.addEventListener('click', () => mostrarCamposDe(boton.dataset.categoria));
+    });
+
+    detalle.querySelector('[data-control="empleado"]').addEventListener('change', event => {
+        const controlRol = detalle.querySelector('[data-control="rol"]');
+        controlRol.value = event.target.selectedOptions[0]?.dataset.rolId || '';
+        controlRol.disabled = true;
     });
 
     detalle.addEventListener('click', event => {

@@ -2,37 +2,57 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Empleado extends Model
 {
-// por defecto Eloquent asume que el nombre de la tabla es el plural del nombre del modelo
-// pero la tabla se llama diferente, por lo que debemos especificarlo manualmente
-protected $table = 'empleados';
+    // por defecto Eloquent asume que el nombre de la tabla es el plural del nombre del modelo
+    // pero la tabla se llama diferente, por lo que debemos especificarlo manualmente
+    protected $table = 'empleados';
 
-// le decimos que solo queremos que se puedan asignar estos campos de manera masiva
-// para evitar problemas de seguridad
-protected $fillable = [
-'nombre_empleados',
-'numero_empleados',
-'cargo_id',
+    // le decimos que solo queremos que se puedan asignar estos campos de manera masiva
+    // para evitar problemas de seguridad
+    protected $fillable = [
+        'nombre_empleados',
+        'numero_empleados',
+        'cargo_id',
+        'rol_produccion_id',
+        'activo',
     ];
 
-// belongsTo: esta tabla tiene la FK (cargo_id), o sea "el empleado pertenece a un cargo"
-// permite acceder a los datos de la tabla cargos
-public function cargo()
+    protected function casts(): array
     {
-return $this->belongsTo(Cargo::class, 'cargo_id');
+        return ['activo' => 'boolean'];
     }
 
-// hasOne: la otra tabla (usuarios_sistema) tiene la FK hacia empleados, "el empleado tiene un usuario"
-// permite acceder a los datos de la tabla usuarios_sistema
-public function usuario()
+    public function rolProduccion(): BelongsTo
     {
-return $this->hasOne(Usuario::class, 'empleado_id');
+        return $this->belongsTo(RolProduccion::class, 'rol_produccion_id');
     }
 
-    //"¿La columna FK está en MI tabla, o está en la OTRA tabla?"
-        //FK en mi tabla → belongsTo
-        //FK en la otra tabla → hasOne (si es 1 a 1) o hasMany (si es 1 a muchos)
+    public function scopeDisponiblesProduccion(Builder $query): Builder
+    {
+        return $query->where('activo', true)
+            ->whereHas('rolProduccion', fn (Builder $roles) => $roles->whereIn('nombre_roles_produccion', RolProduccion::NOMBRES));
+    }
+
+    // belongsTo: esta tabla tiene la FK (cargo_id), o sea "el empleado pertenece a un cargo"
+    // permite acceder a los datos de la tabla cargos
+    public function cargo()
+    {
+        return $this->belongsTo(Cargo::class, 'cargo_id');
+    }
+
+    // hasOne: la otra tabla (usuarios_sistema) tiene la FK hacia empleados, "el empleado tiene un usuario"
+    // permite acceder a los datos de la tabla usuarios_sistema
+    public function usuario()
+    {
+        return $this->hasOne(Usuario::class, 'empleado_id');
+    }
+
+    // "¿La columna FK está en MI tabla, o está en la OTRA tabla?"
+    // FK en mi tabla → belongsTo
+    // FK en la otra tabla → hasOne (si es 1 a 1) o hasMany (si es 1 a muchos)
 }

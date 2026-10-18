@@ -69,7 +69,7 @@
                             @csrf
                             @method('PATCH')
                             <input type="hidden" name="activo" value="{{ $producto->activo ? '0' : '1' }}">
-                            <button class="productos-boton {{ $producto->activo ? '' : 'productos-boton-principal' }}" type="submit" aria-label="{{ $producto->activo ? 'Desactivar' : 'Activar' }} {{ $producto->nombre_p }}">{{ $producto->activo ? 'Desactivar' : 'Activar' }}</button>
+                            <button class="productos-boton {{ $producto->activo ? 'productos-boton-desactivar' : 'productos-boton-principal' }}" type="submit" aria-label="{{ $producto->activo ? 'Desactivar' : 'Activar' }} {{ $producto->nombre_p }}">{{ $producto->activo ? 'Desactivar' : 'Activar' }}</button>
                         </form>
                     </div>
                 </article>

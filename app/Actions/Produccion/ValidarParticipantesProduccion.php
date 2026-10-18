@@ -14,11 +14,14 @@ class ValidarParticipantesProduccion
         $maestros = 0;
         $ayudantes = 0;
         $existentes = Empleado::whereIn('id', array_column($participantes, 'empleado_id'))
-            ->orderBy('id')->lockForUpdate()->pluck('id')->flip();
+            ->orderBy('id')->lockForUpdate()->get()->keyBy('id');
         foreach ($participantes as $posicion => $participante) {
             $empleadoId = (int) $participante['empleado_id'];
-            if (! $existentes->has($empleadoId)) {
+            $empleado = $existentes->get($empleadoId);
+            if (! $empleado) {
                 $errores["detalles.0.participantes.$posicion.empleado_id"] = 'El empleado seleccionado no existe.';
+            } elseif (! $empleado->activo) {
+                $errores["detalles.0.participantes.$posicion.empleado_id"] = 'El empleado está inactivo. Selecciona otro trabajador.';
             }
             if (isset($empleados[$empleadoId])) {
                 $errores['detalles.0.participantes'][] = 'Un empleado no puede repetirse dentro del mismo detalle.';
@@ -26,11 +29,14 @@ class ValidarParticipantesProduccion
             $empleados[$empleadoId] = true;
             $rol = $roles->get($participante['rol_produccion_id']);
             if (! $rol) {
-                $errores["detalles.0.participantes.$posicion.rol_produccion_id"] = "Para $familia solo se permiten los roles Maestro y Ayudante.";
+                $errores["detalles.0.participantes.$posicion.rol_produccion_id"] = "Para $familia solo se permiten Maestro, Ayudante y Practicante.";
             } elseif ($rol->nombre_roles_produccion === 'Maestro') {
                 $maestros++;
-            } else {
+            } elseif ($rol->nombre_roles_produccion === 'Ayudante') {
                 $ayudantes++;
+            }
+            if ($empleado && (int) $empleado->rol_produccion_id !== (int) $participante['rol_produccion_id']) {
+                $errores["detalles.0.participantes.$posicion.rol_produccion_id"] = 'El rol debe coincidir con el rol actual del empleado. Actualiza la selección.';
             }
         }
         if ($maestros !== 1) {

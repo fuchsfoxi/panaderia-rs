@@ -127,6 +127,7 @@ test('la Action admite más de dos Ayudantes sin inventar un máximo de equipo',
     foreach (range(1, 4) as $numero) {
         $empleado = Empleado::create([
             'nombre_empleados' => 'Ayudante adicional ficticio '.$numero, 'cargo_id' => $this->fixtures['cargo']->id,
+            'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id, 'activo' => true,
         ]);
         $this->datos['detalles'][0]['participantes'][] = [
             'empleado_id' => $empleado->id, 'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id,

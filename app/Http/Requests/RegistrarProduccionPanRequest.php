@@ -104,7 +104,7 @@ class RegistrarProduccionPanRequest extends FormRequest
                 }
                 $erroresEquipo = collect($validator->errors()->keys())->contains(fn ($campo) => str_starts_with($campo, "detalles.$indice.participantes"));
                 if (! $erroresEquipo && isset($detalle['participantes'])) {
-                    $roles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])->get()->keyBy('id');
+                    $roles = RolProduccion::whereIn('nombre_roles_produccion', RolProduccion::NOMBRES)->get()->keyBy('id');
                     foreach (app(ValidarParticipantesProduccion::class)->errores($detalle['participantes'], $roles, 'Pan') as $campo => $mensajes) {
                         foreach ((array) $mensajes as $mensaje) {
                             $validator->errors()->add($campo, $mensaje);

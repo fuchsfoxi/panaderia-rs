@@ -42,6 +42,7 @@ afterEach(function () {
 dataset('endpoints usuarios', [
     ['GET', '/usuarios'], ['GET', '/usuarios/crear'], ['POST', '/usuarios'],
     ['PATCH', '/usuarios/%d/estado'], ['GET', '/usuarios/%d/password'], ['PATCH', '/usuarios/%d/password'],
+    ['GET', '/usuarios/%d/editar'], ['PATCH', '/usuarios/%d'], ['PUT', '/usuarios/%d'],
 ]);
 
 test('invitado y Operador no acceden a ningún endpoint de Usuarios', function (bool $guest, string $metodo, string $ruta) {
@@ -244,7 +245,7 @@ test('cambiar contraseña exige confirmación y no rellena campos en el siguient
     expect($this->operador->fresh()->password_hash)->toBe($antes);
 });
 
-test('no existe DELETE de usuarios ni edición pública', function () {
-    $this->actingAs($this->admin)->delete('/usuarios/'.$this->operador->id)->assertNotFound();
+test('no existe DELETE de usuarios', function () {
+    $this->actingAs($this->admin)->delete('/usuarios/'.$this->operador->id)->assertStatus(405);
     expect(Usuario::count())->toBe(2);
 });

@@ -2,7 +2,7 @@ import { inicializarContrasenas } from './contrasenas.js';
 
 inicializarContrasenas();
 
-const formularioUsuario = document.querySelector('[data-crear-usuario]');
+const formularioUsuario = document.querySelector('[data-crear-usuario], [data-editar-usuario]');
 
 if (formularioUsuario) {
     const rol = formularioUsuario.querySelector('[data-rol-usuario]');

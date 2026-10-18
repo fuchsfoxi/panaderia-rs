@@ -104,9 +104,9 @@ test('sidebar tiene cinco módulos para Admin y tres para Operador', function (s
     }
     $response->assertDontSeeText('Configuración')->assertDontSeeText('Empleados');
     if ($rol === Rol::ADMINISTRADOR) {
-        $response->assertSeeText('Usuarios');
+        $response->assertSeeText('Personal');
     } else {
-        $response->assertDontSeeText('Usuarios');
+        $response->assertDontSeeText('Personal');
     }
 })->with([[Rol::ADMINISTRADOR, 5], [Rol::OPERADOR, 3]]);
 

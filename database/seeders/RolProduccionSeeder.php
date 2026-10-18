@@ -11,8 +11,8 @@ class RolProduccionSeeder extends Seeder
     {
         // Roles operativos; no son cargos ni permisos de acceso.
         // Una producción tendrá exactamente un Maestro y al menos un Ayudante.
-        // Esa regla se validará en el registro de producción, no en este catálogo.
-        foreach (['Maestro', 'Ayudante'] as $nombre) {
+        // Practicante es adicional; la composición se valida al registrar producción.
+        foreach (RolProduccion::NOMBRES as $nombre) {
             RolProduccion::firstOrCreate(['nombre_roles_produccion' => $nombre]);
         }
     }

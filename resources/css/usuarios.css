@@ -1,5 +1,16 @@
 @import './productos.css';
 
+.usuario-boton-editar { gap: 8px; transition: background-color 200ms ease, border-color 200ms ease; }
+.usuario-boton-editar svg { flex-shrink: 0; }
+
+.personal-pestanas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+.personal-pestana { flex: 1; max-width: 220px; min-height: 44px; padding: 16px 24px; border: 1px solid var(--verde-claro); border-radius: 16px; background: var(--beige); color: var(--verde-oscuro); font-weight: 700; text-align: center; text-decoration: none; transition: background-color 200ms ease; }
+.personal-pestana.activa { background: var(--verde-oscuro); color: var(--crema); }
+.personal-pestana:hover:not(.activa) { background: var(--verde-claro); }
+.pagina-personal .personal-formulario-titulo { margin-bottom: 8px; }
+.pagina-personal .personal-formulario-descripcion { margin-bottom: 20px; color: var(--verde-medio); line-height: 1.6; }
+@media (max-width: 600px) { .personal-pestana { padding-inline: 12px; } }
+
 .usuario-caja-contrasena {
     position: relative;
     min-width: 0;

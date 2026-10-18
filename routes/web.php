@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProduccionController;
@@ -23,9 +24,20 @@ Route::middleware(['auth', EnsureUsuarioActivo::class, 'auth.session'])->group(f
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::middleware('can:administrar-sistema')->group(function () {
+        Route::redirect('/personal', '/usuarios')->name('personal.index');
+        Route::get('/empleados', [EmpleadoController::class, 'index'])->name('empleados.index');
+        Route::get('/empleados/crear', [EmpleadoController::class, 'create'])->name('empleados.create');
+        Route::post('/empleados', [EmpleadoController::class, 'store'])->name('empleados.store');
+        Route::get('/empleados/{empleado}/editar', [EmpleadoController::class, 'edit'])->name('empleados.edit');
+        Route::match(['put', 'patch'], '/empleados/{empleado}', [EmpleadoController::class, 'update'])->name('empleados.update');
+        Route::patch('/empleados/{empleado}/estado', [EmpleadoController::class, 'estado'])->name('empleados.estado');
+        Route::delete('/history/{familia}/{detalle}', [HistorialController::class, 'destroy'])
+            ->whereIn('familia', ['pan', 'torta', 'bocadito'])->whereNumber('detalle')->name('history.destroy');
         Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
         Route::get('/usuarios/crear', [UsuarioController::class, 'create'])->name('usuarios.create');
         Route::post('/usuarios', [UsuarioController::class, 'store'])->name('usuarios.store');
+        Route::get('/usuarios/{usuario}/editar', [UsuarioController::class, 'edit'])->name('usuarios.edit');
+        Route::match(['put', 'patch'], '/usuarios/{usuario}', [UsuarioController::class, 'update'])->name('usuarios.update');
         Route::patch('/usuarios/{usuario}/estado', [UsuarioController::class, 'estado'])->name('usuarios.estado');
         Route::get('/usuarios/{usuario}/password', [UsuarioController::class, 'password'])->name('usuarios.password');
         Route::patch('/usuarios/{usuario}/password', [UsuarioController::class, 'cambiarPassword'])->name('usuarios.password.update');

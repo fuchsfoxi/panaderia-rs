@@ -95,6 +95,11 @@ class IsolatedMariaDb
         $roles = collect(['Maestro', 'Ayudante', 'Practicante'])->mapWithKeys(fn ($nombre) => [
             $nombre => RolProduccion::create(['nombre_roles_produccion' => $nombre]),
         ]);
+        if (Schema::hasColumn('empleados', 'rol_produccion_id')) {
+            foreach ($empleados as $indice => $empleado) {
+                $empleado->update(['rol_produccion_id' => $roles[$indice === 0 ? 'Maestro' : 'Ayudante']->id, 'activo' => true]);
+            }
+        }
         $productos = collect(['Pan', 'Torta', 'Bocadito'])->mapWithKeys(function ($familia) use ($unidad, $unidadDirecta, $canonicas, $tieneFactor) {
             $categoria = Categoria::create(['nombre_categorias' => $familia]);
 

@@ -7,7 +7,7 @@ import { inicializarContrasenas } from '../../resources/js/contrasenas.js';
 const codigo = readFileSync(new URL('../../resources/js/usuarios.js', import.meta.url), 'utf8')
     .replace("import { inicializarContrasenas } from './contrasenas.js';", '');
 
-function entorno(operador, crear = true) {
+function entorno(operador, crear = true, tipo = 'crear') {
     const campos = ['password', 'password_confirmation'].map(id => {
         const input = { id, type: 'password', value: 'ejemplo-ficticio' };
         const boton = {
@@ -27,7 +27,7 @@ function entorno(operador, crear = true) {
     };
     const formulario = { querySelector: selector => selector === '[data-rol-usuario]' ? rol : grupo };
     const document = {
-        querySelector: () => crear ? formulario : null,
+        querySelector: selector => crear && selector.split(',').map(s => s.trim()).includes(`[data-${tipo}-usuario]`) ? formulario : null,
         querySelectorAll: () => campos.map(campo => campo.boton),
     };
     runInNewContext(codigo, { document, inicializarContrasenas: () => inicializarContrasenas(document) });
@@ -108,3 +108,19 @@ test('ambos formularios comparten botones que no envían el formulario y campos 
         assert.match(contenido, /@include\('usuarios.password-fields'\)/);
     }
 });
+
+
+for (const operador of [true, false, null]) {
+    test(`edición: turno inicial y cambios de rol funcionan sin formulario de creación (${operador})`, () => {
+        const ui = entorno(operador, true, 'editar');
+        assert.equal(ui.grupo.hidden, operador !== true);
+        assert.equal(ui.turno.required, operador === true);
+        assert.equal(ui.turno.disabled, operador !== true);
+        ui.cambiar(true);
+        assert.equal(ui.turno.required, true);
+        assert.equal(ui.turno.disabled, false);
+        ui.cambiar(false);
+        assert.equal(ui.turno.disabled, true);
+        assert.equal(ui.grupo.hidden, true);
+    });
+}

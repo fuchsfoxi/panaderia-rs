@@ -53,11 +53,11 @@
             <svg class="sidebar-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m12 3 9 5v8l-9 5-9-5V8Zm-9 5 9 5 9-5M12 13v8M7.5 5.5l9 5" /></svg>
             <span class="sidebar-texto">Productos</span>
         </a>
-        <a href="{{ route('usuarios.index') }}"
-           class="sidebar-link {{ request()->routeIs('usuarios.*') ? 'activo' : '' }}"
-           @if(request()->routeIs('usuarios.*')) aria-current="page" @endif>
+        <a href="{{ route('personal.index') }}"
+           class="sidebar-link {{ request()->routeIs('personal.*', 'usuarios.*', 'empleados.*') ? 'activo' : '' }}"
+           @if(request()->routeIs('personal.*', 'usuarios.*', 'empleados.*')) aria-current="page" @endif>
             <svg class="sidebar-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v3" /></svg>
-            <span class="sidebar-texto">Usuarios</span>
+            <span class="sidebar-texto">Personal</span>
         </a>
         @endcan
 

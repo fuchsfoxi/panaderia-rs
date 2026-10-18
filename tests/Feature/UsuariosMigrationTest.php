@@ -16,7 +16,7 @@ test('migración de cuentas conserva filas FK UNIQUE y activa cuentas existentes
     }
     IsolatedMariaDb::connect('sprint4_migration_test');
     $path = database_path('migrations/2026_10_16_100000_add_access_fields_to_usuarios_sistema.php');
-    $anteriores = array_values(array_diff(glob(database_path('migrations/*.php')), [$path]));
+    $anteriores = array_values(array_filter(glob(database_path('migrations/*.php')), fn ($migration) => basename($migration) < basename($path)));
     expect(IsolatedMariaDb::migrateInNewDatabase($anteriores))->toBe(0);
     try {
         $cargo = Cargo::create(['nombre_cargos' => 'Cargo de migración ficticio']);

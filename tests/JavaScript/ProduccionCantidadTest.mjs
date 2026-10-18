@@ -98,7 +98,7 @@ function entorno(categoria = 'pan', capacidad = 7) {
     runInNewContext(codigo, { document, window, URL: PreviewURL, queueMicrotask });
     document.emitir('DOMContentLoaded');
     const actualizar = () => detalle.emitir('input', { target: coches });
-    return { factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
+    return { empleado, rol, factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
 }
 
 test('preview interpreta vacíos como cero y consume el factor de Blade', () => {
@@ -391,4 +391,19 @@ test('volver de UNIDAD a LATA activa hora y cálculo de 18 latas por coche', () 
     ui.coches.value='1'; ui.latas.value='4'; ui.actualizar();
     assert.equal(ui.output.textContent, `${ui.factor + 4} latas`);
     assert.equal(ui.totalPanes.textContent, `${(ui.factor + 4) * 30} panes`);
+});
+
+
+test('seleccionar un empleado toma su rol actual y mantiene el control de rol protegido', () => {
+    const e = entorno();
+    for (const rolId of ['701', '801', '901']) {
+        e.empleado.selectedOptions = [{ value: '42', dataset: { rolId } }];
+        e.empleado.emitir('change', { target: e.empleado });
+        assert.equal(e.rol.value, rolId);
+        assert.equal(e.rol.disabled, true);
+    }
+    e.empleado.selectedOptions = [{ value: '', dataset: {} }];
+    e.empleado.emitir('change', { target: e.empleado });
+    assert.equal(e.rol.value, '');
+    assert.equal(e.rol.disabled, true);
 });

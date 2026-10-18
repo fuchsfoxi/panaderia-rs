@@ -3,6 +3,7 @@
 use App\Models\Categoria;
 use App\Models\DetallePan;
 use App\Models\DetallePanEmpleado;
+use App\Models\Empleado;
 use App\Models\Produccion;
 use App\Models\Producto;
 use App\Models\Rol;
@@ -230,7 +231,7 @@ test('reutiliza la cabecera en peticiones sucesivas con productos y observacione
 });
 
 test('acepta varios Ayudantes sin depender del cargo del empleado', function () {
-    // Las fixtures tienen un mismo cargo genérico: el rol procede del pivot.
+    // El cargo no decide el rol actual; la participación conserva su propia copia.
     $this->payload['detalles'][0]['participantes'][] = [
         'empleado_id' => $this->fixtures['empleados'][2]->id,
         'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id,
@@ -469,6 +470,8 @@ test('repetir el producto crea detalles separados sin sumar ni alterar snapshots
     $this->payload['detalles'][0]['latas_adicionales'] = 9;
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
     $primero = DetallePan::sole();
+    $this->fixtures['empleados'][2]->update(['rol_produccion_id' => $this->fixtures['roles']['Maestro']->id]);
+    $this->fixtures['empleados'][0]->update(['rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id]);
     $this->fixtures['productos']['Pan']->update(['panes_por_lata' => 14]);
     $otroUsuario = Usuario::create([
         'username' => 'segundo.registrador.ficticio', 'password_hash' => $this->fixtures['usuario']->password_hash,
@@ -570,6 +573,9 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
 
 test('producción explica los datos faltantes sin impedir el renderizado del formulario', function (string $catalogo, string $mensaje) {
     // Cambios exclusivamente en fixtures dentro de la transacción aislada.
+    if ($catalogo === 'roles') {
+        Empleado::query()->update(['rol_produccion_id' => null]);
+    }
     match ($catalogo) {
         'productos' => Producto::query()->update(['activo' => false]),
         'turnos' => Turno::query()->delete(),

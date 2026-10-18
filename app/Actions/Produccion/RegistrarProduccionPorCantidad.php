@@ -23,7 +23,7 @@ class RegistrarProduccionPorCantidad
         return DB::transaction(function () use ($datos, $usuarioId, $familia, $atributos): Produccion {
             // Mismo orden de locks que Pan. Serializa la familia incluso sin UNIQUE.
             $categoria = Categoria::where('nombre_categorias', $familia)->lockForUpdate()->first();
-            $roles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])->get()->keyBy('id');
+            $roles = RolProduccion::whereIn('nombre_roles_produccion', RolProduccion::NOMBRES)->get()->keyBy('id');
             $datosDetalle = $datos['detalles'][0];
             $producto = Producto::whereKey($datosDetalle['producto_id'])->lockForUpdate()->first();
             $errores = [];

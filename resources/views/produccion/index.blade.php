@@ -214,7 +214,7 @@
                                             $empleado = $empleados->firstWhere('id', $participante['empleado_id'] ?? null);
                                             $rol = $rolesProduccion->firstWhere('id', $participante['rol_produccion_id'] ?? null);
                                         @endphp
-                                        @if ($empleado && $rol && in_array($rol->nombre_roles_produccion, ['Maestro', 'Ayudante'], true))
+                                        @if ($empleado && $rol && (int) $empleado->rol_produccion_id === (int) $rol->id && in_array($rol->nombre_roles_produccion, \App\Models\RolProduccion::NOMBRES, true))
                                             <span class="empleado-tag" data-participante data-rol-nombre="{{ $rol->nombre_roles_produccion }}">
                                                 {{ $empleado->nombre_empleados }} — {{ $rol->nombre_roles_produccion }}
                                                 <button type="button" data-quitar-participante aria-label="Quitar a {{ $empleado->nombre_empleados }}">×</button>
@@ -231,18 +231,19 @@
                                 <select data-control="empleado" id="detalle-{{ $indice }}-empleado">
                                     <option value="">Selecciona un empleado</option>
                                     @foreach ($empleados as $empleado)
-                                        <option value="{{ $empleado->id }}">{{ $empleado->nombre_empleados }}</option>
+                                        <option value="{{ $empleado->id }}" data-rol-id="{{ $empleado->rol_produccion_id }}">{{ $empleado->nombre_empleados }} · #{{ $empleado->id }}</option>
                                     @endforeach
                                 </select>
-                                <label data-label="rol" for="detalle-{{ $indice }}-rol">Rol de producción</label>
-                                <select data-control="rol" id="detalle-{{ $indice }}-rol">
-                                    <option value="">Selecciona un rol</option>
+                                <label data-label="rol" for="detalle-{{ $indice }}-rol">Rol actual</label>
+                                <select data-control="rol" id="detalle-{{ $indice }}-rol" disabled aria-describedby="ayuda-rol-actual">
+                                    <option value="">Selecciona un empleado</option>
                                     @foreach ($rolesProduccion as $rol)
-                                        @if (in_array($rol->nombre_roles_produccion, ['Maestro', 'Ayudante'], true))
+                                        @if (in_array($rol->nombre_roles_produccion, \App\Models\RolProduccion::NOMBRES, true))
                                             <option value="{{ $rol->id }}" data-rol-nombre="{{ $rol->nombre_roles_produccion }}">{{ $rol->nombre_roles_produccion }}</option>
                                         @endif
                                     @endforeach
                                 </select>
+                                <small id="ayuda-rol-actual">El rol se administra en Personal. Los Practicantes son adicionales al Maestro y al Ayudante.</small>
                                 <button type="button" data-agregar-participante>Agregar participante</button>
                             </div>
                             <p data-estado-participantes aria-live="polite"></p>

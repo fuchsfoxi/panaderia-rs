@@ -1,7 +1,6 @@
 @extends('usuarios.layout')
 
-@section('titulo', 'Usuarios')
-@section('descripcion', 'Administra las cuentas de acceso. Una cuenta compartida no identifica a la persona que produjo.')
+@section('titulo', 'Personal · Usuarios')
 @section('accion')
     <a class="productos-boton productos-boton-principal" href="{{ route('usuarios.create') }}">+ Nuevo usuario</a>
 @endsection
@@ -23,6 +22,10 @@
                     @if ($usuario->id === auth()->id())<p class="productos-ayuda">Tu cuenta</p>@endif
                 </div>
                 <div class="productos-acciones producto-acciones">
+                    <a class="productos-boton usuario-boton-editar" href="{{ route('usuarios.edit', $usuario) }}" aria-label="Editar {{ $usuario->username }}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5M4 15 15 4a3 3 0 0 1 5 5L9 20l-6 1Z" /></svg>
+                        Editar
+                    </a>
                     <a class="productos-boton" href="{{ route('usuarios.password', $usuario) }}" aria-label="Cambiar contraseña de {{ $usuario->username }}">Cambiar contraseña</a>
                     <form method="POST" action="{{ route('usuarios.estado', $usuario) }}">
                         @csrf

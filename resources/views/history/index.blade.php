@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Historial - Panadería RS</title>
-    @vite(['resources/css/historial.css'])
+    @vite(['resources/css/historial.css', 'resources/js/historial.js'])
 </head>
 <body class="pagina-con-sidebar">
     <x-sidebar />
@@ -62,6 +62,13 @@
             </div>
         </form>
 
+        @if (session('success'))
+            <p class="aviso-historial" role="status">{{ session('success') }}</p>
+        @endif
+        @if (session('error') || $errors->has('confirmado'))
+            <p class="aviso-historial aviso-historial-error" role="alert">{{ session('error') ?? $errors->first('confirmado') }}</p>
+        @endif
+
         @if ($erroresFiltros->isNotEmpty())
             <p class="estado-vacio" role="alert">Revisa los filtros indicados para consultar el historial.</p>
             @if ($erroresFiltros->has('page'))
@@ -86,6 +93,7 @@
                     $fecha = $detalle->produccion->fecha->format('Y-m-d');
                     $maestros = $detalle->empleados->filter(fn ($empleado) => $empleado->pivot->rolProduccion?->nombre_roles_produccion === 'Maestro');
                     $ayudantes = $detalle->empleados->filter(fn ($empleado) => $empleado->pivot->rolProduccion?->nombre_roles_produccion === 'Ayudante');
+                    $practicantes = $detalle->empleados->filter(fn ($empleado) => $empleado->pivot->rolProduccion?->nombre_roles_produccion === 'Practicante');
                 @endphp
                 @if ($fecha !== $fechaAnterior)
                     @if ($fechaAnterior !== null)
@@ -143,6 +151,9 @@
                             <section class="grupo-detalles">
                                 <h4>Equipo</h4>
                                 <p>Ayudantes: {{ $ayudantes->pluck('nombre_empleados')->implode(', ') ?: 'Sin Ayudantes registrados' }}</p>
+                                @if ($practicantes->isNotEmpty())
+                                    <p>Practicantes: {{ $practicantes->pluck('nombre_empleados')->implode(', ') }}</p>
+                                @endif
                             </section>
                             <section class="grupo-detalles">
                                 <h4>Información general</h4>
@@ -159,6 +170,21 @@
                                     <p class="observacion">{{ $detalle->observacion }}</p>
                                 </section>
                             @endif
+                            @can('administrar-sistema')
+                                <form class="acciones-registro" method="POST" action="{{ route('history.destroy', ['familia' => strtolower($familia), 'detalle' => $detalle->id] + array_filter($filtros, fn ($valor) => $valor !== '') + ['page' => $detalles->currentPage()]) }}" data-eliminar-registro
+                                      data-producto="{{ $detalle->producto?->nombre_p ?? 'Producto no disponible' }}"
+                                      data-fecha="{{ $detalle->produccion->fecha->format('d/m/Y') }}"
+                                      data-turno="{{ $detalle->produccion->turno?->nombre_turnos ?? 'Sin turno registrado' }}">
+                                    @csrf
+                                    @method('DELETE')
+                                    <input type="hidden" name="confirmado" value="0">
+                                    <button type="button" class="boton-eliminar-registro" data-abrir-eliminacion disabled>
+                                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6" /></svg>
+                                        Eliminar registro
+                                    </button>
+                                    <noscript><p class="error-filtro">Activa JavaScript para confirmar la eliminación.</p></noscript>
+                                </form>
+                            @endcan
                         </div>
                     </details>
                 </article>
@@ -182,6 +208,21 @@
                 </nav>
             @endif
         @endif
+        @can('administrar-sistema')
+            <dialog class="confirmacion-historial" data-confirmacion-eliminar aria-labelledby="titulo-eliminar" aria-describedby="aviso-eliminar identidad-eliminar">
+                <h2 id="titulo-eliminar">¿Eliminar este registro?</h2>
+                <p id="aviso-eliminar">Se eliminará el registro de producción seleccionado. Esta acción no se puede deshacer.</p>
+                <dl id="identidad-eliminar">
+                    <dt>Producto</dt><dd data-confirmacion-producto></dd>
+                    <dt>Fecha</dt><dd data-confirmacion-fecha></dd>
+                    <dt>Turno</dt><dd data-confirmacion-turno></dd>
+                </dl>
+                <form method="dialog" class="acciones-confirmacion" data-responder-eliminacion>
+                    <button type="submit" value="cancelar" class="boton-cancelar-registro" autofocus>Cancelar</button>
+                    <button type="submit" value="eliminar" class="boton-eliminar-registro">Eliminar definitivamente</button>
+                </form>
+            </dialog>
+        @endcan
     </main>
 </body>
 </html>

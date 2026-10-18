@@ -33,7 +33,7 @@ class ProduccionController extends Controller
         $productosBocadito = $productosPorCategoria->get($categorias->get('Bocadito')?->id, collect());
 
         $turnos = Turno::orderBy('nombre_turnos')->get();
-        $empleados = Empleado::orderBy('nombre_empleados')->get();
+        $empleados = Empleado::with('rolProduccion')->disponiblesProduccion()->orderBy('nombre_empleados')->orderBy('id')->get();
         $rolesProduccion = RolProduccion::orderBy('nombre_roles_produccion')->get();
 
         $filtros = $request->filtros();

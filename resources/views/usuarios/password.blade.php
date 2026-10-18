@@ -1,6 +1,7 @@
 @extends('usuarios.layout')
 
 @section('titulo', 'Cambiar contraseña')
+@section('formulario-titulo', 'Cambiar contraseña')
 @section('descripcion', 'Establece una contraseña nueva sin solicitar la anterior.')
 
 @section('contenido')

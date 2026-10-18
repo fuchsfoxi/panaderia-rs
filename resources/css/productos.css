@@ -23,6 +23,9 @@ body { color: var(--verde-oscuro); font-family: 'Huninn', sans-serif; }
 .productos-boton:hover { border-color: var(--verde-oscuro); background: var(--beige); }
 .productos-boton-principal { background: var(--verde-medio); color: var(--crema); border-color: var(--verde-medio); }
 .productos-boton-principal:hover { background: var(--verde-oscuro); color: var(--crema); }
+.productos-boton-desactivar { transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease; }
+.productos-boton-desactivar:is(:hover, :focus-visible) { background: #C96B5D; border-color: #C96B5D; color: #fff; }
+.pagina-productos .productos-boton-desactivar:focus-visible { outline: 2px solid #9a493e; outline-offset: 3px; }
 .productos-boton:disabled, .productos-boton[aria-disabled="true"] { opacity: .6; cursor: default; }
 .productos-enlace { color: var(--verde-medio); text-underline-offset: 4px; }
 .productos-filtros { display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)) auto; align-items: start; gap: 16px; margin-bottom: 32px; }

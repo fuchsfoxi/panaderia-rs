@@ -15,8 +15,9 @@ abstract class GestionarUsuarioRequest extends FormRequest
 
     public function safeInput(): array
     {
-        return collect($this->only('username', 'rol_id', 'turno_id', 'activo'))
-            ->filter(fn ($value) => is_scalar($value) && mb_strlen((string) $value) <= 50)->all();
+        return collect($this->only('username', 'rol_id', 'turno_id', 'activo', 'empleado_id'))
+            ->filter(fn ($value, $key) => ($key === 'empleado_id' && $value === null)
+                || (is_scalar($value) && mb_strlen((string) $value) <= 50))->all();
     }
 
     protected function failedValidation(Validator $validator): void
@@ -46,6 +47,6 @@ abstract class GestionarUsuarioRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['username' => 'usuario', 'rol_id' => 'rol', 'turno_id' => 'turno', 'password' => 'contraseña', 'activo' => 'estado'];
+        return ['username' => 'usuario', 'rol_id' => 'rol', 'turno_id' => 'turno', 'password' => 'contraseña', 'activo' => 'estado', 'empleado_id' => 'empleado vinculado'];
     }
 }

@@ -35,7 +35,7 @@ class RegistrarProduccionPan
             ])->validate();
             // Conservar el orden de adquisición de locks del escritor original.
             $categoriaPan = $this->obtenerCategoriaPan();
-            $roles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])
+            $roles = RolProduccion::whereIn('nombre_roles_produccion', RolProduccion::NOMBRES)
                 ->get()->keyBy('id');
             $detalle = $datos['detalles'][0];
             $producto = $this->obtenerProducto((int) $detalle['producto_id']);
