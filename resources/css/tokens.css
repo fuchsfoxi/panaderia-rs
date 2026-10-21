@@ -1,0 +1,57 @@
+/* Paleta compartida por las entradas Vite, sin estilos de layout. */
+:root {
+    color-scheme: light;
+
+    /* Superficies: conservar la identidad verde/beige existente. */
+    --color-bg: #F6F2EF;
+    --color-surface: #DCD6C4;
+
+    /* Marca y bordes. */
+    --color-primary: #33403A;
+    --color-primary-hover: #4F6355;
+    --color-primary-soft: #7D9481;
+    --color-border: #AEC0AC;
+
+    /* Texto: el sage se reserva para decoración, no para texto pequeño. */
+    --color-text: var(--color-primary);
+    --color-text-muted: #4E6254; /* AA sobre beige: 4,52:1. */
+    --color-text-inverse: var(--color-bg);
+    --color-focus: var(--color-primary-hover);
+
+    /* Estados y acciones destructivas: texto oscuro también en hover. */
+    --color-success: var(--color-border);
+    --color-danger: #C96B5D;
+    --color-danger-soft: #F3DDDA;
+    --color-danger-text: #7A3325;
+    --color-danger-on-solid: #211512;
+
+    /* Componentes compartidos. */
+    --color-field-bg: var(--color-bg);
+    --color-field-placeholder: var(--color-text-muted);
+    --color-tab-bg: var(--color-surface);
+    --color-tab-active: var(--color-primary);
+    --color-tab-hover: var(--color-success);
+    --color-overlay: rgb(51 64 58 / 35%);
+    --color-dialog-backdrop: rgb(51 64 58 / 45%);
+    --color-shadow: rgb(51 64 58 / 10%);
+}
+
+/* Todas las pantallas comparten foco, placeholders y movimiento reducido. */
+:where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 3px;
+}
+
+::placeholder {
+    color: var(--color-field-placeholder);
+    opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

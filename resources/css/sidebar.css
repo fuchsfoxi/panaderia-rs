@@ -1,28 +1,29 @@
+@import './tokens.css';
 @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
 
 /* Se reserva el ancho compacto; la expansión se superpone sin mover la página. */
 body.pagina-con-sidebar {
     margin: 0;
     padding: 24px 32px 48px 108px;
-    background-color: #f6f2ef;
+    background-color: var(--color-bg);
 }
 
 .pagina-con-sidebar .marca-pagina {
     margin: 0;
-    color: #4f6355;
+    color: var(--color-text-muted);
     font-size: 0.85rem;
     letter-spacing: 0.08em;
 }
 
 .pagina-con-sidebar .descripcion-pagina {
     margin: 0;
-    color: #4f6355;
+    color: var(--color-text-muted);
     line-height: 1.5;
 }
 
 /* Foco común del contenido; los controles del sidebar conservan su contraste. */
 .pagina-con-sidebar :is(.dashboard, .pagina-produccion, .pagina-historial) :is(a, button, input, select, textarea):focus-visible {
-    outline: 2px solid #4f6355;
+    outline: 2px solid var(--color-focus);
     outline-offset: 3px;
 }
 
@@ -46,9 +47,9 @@ body.pagina-con-sidebar {
     overflow-x: hidden;
     overflow-y: auto;
     border-radius: 24px;
-    background-color: #33403a;
-    color: #f6f2ef;
-    box-shadow: 0 4px 16px rgb(51 64 58 / 10%);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
+    box-shadow: 0 4px 16px var(--color-shadow);
     transition: width 160ms ease;
 }
 
@@ -75,7 +76,7 @@ body.pagina-con-sidebar {
     flex: 0 0 52px;
     height: 52px;
     border-radius: 18px;
-    background-color: #4f6355;
+    background-color: var(--color-primary-hover);
 }
 
 .sidebar-icono {
@@ -109,7 +110,7 @@ body.pagina-con-sidebar {
 .sidebar-etiqueta {
     display: block;
     margin-bottom: 4px;
-    color: #aec0ac;
+    color: var(--color-border);
     font-size: 0.75rem;
 }
 
@@ -138,19 +139,19 @@ body.pagina-con-sidebar {
 }
 
 .sidebar .sidebar-link:hover {
-    background-color: #4f6355;
+    background-color: var(--color-primary-hover);
 }
 
 .sidebar .sidebar-link.activo {
-    background-color: #aec0ac;
-    color: #33403a;
+    background-color: var(--color-border);
+    color: var(--color-text);
     font-weight: 600;
 }
 
 .sidebar-salir {
     margin: auto 0 0;
     padding-top: 16px;
-    border-top: 1px solid #7d9481;
+    border-top: 1px solid var(--color-primary-soft);
 }
 
 .sidebar-menu,
@@ -163,21 +164,26 @@ body.pagina-con-sidebar {
     padding: 12px;
     border: 0;
     border-radius: 16px;
-    background-color: #33403a;
-    color: #f6f2ef;
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
     font: inherit;
     cursor: pointer;
+}
+
+.sidebar-menu:hover,
+.sidebar-cerrar:hover {
+    background-color: var(--color-primary-hover);
 }
 
 .sidebar button:focus-visible,
 .sidebar a:focus-visible,
 .sidebar-menu:focus-visible {
-    outline: 2px solid #f6f2ef;
+    outline: 2px solid var(--color-bg);
     outline-offset: -4px;
 }
 
 .sidebar .sidebar-link.activo:focus-visible {
-    outline-color: #33403a;
+    outline-color: var(--color-text);
 }
 
 .sidebar-menu[hidden],
@@ -201,10 +207,6 @@ body.pagina-con-sidebar {
         padding: 24px 16px 32px;
     }
 
-    body.pagina-con-sidebar.sidebar-enhanced {
-        padding-top: 80px;
-    }
-
     /* Fallback sin JS: navegación completa, visible y sin superposición. */
     .sidebar,
     .sidebar:focus-within {
@@ -224,19 +226,21 @@ body.pagina-con-sidebar {
         min-width: 0;
     }
 
+    /* La altura real del botón reserva espacio; al desplazar no tapa controles.
+       Solo el panel modal y su overlay se fijan al viewport. */
     .sidebar-menu {
-        position: fixed;
-        z-index: 20;
-        top: 16px;
-        left: 16px;
-        box-shadow: 0 4px 16px rgb(51 64 58 / 10%);
+        position: static;
+        width: fit-content;
+        max-width: 100%;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 16px var(--color-shadow);
     }
 
     .sidebar-overlay {
         position: fixed;
         z-index: 25;
         inset: 0;
-        background-color: rgb(51 64 58 / 35%);
+        background-color: var(--color-overlay);
         touch-action: none;
     }
 
@@ -257,11 +261,13 @@ body.pagina-con-sidebar {
     .sidebar-enhanced .sidebar-abierto {
         visibility: visible;
         transform: translateX(0);
+        /* Visibilidad inmediata para que cerrar.focus() funcione al abrir. */
+        transition: transform 160ms ease;
     }
 
     .sidebar-cerrar {
         align-self: flex-end;
-        background-color: #4f6355;
+        background-color: var(--color-primary-hover);
     }
 }
 

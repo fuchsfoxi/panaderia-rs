@@ -4,11 +4,11 @@
 .usuario-boton-editar svg { flex-shrink: 0; }
 
 .personal-pestanas { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
-.personal-pestana { flex: 1; max-width: 220px; min-height: 44px; padding: 16px 24px; border: 1px solid var(--verde-claro); border-radius: 16px; background: var(--beige); color: var(--verde-oscuro); font-weight: 700; text-align: center; text-decoration: none; transition: background-color 200ms ease; }
-.personal-pestana.activa { background: var(--verde-oscuro); color: var(--crema); }
-.personal-pestana:hover:not(.activa) { background: var(--verde-claro); }
+.personal-pestana { flex: 1; max-width: 220px; min-height: 44px; padding: 16px 24px; border: 1px solid var(--color-border); border-radius: 16px; background: var(--color-tab-bg); color: var(--color-text); font-weight: 700; text-align: center; text-decoration: none; transition: background-color 200ms ease; }
+.personal-pestana.activa { background: var(--color-tab-active); color: var(--color-text-inverse); }
+.personal-pestana:hover:not(.activa) { background: var(--color-tab-hover); }
 .pagina-personal .personal-formulario-titulo { margin-bottom: 8px; }
-.pagina-personal .personal-formulario-descripcion { margin-bottom: 20px; color: var(--verde-medio); line-height: 1.6; }
+.pagina-personal .personal-formulario-descripcion { margin-bottom: 20px; color: var(--color-text-muted); line-height: 1.6; }
 @media (max-width: 600px) { .personal-pestana { padding-inline: 12px; } }
 
 .usuario-caja-contrasena {
@@ -34,7 +34,7 @@
     border: none;
     border-radius: 8px;
     background: transparent;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     cursor: pointer;
 }
 
@@ -51,7 +51,7 @@
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 8px 24px;
     margin-top: 12px;
-    color: var(--color-dark, #33403a);
+    color: var(--color-text);
 }
 
 .usuario-detalles dt {

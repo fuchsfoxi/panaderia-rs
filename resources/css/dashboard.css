@@ -1,19 +1,10 @@
 @import './sidebar.css';
 
-:root {
-    --verde-oscuro: #33403a;
-    --verde-medio: #4f6355;
-    --verde-sage: #7d9481;
-    --verde-claro: #aec0ac;
-    --beige: #dcd6c4;
-    --crema: #f6f2ef;
-}
-
 body {
     margin: 0;
     font-family: 'Huninn', sans-serif;
-    background-color: var(--crema);
-    color: var(--verde-oscuro);
+    background-color: var(--color-bg);
+    color: var(--color-text);
 }
 
 .dashboard,
@@ -47,11 +38,11 @@ body {
 .dashboard-encabezado {
     padding-bottom: 28px;
     margin-bottom: 32px;
-    border-bottom: 1px solid var(--verde-claro);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .dashboard-etiqueta {
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     font-size: 0.85rem;
     letter-spacing: 0.08em;
 }
@@ -64,7 +55,7 @@ body {
 
 .dashboard-descripcion,
 .dashboard-nota {
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     line-height: 1.5;
 }
 
@@ -77,29 +68,29 @@ body {
 .dashboard-boton {
     display: inline-block;
     padding: 12px 18px;
-    border: 1px solid var(--verde-claro);
+    border: 1px solid var(--color-border);
     border-radius: 24px;
-    color: var(--verde-oscuro);
+    color: var(--color-text);
     text-decoration: none;
-    background-color: var(--beige);
+    background-color: var(--color-surface);
     min-height: 44px;
     line-height: 1.4;
     overflow-wrap: anywhere;
 }
 
 .dashboard-boton-principal {
-    border-color: var(--verde-medio);
-    background-color: var(--verde-medio);
-    color: var(--crema);
+    border-color: var(--color-primary-hover);
+    background-color: var(--color-primary-hover);
+    color: var(--color-text-inverse);
 }
 
 .dashboard-boton:hover {
-    border-color: var(--verde-oscuro);
+    border-color: var(--color-primary);
 }
 
 .dashboard a:focus-visible,
 .dashboard-tabla-contenedor:focus-visible {
-    outline: 2px solid var(--verde-medio);
+    outline: 2px solid var(--color-focus);
     outline-offset: 4px;
 }
 
@@ -119,20 +110,20 @@ body {
 .dashboard-titulo-seccion time,
 .dashboard-titulo-seccion > span {
     font-size: 0.9rem;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
 }
 
 .dashboard-titulo-seccion .dashboard-fecha {
     padding: 8px 14px;
     border-radius: 16px;
-    background-color: var(--beige);
-    color: var(--verde-oscuro);
+    background-color: var(--color-surface);
+    color: var(--color-text);
     font-variant-numeric: tabular-nums;
 }
 
 .dashboard-ayuda-tabla {
     display: none;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     font-size: 0.85rem;
 }
 
@@ -147,7 +138,7 @@ body {
 .dashboard-turno {
     padding: 24px;
     border-radius: 20px;
-    background-color: var(--beige);
+    background-color: var(--color-surface);
     min-width: 0;
     overflow-wrap: anywhere;
 }
@@ -156,7 +147,7 @@ body {
 .dashboard-turno h3 {
     font-size: 1rem;
     font-weight: 400;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
 }
 
 .dashboard-metrica .dashboard-valor {
@@ -166,7 +157,7 @@ body {
 }
 
 .dashboard-metrica > p:last-child {
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     font-size: 0.9rem;
 }
 
@@ -177,7 +168,7 @@ body {
 }
 
 .dashboard-turno dt {
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     font-size: 0.85rem;
 }
 
@@ -189,9 +180,9 @@ body {
 
 .dashboard-vacio {
     padding: 20px;
-    border: 1px solid var(--verde-claro);
+    border: 1px solid var(--color-border);
     border-radius: 16px;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     line-height: 1.5;
 }
 
@@ -200,7 +191,7 @@ body {
 }
 
 .dashboard-enlace {
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     text-underline-offset: 4px;
 }
 
@@ -211,7 +202,7 @@ body {
 
 .dashboard-tabla-contenedor {
     overflow-x: auto;
-    border: 1px solid var(--verde-claro);
+    border: 1px solid var(--color-border);
     border-radius: 16px;
 }
 
@@ -240,14 +231,14 @@ body {
 .dashboard-tabla th,
 .dashboard-tabla td {
     padding: 16px;
-    border-bottom: 1px solid var(--verde-claro);
+    border-bottom: 1px solid var(--color-border);
     overflow-wrap: anywhere;
     max-width: 280px;
 }
 
 .dashboard-tabla thead {
-    background-color: var(--beige);
-    color: var(--verde-medio);
+    background-color: var(--color-surface);
+    color: var(--color-text-muted);
 }
 
 .dashboard-tabla th {

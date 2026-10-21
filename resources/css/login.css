@@ -1,13 +1,5 @@
+@import './tokens.css';
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Quicksand:wght@400;500;600;700&display=swap');
-
-:root {
-    --color-bg: #f6f2ef;
-    --color-card: #dcd6c4;
-    --color-dark: #33403a;
-    --color-medium: #4f6355;
-    --color-sage: #aec0ac;
-    --color-placeholder: #7d9481;
-}
 
 * {
     box-sizing: border-box;
@@ -18,6 +10,8 @@
 body {
     font-family: 'Quicksand', sans-serif;
     min-height: 100vh;
+    background-color: var(--color-bg);
+    color: var(--color-text);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -71,7 +65,7 @@ body {
     height: 400px;
     left: -100px;
     top: 60%;
-    background: radial-gradient(circle, var(--color-sage) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--color-border) 0%, transparent 70%);
 }
 
 .brillo-calido-derecho {
@@ -79,7 +73,7 @@ body {
     height: 350px;
     right: -100px;
     top: 20%;
-    background: radial-gradient(circle, var(--color-card) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--color-surface) 0%, transparent 70%);
 }
 
 /* --- Bloque principal --- */
@@ -115,7 +109,7 @@ body {
 .placa-icono-logo {
     width: 64px;
     height: 64px;
-    background-color: var(--color-dark);
+    background-color: var(--color-primary);
     border-radius: 32px;
     display: flex;
     align-items: center;
@@ -143,14 +137,14 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 500;
     font-size: 15px;
-    color: #f6f2ef;
+    color: var(--color-text-inverse);
     text-align: center;
     text-shadow: 0 1px 3px rgba(0,0,0,0.6);
 }
 
 /* --- Tarjeta del formulario --- */
 .tarjeta-login {
-    background-color: var(--color-card);
+    background-color: var(--color-surface);
     border-radius: 32px;
     padding: 40px;
     width: 100%;
@@ -167,7 +161,7 @@ body {
     font-family: 'Baloo 2', sans-serif;
     font-weight: 700;
     font-size: 24px;
-    color: var(--color-dark);
+    color: var(--color-text);
     margin-bottom: 4px;
 }
 
@@ -175,7 +169,7 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 400;
     font-size: 14px;
-    color: var(--color-medium);
+    color: var(--color-text-muted);
 }
 
 .campos-formulario {
@@ -189,13 +183,13 @@ body {
     font-family: 'Quicksand', sans-serif;
     font-weight: 600;
     font-size: 14px;
-    color: var(--color-dark);
+    color: var(--color-text);
     margin-bottom: 8px;
 }
 
 .caja-input {
-    background-color: var(--color-bg);
-    border: 1px solid var(--color-sage);
+    background-color: var(--color-field-bg);
+    border: 1px solid var(--color-border);
     border-radius: 16px;
     height: 52px;
     display: flex;
@@ -206,13 +200,13 @@ body {
 }
 
 .caja-input:focus-within {
-    border-color: var(--color-dark);
+    border-color: var(--color-primary);
 }
 
 .caja-input .icon {
     width: 20px;
     height: 20px;
-    color: var(--color-medium);
+    color: var(--color-text-muted);
     flex-shrink: 0;
 }
 
@@ -221,14 +215,13 @@ body {
     min-width: 0;
     border: none;
     background: transparent;
-    outline: none;
     font-family: 'Quicksand', sans-serif;
     font-size: 15px;
-    color: var(--color-dark);
+    color: var(--color-text);
 }
 
 .caja-input input::placeholder {
-    color: var(--color-placeholder);
+    color: var(--color-field-placeholder);
 }
 
 .alternar-contrasena {
@@ -238,7 +231,10 @@ body {
     display: flex;
     align-items: center;
     padding: 0;
-    color: var(--color-medium);
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    color: var(--color-text-muted);
     flex-shrink: 0;
 }
 
@@ -258,13 +254,13 @@ body {
 .separador-decorativo .linea {
     flex: 1;
     height: 1px;
-    background-color: var(--color-sage);
+    background-color: var(--color-border);
 }
 
 .separador-decorativo .diamante {
     width: 10px;
     height: 10px;
-    background-color: var(--color-sage);
+    background-color: var(--color-border);
     transform: rotate(45deg);
     flex-shrink: 0;
 }
@@ -279,8 +275,8 @@ body {
 }
 
 .btn-enviar {
-    background-color: var(--color-dark);
-    color: var(--color-bg);
+    background-color: var(--color-primary);
+    color: var(--color-text-inverse);
     border: none;
     height: 52px;
     width: 100%;
@@ -297,8 +293,8 @@ body {
 }
 
 .btn-enviar:disabled {
-    background-color: var(--color-sage);
-    color: var(--color-dark);
+    background-color: var(--color-border);
+    color: var(--color-text);
     cursor: not-allowed;
 }
 
@@ -310,7 +306,7 @@ body {
 }
 
 .mensaje-login {
-    color: #7a312b;
+    color: var(--color-danger-text);
 }
 
 .grupo-input > .mensaje-login {
@@ -323,7 +319,7 @@ body {
 }
 
 .ayuda-espera {
-    color: var(--color-dark);
+    color: var(--color-text);
 }
 
 [data-login-seconds] {
@@ -331,7 +327,7 @@ body {
 }
 
 .caja-input:has(input[aria-invalid="true"]) {
-    border-color: #7a312b;
+    border-color: var(--color-danger-text);
 }
 
 @media (max-width: 480px) {

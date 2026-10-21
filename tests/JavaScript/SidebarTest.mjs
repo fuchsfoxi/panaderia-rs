@@ -6,7 +6,7 @@ import { runInNewContext } from 'node:vm';
 const codigo = readFileSync(new URL('../../resources/js/sidebar.js', import.meta.url), 'utf8');
 
 // Dobles mínimos del DOM para comprobar eventos/foco; no simulan CSS ni un navegador.
-function entorno(esMovil = true) {
+function entorno(esMovil = true, claseContenido = '.dashboard', aplazarFoco = false) {
     let document;
     const elemento = () => {
         const atributos = new Map();
@@ -42,17 +42,19 @@ function entorno(esMovil = true) {
     const selectores = new Map([
         ['[data-sidebar]', panel], ['[data-sidebar-abrir]', abrir],
         ['[data-sidebar-cerrar]', cerrar], ['[data-sidebar-overlay]', overlay],
-        ['.dashboard, .pagina-produccion, .pagina-historial', contenido],
     ]);
     document = elemento();
     document.body = elemento();
-    document.querySelector = (selector) => selectores.get(selector);
+    document.querySelector = (selector) => selectores.get(selector)
+        ?? (selector.split(', ').includes(claseContenido) ? contenido : null);
     const movil = elemento();
     movil.matches = esMovil;
     const window = elemento();
     window.matchMedia = () => movil;
+    const frames = [];
+    window.requestAnimationFrame = (callback) => aplazarFoco ? frames.push(callback) : callback();
     runInNewContext(codigo, { document, window });
-    return { panel, abrir, cerrar, overlay, contenido, enlaces, logout, document, movil, window };
+    return { panel, abrir, cerrar, overlay, contenido, enlaces, logout, document, movil, window, frames };
 }
 
 test('escritorio conserva la navegación disponible y oculta los controles móviles', () => {
@@ -134,4 +136,23 @@ test('pagehide elimina el estado abierto sin modificar scroll o sesión', () => 
 
 test('una página sin componente no requiere controles ni modifica el documento', () => {
     runInNewContext(codigo, { document: { querySelector: () => null } });
+});
+
+// Productos y Personal comparten esta clase fuera de las tres pantallas originales.
+test('el menú modal también aísla Productos y Personal y los libera al cerrar', () => {
+    const e = entorno(true, '.pagina-productos');
+    e.abrir.emitir('click');
+    assert.equal(e.contenido.inert, true);
+    e.cerrar.emitir('click');
+    assert.equal(e.contenido.inert, false);
+    assert.equal(e.document.activeElement, e.abrir);
+});
+
+test('cerrar antes del frame pendiente conserva el foco devuelto al botón Menú', () => {
+    const e = entorno(true, '.pagina-productos', true);
+    e.abrir.emitir('click');
+    e.cerrar.emitir('click');
+    e.frames.shift()();
+    assert.equal(e.document.activeElement, e.abrir);
+    assert.equal(e.panel.inert, true);
 });

@@ -5,7 +5,7 @@ const overlay = document.querySelector('[data-sidebar-overlay]');
 
 if (panel && abrir && cerrar && overlay) {
     const movil = window.matchMedia('(max-width: 767px)');
-    const contenido = document.querySelector('.dashboard, .pagina-produccion, .pagina-historial');
+    const contenido = document.querySelector('.dashboard, .pagina-produccion, .pagina-historial, .pagina-productos');
     let abierto = false;
 
     const controles = () => [...panel.querySelectorAll('a[href], button:not([disabled])')]
@@ -24,7 +24,14 @@ if (panel && abrir && cerrar && overlay) {
         if (abierto) {
             panel.setAttribute('role', 'dialog');
             panel.setAttribute('aria-modal', 'true');
-            cerrar.focus();
+            // Dejar que se pinte el panel antes de enfocar, también con movimiento
+            // reducido. No robar el foco si se cerró o cambió a escritorio.
+            window.requestAnimationFrame(() => {
+                if (!abierto) return;
+                window.requestAnimationFrame(() => {
+                    if (abierto) cerrar.focus({ preventScroll: true });
+                });
+            });
         } else {
             panel.removeAttribute('role');
             panel.removeAttribute('aria-modal');

@@ -1,13 +1,5 @@
+@import './tokens.css';
 @import url('https://fonts.googleapis.com/css2?family=Huninn&display=swap');
-
-:root {
-    --verde-oscuro: #33403a;
-    --verde-medio: #4f6355;
-    --verde-sage: #7d9481;
-    --verde-claro: #aec0ac;
-    --beige: #dcd6c4;
-    --crema: #f6f2ef;
-}
 
 .pagina-error,
 .pagina-error * {
@@ -21,8 +13,8 @@
     display: grid;
     place-items: center;
     padding: 24px;
-    background: var(--crema);
-    color: var(--verde-oscuro);
+    background: var(--color-bg);
+    color: var(--color-text);
     font-family: 'Huninn', sans-serif;
 }
 
@@ -30,21 +22,21 @@
     width: 100%;
     max-width: 520px;
     padding: clamp(24px, 6vw, 48px);
-    border: 1px solid var(--beige);
-    border-top: 6px solid var(--verde-sage);
+    border: 1px solid var(--color-surface);
+    border-top: 6px solid var(--color-primary-soft);
     border-radius: 24px;
-    box-shadow: 0 8px 32px rgb(51 64 58 / 8%);
+    box-shadow: 0 8px 32px color-mix(in srgb, var(--color-primary) 8%, transparent);
 }
 
 .error-marca {
     margin: 0;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     letter-spacing: 0.06em;
 }
 
 .error-codigo {
     margin: 24px 0 8px;
-    color: var(--verde-medio);
+    color: var(--color-text-muted);
     font-size: clamp(3rem, 12vw, 5rem);
     line-height: 1;
 }
@@ -75,26 +67,26 @@
     justify-content: center;
     min-height: 44px;
     padding: 12px 18px;
-    border: 1px solid var(--verde-oscuro);
+    border: 1px solid var(--color-text);
     border-radius: 12px;
-    background: var(--verde-oscuro);
-    color: var(--crema);
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
     font: inherit;
     text-decoration: none;
     cursor: pointer;
 }
 
 .error-boton-secundario {
-    background: var(--verde-claro);
-    color: var(--verde-oscuro);
+    background: var(--color-border);
+    color: var(--color-text);
 }
 
 .error-boton:hover {
-    background: var(--verde-medio);
-    color: var(--crema);
+    background: var(--color-primary-hover);
+    color: var(--color-text-inverse);
 }
 
 .error-boton:focus-visible {
-    outline: 3px solid var(--verde-medio);
+    outline: 3px solid var(--color-focus);
     outline-offset: 3px;
 }
