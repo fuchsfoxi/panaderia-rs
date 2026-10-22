@@ -299,4 +299,43 @@ test('las migraciones aditivas preservan registros y se revierten solo en la bas
     expect(Schema::hasColumn('unidades_medida', 'codigo'))->toBeFalse();
     $codigoMigration->up();
     (new UnidadMedidaSeeder)->run();
+
+    // Hora de vitrina aditiva: ninguna fila previa se reinterpreta ni se rellena.
+    $tablasVitrina = ['produccion', 'productos', 'detalle_pan', 'detalle_torta', 'detalle_bocadito',
+        'detalle_pan_empleado', 'detalle_torta_empleado', 'detalle_bocadito_empleado'];
+    $filasAntesVitrina = $esquemasAntesVitrina = [];
+    foreach ($tablasVitrina as $tabla) {
+        $filasAntesVitrina[$tabla] = DB::table($tabla)->get()->map(fn ($fila) => (array) $fila)->all();
+        $esquemasAntesVitrina[$tabla] = Schema::getColumns($tabla);
+    }
+    $horaVitrina = require database_path('migrations/2026_10_21_100000_add_hora_vitrina_to_detalle_torta.php');
+    $horaVitrina->up();
+    $columnaVitrina = collect(Schema::getColumns('detalle_torta'))->firstWhere('name', 'hora_vitrina');
+    expect($columnaVitrina['type_name'])->toBe('time')->and($columnaVitrina['nullable'])->toBeTrue()
+        ->and($columnaVitrina['default'])->toBeIn([null, 'NULL']);
+    foreach ($tablasVitrina as $tabla) {
+        $filas = DB::table($tabla)->get()->map(function ($fila) use ($tabla) {
+            $datos = (array) $fila;
+            if ($tabla === 'detalle_torta') {
+                expect($datos['hora_vitrina'])->toBeNull();
+                unset($datos['hora_vitrina']);
+            }
+
+            return $datos;
+        })->all();
+        expect($filas)->toBe($filasAntesVitrina[$tabla])
+            ->and(collect(Schema::getColumns($tabla))->reject(fn ($columna) => $columna['name'] === 'hora_vitrina')->values()->all())
+            ->toBe($esquemasAntesVitrina[$tabla]);
+    }
+    $idTorta = $filasAntesVitrina['detalle_torta'][0]['id'];
+    DB::table('detalle_torta')->where('id', $idTorta)->update(['hora_vitrina' => '14:15']);
+    expect(fn () => $horaVitrina->down())->toThrow(RuntimeException::class, 'hay horas de vitrina')
+        ->and(DB::table('detalle_torta')->where('id', $idTorta)->value('hora_vitrina'))->toBe('14:15:00');
+    // Retirar exclusivamente la hora ficticia para comprobar down y reaplicación.
+    DB::table('detalle_torta')->where('id', $idTorta)->update(['hora_vitrina' => null]);
+    $horaVitrina->down();
+    expect(Schema::getColumns('detalle_torta'))->toBe($esquemasAntesVitrina['detalle_torta'])
+        ->and(DB::table('detalle_torta')->get()->map(fn ($fila) => (array) $fila)->all())->toBe($filasAntesVitrina['detalle_torta']);
+    $horaVitrina->up();
+    expect(DB::table('detalle_torta')->where('id', $idTorta)->value('hora_vitrina'))->toBeNull();
 });

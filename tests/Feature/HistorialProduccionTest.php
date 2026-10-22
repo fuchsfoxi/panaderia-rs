@@ -255,6 +255,9 @@ test('historial reúne las tres familias con detalles accesibles y filtros combi
         $datos['detalles'][0]['producto_id'] = $this->fixtures['productos'][$familia]->id;
         $datos['detalles'][0]['cantidad'] = 7;
         $datos['detalles'][0]['forma'] = 'Corazón';
+        if ($familia === 'Torta') {
+            $datos['detalles'][0]['hora_vitrina'] = '14:15';
+        }
         $datos['detalles'][0]['observacion'] = 'Nota '.$familia;
         $action->ejecutar($datos, $this->fixtures['usuario']->id);
     }
@@ -320,13 +323,18 @@ test('históricos no inventan autor hora ni factor y las fotos de Torta usan el 
         'categoria_id' => $this->fixtures['productos']['Torta']->categoria_id,
         'registrado_por_usuario_id' => $this->fixtures['usuario']->id,
     ]);
-    IsolatedMariaDb::detail(DetalleTorta::class, $cabecera, $this->fixtures);
+    $torta = IsolatedMariaDb::detail(DetalleTorta::class, $cabecera, $this->fixtures);
+    expect($torta->fresh()->hora_vitrina)->toBeNull();
     $this->actingAs($this->fixtures['usuario'])->get(route('history.index'))->assertOk()
         ->assertSeeText('Registrador del lote: desconocido (registro histórico).')
         ->assertSeeText('Registró la sesión: '.$this->fixtures['usuario']->username)
         ->assertSeeText('Sin hora registrada')->assertSeeText('Sin factor registrado')
+        ->assertSeeText('Hora de vitrina: Sin hora registrada')
         ->assertDontSeeText('Total estimado de panes:')
         ->assertSee('src="'.Storage::disk('public')->url('pruebas/torta-ficticia.jpg').'"', false);
+    $this->get(route('produccion.index', ['categoria' => 'torta', 'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id']]))
+        ->assertOk()->assertSeeText('Hora de vitrina: Sin hora registrada');
+    expect($torta->fresh()->hora_vitrina)->toBeNull();
 });
 
 test('el número de consultas es constante también con tres familias en la página', function () {

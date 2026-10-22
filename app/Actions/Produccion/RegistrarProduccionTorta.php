@@ -25,7 +25,7 @@ class RegistrarProduccionTorta
                     }
                 }
 
-                return ['forma' => $detalle['forma'], 'foto' => $ruta];
+                return ['forma' => $detalle['forma'], 'foto' => $ruta, 'hora_vitrina' => $detalle['hora_vitrina']];
             });
         } catch (Throwable $exception) {
             // La transacción ya revirtió SQL. Compensar también el archivo recién escrito.

@@ -17,6 +17,7 @@ class DetalleTorta extends Model
         'registrado_por_usuario_id',
         'producto_id',
         'cantidad',
+        'hora_vitrina',
         'observacion',
         'forma',
         'foto',

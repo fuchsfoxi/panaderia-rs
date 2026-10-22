@@ -24,4 +24,9 @@ class Categoria extends Model
     {
         return $this->hasMany(Produccion::class, 'categoria_id');
     }
+
+    public function gruposProduccion(): HasMany
+    {
+        return $this->hasMany(GrupoProduccion::class, 'categoria_id');
+    }
 }

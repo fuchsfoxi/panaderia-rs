@@ -54,8 +54,8 @@
             <span class="sidebar-texto">Productos</span>
         </a>
         <a href="{{ route('personal.index') }}"
-           class="sidebar-link {{ request()->routeIs('personal.*', 'usuarios.*', 'empleados.*') ? 'activo' : '' }}"
-           @if(request()->routeIs('personal.*', 'usuarios.*', 'empleados.*')) aria-current="page" @endif>
+           class="sidebar-link {{ request()->routeIs('personal.*', 'usuarios.*', 'empleados.*', 'grupos.*') ? 'activo' : '' }}"
+           @if(request()->routeIs('personal.*', 'usuarios.*', 'empleados.*', 'grupos.*')) aria-current="page" @endif>
             <svg class="sidebar-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="9" cy="8" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 4a3 3 0 0 1 0 6m1 4a5 5 0 0 1 3 4v3" /></svg>
             <span class="sidebar-texto">Personal</span>
         </a>

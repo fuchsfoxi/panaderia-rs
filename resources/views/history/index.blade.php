@@ -140,6 +140,7 @@
                             @elseif ($esTorta)
                                 <section class="grupo-detalles">
                                     <h4>Producción</h4>
+                                    <p>Hora de vitrina: {{ $detalle->hora_vitrina !== null ? substr($detalle->hora_vitrina, 0, 5) : 'Sin hora registrada' }}</p>
                                     <p>Forma: {{ $detalle->forma }}</p>
                                     @if ($detalle->foto)
                                         <a href="{{ asset('storage/'.$detalle->foto) }}" target="_blank" rel="noopener">

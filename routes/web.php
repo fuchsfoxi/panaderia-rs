@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmpleadoController;
+use App\Http\Controllers\GrupoController;
 use App\Http\Controllers\HistorialController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\ProduccionController;
@@ -25,6 +26,12 @@ Route::middleware(['auth', EnsureUsuarioActivo::class, 'auth.session'])->group(f
 
     Route::middleware('can:administrar-sistema')->group(function () {
         Route::redirect('/personal', '/usuarios')->name('personal.index');
+        Route::get('/grupos', [GrupoController::class, 'index'])->name('grupos.index');
+        Route::get('/grupos/crear', [GrupoController::class, 'create'])->name('grupos.create');
+        Route::post('/grupos', [GrupoController::class, 'store'])->name('grupos.store');
+        Route::get('/grupos/{grupo}/editar', [GrupoController::class, 'edit'])->name('grupos.edit');
+        Route::match(['put', 'patch'], '/grupos/{grupo}', [GrupoController::class, 'update'])->name('grupos.update');
+        Route::patch('/grupos/{grupo}/estado', [GrupoController::class, 'estado'])->name('grupos.estado');
         Route::get('/empleados', [EmpleadoController::class, 'index'])->name('empleados.index');
         Route::get('/empleados/crear', [EmpleadoController::class, 'create'])->name('empleados.create');
         Route::post('/empleados', [EmpleadoController::class, 'store'])->name('empleados.store');

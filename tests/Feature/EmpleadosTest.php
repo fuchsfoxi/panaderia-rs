@@ -49,7 +49,7 @@ test('Personal abre Usuarios y cada pestaña muestra solo su listado con la nave
         @$html->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
         $xpath = new DOMXPath($html);
         expect($xpath->query('//h1')->item(0)->textContent)->toBe('Personal')
-            ->and($xpath->query('//nav[@aria-label="Secciones de Personal"]/a')->length)->toBe(2)
+            ->and($xpath->query('//nav[@aria-label="Secciones de Personal"]/a')->length)->toBe(3)
             ->and($xpath->query('//nav[@aria-label="Secciones de Personal"]/a[@aria-current="page"]')->item(0)->textContent)->toBe(ucfirst($pestana));
         $otra = $pestana === 'usuarios' ? 'Empleados de producción' : 'Cuentas de acceso';
         $response->assertDontSee('aria-label="'.$otra.'"', false);

@@ -29,6 +29,7 @@ function entorno(categoria = 'pan', capacidad = 7) {
     const foto = elemento('', { campo: 'foto' });
     const camara = elemento('', { campo: 'foto_camara' });
     const hora = elemento('08:35', { campo: 'hora_finalizacion' });
+    const horaVitrina = elemento('14:15', { campo: 'hora_vitrina' });
     const preview = elemento();
     const nombreFoto = elemento();
     const iconoFoto = elemento();
@@ -63,7 +64,7 @@ function entorno(categoria = 'pan', capacidad = 7) {
     detalle.querySelectorAll = selector => selector === '[data-forma]' ? formas : selector === '[data-participante]'
         ? [] : selector.startsWith('[data-campo="cantidad"]')
             ? [cantidad, forma, foto, observacion]
-            : [coches, latas, producto, cantidad, forma, foto, camara, hora, observacion, empleado, rol];
+            : [coches, latas, producto, cantidad, forma, foto, camara, hora, horaVitrina, observacion, empleado, rol];
     // Factor deliberadamente distinto: demostrar que el JS consume el dato publicado por Blade.
     const factor = capacidad;
     const formulario = elemento('', { latasPorCoche: String(factor), panUrl: '/produccion', tortaUrl: '/produccion/torta', bocaditoUrl: '/produccion/bocadito' });
@@ -82,6 +83,7 @@ function entorno(categoria = 'pan', capacidad = 7) {
         querySelectorAll: () => controles,
     });
     const campos = [condicional('pan', [coches, latas, hora], 'LATA'), condicional('pan torta bocadito', [cantidad], 'UNIDAD'), condicional('torta', [forma, foto, camara, quitarFoto, ...formas])];
+    campos.push(condicional('torta', [horaVitrina]));
     const error = elemento('', { errorFamilia: categoria });
     const registros = elemento('', { registrosFamilia: categoria });
     document.querySelectorAll = selector => selector === '.btn-categoria' ? botones
@@ -98,8 +100,30 @@ function entorno(categoria = 'pan', capacidad = 7) {
     runInNewContext(codigo, { document, window, URL: PreviewURL, queueMicrotask });
     document.emitir('DOMContentLoaded');
     const actualizar = () => detalle.emitir('input', { target: coches });
-    return { empleado, rol, factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
+    return { empleado, rol, factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, horaVitrina, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
 }
+
+test('hora de vitrina conserva old input en Torta y se limpia y deshabilita al cambiar familia o cancelar', async () => {
+    const e = entorno('torta');
+    assert.equal(e.horaVitrina.value, '14:15');
+    assert.equal(e.horaVitrina.disabled, false);
+    e.producto.emitir('change');
+    assert.equal(e.horaVitrina.value, '14:15');
+    for (const familia of ['pan', 'bocadito']) {
+        e.botones.find(boton => boton.dataset.categoria === familia).emitir('click');
+        assert.equal(e.horaVitrina.disabled, true);
+        assert.equal(e.horaVitrina.value, '');
+        assert.equal(e.campos.at(-1).style.display, 'none');
+        e.botones.find(boton => boton.dataset.categoria === 'torta').emitir('click');
+        assert.equal(e.horaVitrina.disabled, false);
+        assert.equal(e.campos.at(-1).style.display, 'flex');
+        e.horaVitrina.value = '16:45';
+    }
+    e.formulario.emitir('reset');
+    await new Promise(resolve => queueMicrotask(resolve));
+    assert.equal(e.horaVitrina.value, '');
+    assert.equal(e.horaVitrina.disabled, false);
+});
 
 test('preview interpreta vacíos como cero y consume el factor de Blade', () => {
     const e = entorno();

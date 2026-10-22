@@ -47,7 +47,7 @@ function payloadTurnoUsuario(array $fixtures, string $familia, int $turnoId): ar
     ];
     $detalle += $familia === 'Pan' ? ['coches' => 1, 'latas_adicionales' => 2, 'hora_finalizacion' => '08:35'] : ['cantidad' => 7];
     if ($familia === 'Torta') {
-        $detalle += ['forma' => 'circular', 'foto' => UploadedFile::fake()->image('foto-ficticia.jpg')];
+        $detalle += ['forma' => 'circular', 'hora_vitrina' => '14:15', 'foto' => UploadedFile::fake()->image('foto-ficticia.jpg')];
     }
 
     return ['categoria' => strtolower($familia), 'fecha' => '2026-10-16', 'turno_id' => $turnoId, 'detalles' => [$detalle]];

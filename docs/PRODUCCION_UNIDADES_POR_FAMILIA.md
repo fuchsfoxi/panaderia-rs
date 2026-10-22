@@ -64,6 +64,7 @@ Mismo tratamiento de cantidad directa, referido a bocaditos. No requiere ni util
 
 Conserva los inputs funcionales Coches/Latas adicionales y el total canónico. Añade el factor vigente del producto y total estimado visual: 0 coches + 12 latas, factor 30 → 360 panes. El factor se publica solo en opciones Pan. Cambio de producto, cantidades y reset actualizan la ayuda.
 
+
 La ayuda no se envía como valor calculado en el POST. La Action sigue derivando cantidad y snapshot desde el producto bloqueado. Factores desconocidos muestran «Sin factor registrado»/«Estimación no disponible»; cantidades inválidas y desbordamiento INT no producen una estimación. Productos matemáticos fuera de la precisión entera segura de JS muestran una advertencia en vez de un entero redondeado.
 
 Las tarjetas de lotes consultados añaden snapshot/estimación usando exclusivamente el detalle histórico, sin recurrir al factor actual.

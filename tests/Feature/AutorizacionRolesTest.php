@@ -179,7 +179,7 @@ test('ambos roles registran las tres familias con turno asignado sin inferirlo d
         ? ['coches' => 1, 'latas_adicionales' => 2, 'hora_finalizacion' => '19:10']
         : ['cantidad' => 4];
     if ($familia === 'Torta') {
-        $detalle += ['forma' => 'circular', 'foto' => UploadedFile::fake()->image('torta-ficticia.jpg')];
+        $detalle += ['forma' => 'circular', 'hora_vitrina' => '14:15', 'foto' => UploadedFile::fake()->image('torta-ficticia.jpg')];
     }
     $payload = [
         'fecha' => '2026-10-12', 'categoria' => strtolower($familia), 'turno_id' => $noche->id,

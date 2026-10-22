@@ -53,7 +53,7 @@ function payloadPersonalProduccion(array $fixtures, string $familia, string $uni
         'detalles' => [['producto_id' => $fixtures['productos'][ucfirst($familia)]->id,
             'participantes' => $participantes, 'observacion' => 'Lote con personal ficticio',
             ...($familia === 'pan' && $unidad === 'LATA' ? ['coches' => 1, 'latas_adicionales' => 4, 'hora_finalizacion' => '09:35'] : ['cantidad' => 8]),
-            ...($familia === 'torta' ? ['forma' => 'circular'] : [])]]];
+            ...($familia === 'torta' ? ['forma' => 'circular', 'hora_vitrina' => '14:15'] : [])]]];
 }
 
 function rutaPersonalProduccion(string $familia): string

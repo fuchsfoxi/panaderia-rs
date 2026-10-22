@@ -52,6 +52,7 @@ function cantidadPayload(array $fixtures, string $familia): array
         'categoria' => strtolower($familia), 'fecha' => '2026-10-10', 'turno_id' => $fixtures['turno']->id,
         'detalles' => [[
             'producto_id' => $fixtures['productos'][$familia]->id, 'cantidad' => 4,
+            ...($familia === 'Torta' ? ['hora_vitrina' => '14:15'] : []),
             'forma' => 'circular', 'observacion' => 'Nota de lote '.$familia,
             'participantes' => [
                 ['empleado_id' => $fixtures['empleados'][0]->id, 'rol_produccion_id' => $fixtures['roles']['Maestro']->id],
@@ -70,6 +71,68 @@ function rutaCantidad(string $familia): string
 {
     return route('produccion.'.strtolower($familia).'.store');
 }
+
+test('Torta exige hora de vitrina HH:MM en servidor sin crear datos ni fotos', function (mixed $hora, string $mensaje) {
+    $payload = cantidadPayload($this->fixtures, 'Torta');
+    if ($hora === 'omitida') {
+        unset($payload['detalles'][0]['hora_vitrina']);
+    } else {
+        $payload['detalles'][0]['hora_vitrina'] = $hora;
+    }
+    $payload['detalles'][0]['foto'] = UploadedFile::fake()->image('torta.png');
+    $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index', ['categoria' => 'torta']))
+        ->post(rutaCantidad('Torta'), $payload)->assertRedirect()
+        ->assertSessionHasErrors(['detalles.0.hora_vitrina' => $mensaje]);
+    expect(Produccion::count())->toBe(0)->and(DetalleTorta::count())->toBe(0)
+        ->and(DB::table('detalle_torta_empleado')->count())->toBe(0)
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+})->with([
+    ['omitida', 'La hora de vitrina es obligatoria.'],
+    [null, 'La hora de vitrina es obligatoria.'],
+    ['', 'La hora de vitrina es obligatoria.'],
+    ['24:00', 'La hora de vitrina debe tener un formato válido HH:MM (00:00 a 23:59).'],
+    ['14:60', 'La hora de vitrina debe tener un formato válido HH:MM (00:00 a 23:59).'],
+    ['2:15', 'La hora de vitrina debe tener un formato válido HH:MM (00:00 a 23:59).'],
+    ['14:15:00', 'La hora de vitrina debe tener un formato válido HH:MM (00:00 a 23:59).'],
+    ['ayer', 'La hora de vitrina debe tener un formato válido HH:MM (00:00 a 23:59).'],
+    [['14:15'], 'La hora de vitrina debe tener un formato válido HH:MM (00:00 a 23:59).'],
+]);
+
+test('cada lote de Torta guarda su propia hora de vitrina sin alterar foto cantidad ni equipo', function (string $hora) {
+    $payload = cantidadPayload($this->fixtures, 'Torta');
+    $payload['detalles'][0]['hora_vitrina'] = $hora;
+    $payload['detalles'][0]['foto'] = UploadedFile::fake()->image('torta.png');
+    $this->actingAs($this->fixtures['usuario'])->followingRedirects()->post(rutaCantidad('Torta'), $payload)
+        ->assertOk()->assertSessionHasNoErrors()->assertSeeText('Hora de vitrina: '.$hora);
+    $primera = DetalleTorta::sole();
+    $original = $primera->getAttributes();
+    $equipo = $primera->empleados()->get()->map(fn ($empleado) => $empleado->pivot->getAttributes())->all();
+    $contenidoFoto = Storage::disk('public')->get($primera->foto);
+    expect($primera->hora_vitrina)->toBe($hora.':00')->and($primera->cantidad)->toBe(4)
+        ->and($primera->forma)->toBe('circular')->and($primera->observacion)->toBe('Nota de lote Torta')
+        ->and($equipo)->toHaveCount(2);
+
+    unset($payload['detalles'][0]['foto']);
+    $payload['detalles'][0]['hora_vitrina'] = '16:45';
+    $payload['detalles'][0]['cantidad'] = 7;
+    $this->post(rutaCantidad('Torta'), $payload)->assertSessionHasNoErrors();
+    $segunda = DetalleTorta::orderByDesc('id')->firstOrFail();
+    expect(Produccion::count())->toBe(1)->and($segunda->produccion_id)->toBe($primera->produccion_id)
+        ->and($segunda->hora_vitrina)->toBe('16:45:00')->and($segunda->cantidad)->toBe(7)
+        ->and($segunda->foto)->toBeNull()->and($primera->fresh()->getAttributes())->toBe($original)
+        ->and($primera->empleados()->get()->map(fn ($empleado) => $empleado->pivot->getAttributes())->all())->toBe($equipo)
+        ->and(Storage::disk('public')->get($primera->foto))->toBe($contenidoFoto);
+
+    $response = $this->get(route('history.index', ['categoria' => 'torta']))->assertOk();
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    foreach ([$primera->id => $hora, $segunda->id => '16:45'] as $id => $horaLote) {
+        $articulo = '//article[@data-familia="torta" and @data-detalle-id="'.$id.'"]';
+        expect($xpath->query($articulo.'//details//p[contains(text(), "Hora de vitrina: '.$horaLote.'")]')->length)->toBe(1)
+            ->and($xpath->query($articulo.'/header//*[contains(text(), "Hora de vitrina")]')->length)->toBe(0);
+    }
+})->with(['14:15', '00:00', '23:59']);
 
 test('registra lote por cantidad con registrador autenticado y pivots reales', function (string $familia) {
     $payload = cantidadPayload($this->fixtures, $familia);
@@ -361,7 +424,12 @@ test('Torta presenta opciones ampliables y controles separados de galería y cá
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
     $forma = $xpath->query('//aside//input[@name="detalles[0][forma]"]')->item(0);
+    $horaVitrina = $xpath->query('//input[@name="detalles[0][hora_vitrina]"]')->item(0);
     expect($forma->getAttribute('value'))->toBe('Corazón')
+        ->and($horaVitrina->getAttribute('type'))->toBe('time')
+        ->and($horaVitrina->getAttribute('value'))->toBe('14:15')
+        ->and($horaVitrina->hasAttribute('required'))->toBeTrue()
+        ->and($horaVitrina->hasAttribute('disabled'))->toBeFalse()
         ->and($xpath->query('//aside//button[@data-forma]')->length)->toBe(2)
         ->and($xpath->query('//img[@data-preview-foto and @hidden]')->length)->toBe(1);
     $galeria = $xpath->query('//input[@id="detalle-foto"]')->item(0);
@@ -374,6 +442,15 @@ test('Torta presenta opciones ampliables y controles separados de galería y cá
         ->and($xpath->query('//input[@type="file" and @name="detalles[0][foto]"]')->length)->toBe(1)
         ->and($xpath->query('//input[@name="detalles[0][hora_finalizacion]" and @disabled]')->length)->toBe(1);
 });
+
+test('hora de vitrina se oculta y deshabilita desde Blade para otras familias', function (string $familia) {
+    $response = $this->actingAs($this->fixtures['usuario'])
+        ->get(route('produccion.index', ['categoria' => $familia]))->assertOk();
+    $document = new DOMDocument;
+    @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($document);
+    expect($xpath->query('//div[@data-mostrar-en="torta" and contains(@style, "display:none")]//input[@name="detalles[0][hora_vitrina]" and @disabled]')->length)->toBe(1);
+})->with(['pan', 'bocadito']);
 
 test('cada lote conserva el usuario autenticado aunque comparta sesión con otro registrador', function (string $familia) {
     $payload = cantidadPayload($this->fixtures, $familia);

@@ -28,7 +28,7 @@
                 // Los errores con ubicación propia se muestran solo junto a su campo.
                 $erroresGenerales = collect($errors->getMessages())->reject(function ($mensajes, $campo) {
                     return in_array($campo, ['categoria', 'fecha', 'turno_id', 'detalles'], true)
-                        || preg_match('/^detalles\.0\.(producto_id|coches|latas_adicionales|cantidad|hora_finalizacion|forma|foto|observacion|participantes(?:\..+)?)$/', $campo);
+                        || preg_match('/^detalles\.0\.(producto_id|coches|latas_adicionales|cantidad|hora_finalizacion|hora_vitrina|forma|foto|observacion|participantes(?:\..+)?)$/', $campo);
                 })->flatten()->unique();
             @endphp
             <div data-error-familia="{{ $categoriaSeleccionada }}" class="feedback-produccion feedback-produccion-error" role="alert">
@@ -95,7 +95,7 @@
                 $anterior = old('detalles.0', []);
                 $anterior = is_array($anterior) ? $anterior : [];
                 $detalle = [];
-                foreach (['producto_id', 'coches', 'latas_adicionales', 'cantidad', 'forma', 'hora_finalizacion', 'observacion'] as $campo) {
+                foreach (['producto_id', 'coches', 'latas_adicionales', 'cantidad', 'forma', 'hora_finalizacion', 'hora_vitrina', 'observacion'] as $campo) {
                     $valor = $anterior[$campo] ?? (in_array($campo, ['coches', 'latas_adicionales'], true) ? 0 : null);
                     $detalle[$campo] = is_scalar($valor) ? (string) $valor : '';
                 }
@@ -204,6 +204,13 @@
                             @enderror
                             <small>Unidad: {{ $categoriaSeleccionada === 'torta' ? 'tortas' : 'UNIDAD' }}. Introduce la cantidad producida.</small>
                             <output data-resultado-directo aria-live="polite">{{ $detalle['cantidad'] ? $detalle['cantidad'].' '.($categoriaSeleccionada === 'torta' ? 'tortas' : 'unidades') : 'Introduce una cantidad entera positiva.' }}</output>
+                        </div>
+                        <div class="campo campo-condicional" data-mostrar-en="torta" style="display:{{ $categoriaSeleccionada === 'torta' ? 'flex' : 'none' }}">
+                            <label for="detalle-hora-vitrina">Hora de vitrina</label>
+                            <input type="time" data-campo="hora_vitrina" id="detalle-hora-vitrina" name="detalles[0][hora_vitrina]" step="60" required @disabled($categoriaSeleccionada !== 'torta') value="{{ $detalle['hora_vitrina'] }}" @error('detalles.0.hora_vitrina') aria-invalid="true" aria-describedby="error-hora-vitrina" @enderror>
+                            @error('detalles.0.hora_vitrina')
+                                <p id="error-hora-vitrina" data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div class="campo campo-ancho">
                             <span class="campo-etiqueta">Participantes</span>
@@ -350,6 +357,7 @@
                                 @else
                                     <p>{{ $registro->cantidad }} unidades</p>
                                     @if ($categoriaSeleccionada === 'torta')
+                                        <p>Hora de vitrina: {{ $registro->hora_vitrina !== null ? substr($registro->hora_vitrina, 0, 5) : 'Sin hora registrada' }}</p>
                                         <p>Forma: {{ $registro->forma }}</p>
                                         @if ($registro->foto)
                                             <a href="{{ asset('storage/'.$registro->foto) }}" target="_blank" rel="noopener">Ver foto</a>

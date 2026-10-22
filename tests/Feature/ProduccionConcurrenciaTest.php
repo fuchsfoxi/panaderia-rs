@@ -18,6 +18,7 @@ test('dos conexiones simultáneas reutilizan una cabecera y conservan ambos lote
             'producto_id' => $fixtures['productos'][$familia]->id,
             'coches' => 1, 'latas_adicionales' => 2, 'hora_finalizacion' => '08:35',
             'cantidad' => 4, 'forma' => 'circular',
+            ...($familia === 'Torta' ? ['hora_vitrina' => '14:15'] : []),
             'participantes' => [
                 ['empleado_id' => $fixtures['empleados'][0]->id, 'rol_produccion_id' => $fixtures['roles']['Maestro']->id],
                 ['empleado_id' => $fixtures['empleados'][1]->id, 'rol_produccion_id' => $fixtures['roles']['Ayudante']->id],

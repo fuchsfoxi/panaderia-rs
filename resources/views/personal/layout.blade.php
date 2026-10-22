@@ -22,6 +22,8 @@
                @if(request()->routeIs('usuarios.*')) aria-current="page" @endif>Usuarios</a>
             <a class="personal-pestana {{ request()->routeIs('empleados.*') ? 'activa' : '' }}" href="{{ route('empleados.index') }}"
                @if(request()->routeIs('empleados.*')) aria-current="page" @endif>Empleados</a>
+            <a class="personal-pestana {{ request()->routeIs('grupos.*') ? 'activa' : '' }}" href="{{ route('grupos.index') }}"
+               @if(request()->routeIs('grupos.*')) aria-current="page" @endif>Grupos</a>
         </nav>
         @hasSection('formulario-titulo')
             <h2 class="personal-formulario-titulo">@yield('formulario-titulo')</h2>

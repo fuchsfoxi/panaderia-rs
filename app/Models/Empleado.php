@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Empleado extends Model
 {
@@ -25,6 +27,17 @@ class Empleado extends Model
     protected function casts(): array
     {
         return ['activo' => 'boolean'];
+    }
+
+    public function gruposComoMaestro(): HasMany
+    {
+        return $this->hasMany(GrupoProduccion::class, 'maestro_id');
+    }
+
+    public function gruposComoAyudante(): BelongsToMany
+    {
+        return $this->belongsToMany(GrupoProduccion::class, 'grupo_integrantes', 'empleado_id', 'grupo_id')
+            ->using(GrupoIntegrante::class);
     }
 
     public function rolProduccion(): BelongsTo
