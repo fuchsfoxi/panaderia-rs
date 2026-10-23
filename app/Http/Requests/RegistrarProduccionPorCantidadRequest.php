@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\TurnoPermitidoProduccion;
 use App\Rules\TurnoPermitidoUsuario;
 use Closure;
 use Illuminate\Contracts\Validation\Validator;
@@ -29,7 +30,7 @@ abstract class RegistrarProduccionPorCantidadRequest extends FormRequest
         return [
             'categoria' => ['required', 'string', Rule::in([$this->familia()])],
             'fecha' => ['required', 'date_format:Y-m-d'],
-            'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user())],
+            'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user()), new TurnoPermitidoProduccion(ucfirst($this->familia()))],
             'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
             'detalles.*' => ['required', 'array'],
             'detalles.*.producto_id' => ['required', 'integer', 'exists:productos,id'],

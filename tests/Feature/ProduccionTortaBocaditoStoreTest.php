@@ -139,8 +139,8 @@ test('registra lote por cantidad con registrador autenticado y pivots reales', f
     $payload['registrado_por_usuario_id'] = 999999; // El cliente no decide el autor.
     $response = $this->actingAs($this->fixtures['usuario'])->followingRedirects()
         ->post(rutaCantidad($familia), $payload)->assertOk()->assertSessionHasNoErrors()
-        ->assertSeeText('Producto de '.$familia.' registrado correctamente.')
-        ->assertSeeText('4 unidades')->assertSeeText('Nota de lote '.$familia);
+        ->assertSeeText($familia === 'Torta' ? 'Torta guardada' : 'Bocadito guardado')
+        ->assertSeeText($familia === 'Torta' ? '4 tortas' : '4 bocaditos')->assertSeeText('Nota de lote '.$familia);
     $cabecera = Produccion::sole();
     $detalle = modeloCantidad($familia)::sole();
     expect($cabecera->categoria_id)->toBe($this->fixtures['productos'][$familia]->categoria_id)
@@ -226,7 +226,7 @@ test('rechaza referencias cantidades y estructuras inválidas sin escrituras', f
     ['índice ajeno', 'detalles'], ['familia manipulada', 'categoria'], ['familia array', 'categoria'],
 ]);
 
-test('cada familia exige exactamente un Maestro Ayudantes y empleados distintos', function (string $familia, string $caso) {
+test('cada familia exige un Maestro empleados distintos y su número permitido de Ayudantes', function (string $familia, string $caso) {
     $payload = cantidadPayload($this->fixtures, $familia);
     $participantes = &$payload['detalles'][0]['participantes'];
     switch ($caso) {
@@ -241,12 +241,18 @@ test('cada familia exige exactamente un Maestro Ayudantes y empleados distintos'
         case 'otro rol': $participantes[1]['rol_produccion_id'] = $this->fixtures['roles']['Practicante']->id;
             break;
     }
+    if ($familia === 'Torta' && $caso === 'sin Ayudante') {
+        $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
+        expect(DetalleTorta::sole()->empleados)->toHaveCount(1);
+
+        return;
+    }
     $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)
         ->assertSessionHasErrors($caso === 'otro rol' ? 'detalles.0.participantes.1.rol_produccion_id' : 'detalles.0.participantes');
     expect(Produccion::count())->toBe(0)->and(DB::table('detalle_'.strtolower($familia).'_empleado')->count())->toBe(0);
 })->with(['Torta', 'Bocadito'])->with(['sin Maestro', 'dos Maestros', 'sin Ayudante', 'duplicado', 'otro rol']);
 
-test('reutiliza sesión y separa cabeceras por fecha turno y familia', function (string $familia) {
+test('reutiliza sesión separa fechas y rechaza Noche en Torta y Bocadito', function (string $familia) {
     $payload = cantidadPayload($this->fixtures, $familia);
     $this->actingAs($this->fixtures['usuario']);
     $this->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
@@ -257,8 +263,8 @@ test('reutiliza sesión y separa cabeceras por fecha turno y familia', function 
     $payload['fecha'] = '2026-10-11';
     $this->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
     $payload['turno_id'] = Turno::create(['nombre_turnos' => 'Noche'])->id;
-    $this->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
-    expect(Produccion::count())->toBe(3)->and(modeloCantidad($familia)::count())->toBe(4);
+    $this->post(rutaCantidad($familia), $payload)->assertSessionHasErrors('turno_id');
+    expect(Produccion::count())->toBe(2)->and(modeloCantidad($familia)::count())->toBe(3);
 })->with(['Torta', 'Bocadito']);
 
 test('cabeceras duplicadas bloquean cada familia sin seleccionar una arbitraria', function (string $familia) {
@@ -387,7 +393,7 @@ test('Action de cada familia revalida producto cantidad y participantes sin Requ
     } elseif ($caso === 'empleado') {
         $payload['detalles'][0]['participantes'][0]['empleado_id'] = 999999;
     } else {
-        $payload['detalles'][0]['participantes'] = [$payload['detalles'][0]['participantes'][0]];
+        $payload['detalles'][0]['participantes'] = [$payload['detalles'][0]['participantes'][1]];
     }
     $action = app($familia === 'Torta' ? RegistrarProduccionTorta::class : RegistrarProduccionBocadito::class);
     expect(fn () => $action->ejecutar($payload, $this->fixtures['usuario']->id))->toThrow(ValidationException::class)
@@ -399,13 +405,19 @@ test('invitados no pueden registrar las nuevas familias', function (string $fami
     expect(Produccion::count())->toBe(0);
 })->with(['Torta', 'Bocadito']);
 
-test('admite varios Ayudantes y observación opcional o texto cero', function (string $familia, ?string $observacion) {
+test('varios Ayudantes se admiten solo en Torta con observación opcional o texto cero', function (string $familia, ?string $observacion) {
     $payload = cantidadPayload($this->fixtures, $familia);
     $payload['detalles'][0]['observacion'] = $observacion;
     $payload['detalles'][0]['participantes'][] = [
         'empleado_id' => $this->fixtures['empleados'][2]->id,
         'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id,
     ];
+    if ($familia === 'Bocadito') {
+        $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)->assertSessionHasErrors('detalles.0.participantes');
+        expect(Produccion::count())->toBe(0);
+
+        return;
+    }
     $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
     expect(modeloCantidad($familia)::sole()->observacion)->toBe($observacion)
         ->and(modeloCantidad($familia)::sole()->empleados)->toHaveCount(3);
@@ -426,10 +438,12 @@ test('Torta presenta opciones ampliables y controles separados de galería y cá
     $forma = $xpath->query('//aside//input[@name="detalles[0][forma]"]')->item(0);
     $horaVitrina = $xpath->query('//input[@name="detalles[0][hora_vitrina]"]')->item(0);
     expect($forma->getAttribute('value'))->toBe('Corazón')
-        ->and($horaVitrina->getAttribute('type'))->toBe('time')
+        ->and($horaVitrina->getAttribute('type'))->toBe('hidden')
         ->and($horaVitrina->getAttribute('value'))->toBe('14:15')
-        ->and($horaVitrina->hasAttribute('required'))->toBeTrue()
-        ->and($horaVitrina->hasAttribute('disabled'))->toBeFalse()
+        ->and($xpath->query('//select[@id="detalle-hora-vitrina-hora" and @required and not(@name)]/option[@selected and @value="14"]')->length)->toBe(1)
+        ->and($xpath->query('//select[@id="detalle-hora-vitrina-minutos" and @required and not(@name)]/option[@selected and @value="15"]')->length)->toBe(1)
+        ->and($horaVitrina->hasAttribute('disabled'))->toBeTrue()
+        ->and($xpath->query('//select[@data-hora-parte and not(@disabled)]')->length)->toBe(2)
         ->and($xpath->query('//aside//button[@data-forma]')->length)->toBe(2)
         ->and($xpath->query('//img[@data-preview-foto and @hidden]')->length)->toBe(1);
     $galeria = $xpath->query('//input[@id="detalle-foto"]')->item(0);

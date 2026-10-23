@@ -42,8 +42,11 @@ class ValidarParticipantesProduccion
         if ($maestros !== 1) {
             $errores['detalles.0.participantes'][] = "Cada detalle de $familia debe tener exactamente un Maestro.";
         }
-        if ($ayudantes < 1) {
+        if ($familia === 'Pan' && $ayudantes < 1) {
             $errores['detalles.0.participantes'][] = "Cada detalle de $familia debe tener al menos un Ayudante.";
+        }
+        if ($familia === 'Bocadito' && $ayudantes !== 1) {
+            $errores['detalles.0.participantes'][] = 'Cada detalle de Bocadito debe tener exactamente un Ayudante.';
         }
 
         return $errores;

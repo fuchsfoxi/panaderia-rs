@@ -1,4 +1,6 @@
 @import './sidebar.css';
+@import './registros.css';
+@import './consultas.css';
 
 body {
     font-family: 'Huninn', sans-serif;
@@ -20,11 +22,6 @@ body {
     background-color: var(--color-bg);
     line-height: 1.5;
     overflow-wrap: anywhere;
-}
-
-.feedback-produccion-exito {
-    background-color: var(--color-border);
-    font-weight: 600;
 }
 
 .feedback-produccion-error {
@@ -734,3 +731,215 @@ body {
         min-height: 44px;
     }
 }
+
+/* Operaciones reales: el botón conserva su tamaño y comunica el estado del POST. */
+.indicador-carga {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: girar-guardado 0.7s linear infinite;
+}
+
+@keyframes girar-guardado {
+    to { transform: rotate(360deg); }
+}
+
+.notificacion-produccion {
+    position: fixed;
+    z-index: 50;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(20px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 64px);
+    padding: 12px 18px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    background: var(--color-primary);
+    color: var(--color-text-inverse);
+    box-shadow: 0 4px 16px rgb(51 64 58 / 15%);
+    font-weight: 600;
+    pointer-events: none;
+    animation: aparecer-guardado 0.2s ease-out;
+}
+
+.notificacion-produccion svg {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
+.notificacion-produccion svg path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 0;
+    animation: marcar-guardado 0.35s ease-out;
+}
+
+@keyframes aparecer-guardado {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes marcar-guardado {
+    from { stroke-dashoffset: 24; }
+    to { stroke-dashoffset: 0; }
+}
+
+.selector-hora { border:0; margin:0; padding:0; min-width:0; width:100%; }
+.selector-hora legend { padding:0; margin-bottom:8px; font-size:14px; }
+.selector-hora-controles { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.selector-hora-controles > div { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.selector-hora-controles label { font-size:12px; color:var(--color-text-muted); }
+.selector-hora-controles select { width:100%; min-width:0; min-height:44px; font-size:16px; font-variant-numeric:tabular-nums; }
+
+[data-tipo-registro] {
+    margin: 0;
+    font-size: 14px;
+    color: var(--color-text-muted);
+}
+
+[data-resultado-directo]:empty {
+    display: none;
+}
+
+.empleados-tags.sin-participantes {
+    display: none;
+}
+
+.empleado-tag {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.empleado-tag button {
+    min-width: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+    .titulo-produccion {
+        padding-bottom: 14px;
+        margin-bottom: 16px;
+    }
+
+    .categoria-botones {
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .btn-categoria {
+        min-height: 44px;
+        padding: 10px 8px;
+        font-size: 15px;
+        border-radius: 12px;
+    }
+
+    .formulario-card,
+    .panel-info {
+        padding: 16px;
+        border-radius: 18px;
+    }
+
+    .formulario-card-header h3 {
+        font-size: 17px;
+    }
+
+    .formulario-card hr {
+        margin: 12px 0 16px;
+    }
+
+    .formulario-produccion {
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .campo {
+        gap: 6px;
+    }
+
+    .campo input,
+    .campo select,
+    .campo textarea {
+        font-size: 16px;
+        min-height: 44px;
+    }
+
+    .formulario-botones button {
+        flex: 1;
+        padding: 12px 16px;
+    }
+
+    .campo-foto {
+        margin-top: 16px;
+    }
+
+    .feedback-produccion {
+        padding: 12px 14px;
+        margin-bottom: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notificacion-produccion,
+    .notificacion-produccion svg path,
+    .indicador-carga {
+        animation: none;
+    }
+
+    .btn-categoria {
+        transition: none;
+    }
+}
+
+/* Fase 2: formulario breve, equipo legible y consultas independientes. */
+.formulario-card { padding:24px; border:1px solid var(--color-border); box-shadow:0 3px 12px rgb(51 64 58 / 3%); }
+.formulario-card-header h3 { font-weight:500; }
+.formulario-card hr { margin:12px 0 18px; }
+.formulario-produccion { gap:16px; }
+.turno-automatico { display:contents; }
+.turno-automatico .error-campo { grid-column:1/-1; }
+.error-campo:empty { display:none; }
+.resumen-latas { padding:14px 16px; border-radius:14px; background:var(--color-bg); gap:6px; }
+.resumen-latas p { margin:0; font-size:14px; color:var(--color-text-muted); }
+.resumen-principal { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.resumen-principal > span { font-size:13px; font-weight:500; }
+.resumen-principal output { font-size:24px; font-weight:600; }
+.resumen-equivalencia { display:block; font-size:13px; color:var(--color-text-muted); margin-top:3px; }
+.resumen-secundario { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; font-size:12px; color:var(--color-text-muted); border-top:1px solid var(--color-border); padding-top:10px; margin-top:10px; }
+.resumen-secundario output { display:block; color:var(--color-text); font-size:14px; margin-top:3px; }
+.equipo-titulo { margin-bottom:2px; }
+.participantes-linea { flex-direction:column-reverse; align-items:stretch; gap:8px; }
+.btn-agregar-participante { width:auto; align-self:flex-start; border-radius:12px; padding:8px 14px; font-size:14px; height:auto; min-height:44px; }
+.empleados-tags { border:0; background:transparent; padding:0; min-height:0; }
+.empleado-tag { border-radius:12px; padding:2px 4px 2px 10px; font-size:13px; }
+.observacion-opcional { min-width:0; border-top:1px solid var(--color-border); }
+.observacion-opcional summary { cursor:pointer; display:flex; justify-content:space-between; align-items:center; min-height:44px; font-size:14px; list-style:none; color:var(--color-primary); }
+.observacion-opcional summary::-webkit-details-marker { display:none; }
+.observacion-opcional[open] .observacion-icono { transform:rotate(45deg); }
+.observacion-cerrar, .observacion-opcional[open] .observacion-abrir { display:none; }
+.observacion-opcional[open] .observacion-cerrar { display:inline; }
+.observacion-opcional textarea { width:100%; }
+.registros-produccion { margin-top:32px; }
+.filtros-registros { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)) auto; align-items:end; gap:12px; margin-bottom:16px; padding:16px; border:1px solid var(--color-border); border-radius:16px; }
+.btn-consultar { min-height:44px; padding:10px 18px; border:0; border-radius:12px; background:var(--color-primary); color:var(--color-text-inverse); font:inherit; cursor:pointer; }
+.datos-encontrados { color:var(--color-text-muted); font-size:13px; margin:12px 0; }
+@media(max-width:767px) {
+    .formulario-card, .panel-info { padding:16px; }
+    .formulario-produccion { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    .formulario-produccion > .campo, .observacion-opcional { grid-column:1/-1; }
+    .formulario-produccion > .campo-pan-cantidad { grid-column:auto; }
+    .filtros-registros { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:12px; }
+    .filtros-registros .campo:first-child { grid-column:1/-1; }
+    .filtros-registros button { grid-column:1/-1; }
+    .resumen-secundario { font-size:12px; }
+}
+@media(max-width:339px) { .formulario-produccion > .campo-pan-cantidad { grid-column:1/-1; } }

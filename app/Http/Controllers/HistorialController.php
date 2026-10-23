@@ -9,24 +9,39 @@ use App\Models\Turno;
 use App\Queries\ConsultarHistorialProduccion;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\QueryException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class HistorialController extends Controller
 {
-    public function destroy(EliminarRegistroProduccionRequest $request, string $familia, int $detalle, EliminarRegistroProduccion $eliminar): RedirectResponse
+    public function destroy(EliminarRegistroProduccionRequest $request, string $familia, int $detalle, EliminarRegistroProduccion $eliminar): RedirectResponse|JsonResponse
     {
         try {
             $eliminar->ejecutar($familia, $detalle);
         } catch (ModelNotFoundException) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'El registro ya no está disponible. Actualiza el historial.'], 404);
+            }
+
             return redirect()->route('history.index', $request->filtrosRetorno())
                 ->with('error', 'El registro ya no está disponible. Actualiza el historial.');
         } catch (QueryException $exception) {
             report($exception);
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'No se pudo eliminar el registro. Vuelve a intentarlo.'], 500);
+            }
 
             return redirect()->route('history.index', $request->filtrosRetorno())
                 ->with('error', 'No se pudo eliminar el registro. Vuelve a intentarlo.');
+        }
+
+        if ($request->expectsJson()) {
+            $request->session()->flash('success', 'Registro de producción eliminado correctamente.');
+
+            return response()->json(['eliminado' => true, 'familia' => $familia, 'detalle' => $detalle,
+                'redirect' => route('history.index', $request->filtrosRetorno())]);
         }
 
         return redirect()->route('history.index', $request->filtrosRetorno())

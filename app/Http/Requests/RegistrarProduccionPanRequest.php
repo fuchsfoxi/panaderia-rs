@@ -8,6 +8,7 @@ use App\Models\DetallePan;
 use App\Models\Producto;
 use App\Models\RolProduccion;
 use App\Models\UnidadMedida;
+use App\Rules\TurnoPermitidoProduccion;
 use App\Rules\TurnoPermitidoUsuario;
 use Closure;
 use Illuminate\Contracts\Validation\Validator;
@@ -65,7 +66,7 @@ class RegistrarProduccionPanRequest extends FormRequest
         return [
             'categoria' => ['required', 'string', Rule::in(['pan'])],
             'fecha' => ['required', 'date_format:Y-m-d'],
-            'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user())],
+            'turno_id' => ['bail', 'required', 'integer', 'exists:turnos,id', new TurnoPermitidoUsuario($this->user()), new TurnoPermitidoProduccion('Pan')],
             'detalles' => ['required', 'array', 'size:1', 'required_array_keys:0'],
             'detalles.*' => ['required', 'array'],
             'detalles.*.cantidad' => ['sometimes'],

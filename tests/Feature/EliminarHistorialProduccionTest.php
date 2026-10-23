@@ -213,3 +213,15 @@ test('borrar una Torta conserva archivos que podrían estar compartidos', functi
     $this->delete('/history/torta/'.$detalle->id, ['confirmado' => 1])->assertRedirect()->assertSessionHas('success');
     Storage::disk('public')->assertExists($detalle->foto);
 });
+
+test('eliminación JSON confirma identidad y destino solo después de persistir el borrado', function () {
+    $detalle = registroParaEliminar($this->fixtures);
+    exigirCsrfHistorial();
+    $this->withSession(['_token' => 'csrf-historial-ficticio'])->postJson(route('history.destroy', ['familia' => 'pan', 'detalle' => $detalle->id, 'categoria' => 'pan']), ['_method' => 'DELETE', 'confirmado' => 1, '_token' => 'csrf-historial-ficticio'])
+        ->assertOk()->assertJson(['eliminado' => true, 'familia' => 'pan', 'detalle' => $detalle->id, 'redirect' => route('history.index', ['categoria' => 'pan'])]);
+    $this->assertDatabaseMissing('detalle_pan', ['id' => $detalle->id]);
+});
+
+test('eliminación JSON inexistente no emite confirmación de éxito', function () {
+    $this->deleteJson(route('history.destroy', ['familia' => 'pan', 'detalle' => 999999]), ['confirmado' => 1])->assertNotFound()->assertJsonMissing(['eliminado' => true]);
+});

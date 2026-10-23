@@ -78,19 +78,25 @@ test('las cuatro variantes admiten Practicantes adicionales y preservan su funci
     $this->patch('/empleados/'.$practicante->id.'/estado', ['activo' => 0])->assertRedirect('/empleados');
     $response = $this->get('/produccion?categoria='.$familia.'&fecha=2026-10-18&turno_id='.$payload['turno_id'])->assertOk();
     expect($response->viewData('empleados')->contains('id', $practicante->id))->toBeFalse();
-    $response->assertSeeText('Practicante: Carlos Ramírez');
+    $response->assertSeeText('Practicantes: Carlos Ramírez');
     $this->get('/history')->assertOk()->assertSeeText('Practicantes: Carlos Ramírez');
     expect(DB::table($tabla)->orderBy('empleado_id')->get()->toArray())->toEqual($pivotes);
     $this->post(rutaPersonalProduccion($familia), $payload)->assertSessionHasErrors('detalles.0.participantes.2.empleado_id');
     $this->assertDatabaseCount('detalle_'.$familia, 1);
 })->with('variantes personal produccion');
 
-test('Practicante no sustituye al Ayudante obligatorio en ninguna variante', function (string $familia, string $unidad) {
+test('Practicante no sustituye al Ayudante obligatorio de Pan y Bocadito', function (string $familia, string $unidad) {
     $this->fixtures['empleados'][1]->update(['rol_produccion_id' => $this->fixtures['roles']['Practicante']->id]);
     $payload = payloadPersonalProduccion($this->fixtures, $familia, $unidad);
     $payload['detalles'][0]['participantes'][1]['rol_produccion_id'] = $this->fixtures['roles']['Practicante']->id;
-    $this->post(rutaPersonalProduccion($familia), $payload)->assertSessionHasErrors('detalles.0.participantes');
-    $this->assertDatabaseCount('produccion', 0);
+    $response = $this->post(rutaPersonalProduccion($familia), $payload);
+    if ($familia === 'torta') {
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseCount('produccion', 1);
+    } else {
+        $response->assertSessionHasErrors('detalles.0.participantes');
+        $this->assertDatabaseCount('produccion', 0);
+    }
 })->with('variantes personal produccion');
 
 test('rol manipulado inactivo o rol pendiente se rechazan en HTTP y en la Action transaccional', function (string $familia, string $unidad, string $caso) {
@@ -141,6 +147,8 @@ test('cada nueva producción copia el rol vigente durante la carrera Practicante
         $participacion = ['empleado_id' => $persona->id, 'rol_produccion_id' => $rolId];
         if ($rol === 'Maestro') {
             $payload['detalles'][0]['participantes'][0] = $participacion;
+        } elseif ($familia === 'bocadito' && $rol === 'Ayudante') {
+            $payload['detalles'][0]['participantes'][1] = $participacion;
         } else {
             $payload['detalles'][0]['participantes'][] = $participacion;
         }

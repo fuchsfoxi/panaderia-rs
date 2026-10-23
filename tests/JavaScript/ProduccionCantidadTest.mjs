@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { runInNewContext } from 'node:vm';
 
-const codigo = readFileSync(new URL('../../resources/js/produccion.js', import.meta.url), 'utf8');
+const codigo = readFileSync(new URL('../../resources/js/produccion.js', import.meta.url), 'utf8').replace(/^import .*;$/gm, '');
 
 // Ejecutar el script completo y sus eventos con dobles del DOM; no simular diseño/navegador.
 function entorno(categoria = 'pan', capacidad = 7) {
@@ -14,6 +14,7 @@ function entorno(categoria = 'pan', capacidad = 7) {
         setAttribute(nombre, valor) { this[nombre] = valor; },
         removeAttribute(nombre) { delete this[nombre]; },
         focus() { this.enfocado = true; },
+        setCustomValidity(mensaje) { this.mensajeValidacion = mensaje; },
         reportValidity() { return true; },
         addEventListener(nombre, callback) { this.eventos.set(nombre, callback); },
         emitir(nombre, event = {}) { this.eventos.get(nombre)?.(event); },
@@ -28,8 +29,20 @@ function entorno(categoria = 'pan', capacidad = 7) {
     const forma = elemento('circular', { campo: 'forma' });
     const foto = elemento('', { campo: 'foto' });
     const camara = elemento('', { campo: 'foto_camara' });
-    const hora = elemento('08:35', { campo: 'hora_finalizacion' });
-    const horaVitrina = elemento('14:15', { campo: 'hora_vitrina' });
+    function selectorHora(valor, campo) {
+        const partes = valor.split(':');
+        const oculto = elemento(valor, { campo });
+        const hora = elemento(partes[0], { campo: `${campo}_hora` });
+        const minutos = elemento(partes[1], { campo: `${campo}_minutos` });
+        hora.required = minutos.required = true;
+        const raiz = { querySelector: selector => selector === '[data-hora-valor]' ? oculto : selector === '[data-hora-parte="hora"]' ? hora : minutos };
+        return { raiz, oculto, hora, minutos };
+    }
+    const finalizacion = selectorHora('08:35', 'hora_finalizacion');
+    const vitrina = selectorHora('14:15', 'hora_vitrina');
+    const hora = finalizacion.oculto;
+    const horaVitrina = vitrina.oculto;
+    const partesHora = [finalizacion.hora, finalizacion.minutos, vitrina.hora, vitrina.minutos];
     const preview = elemento();
     const nombreFoto = elemento();
     const iconoFoto = elemento();
@@ -64,14 +77,15 @@ function entorno(categoria = 'pan', capacidad = 7) {
     detalle.querySelectorAll = selector => selector === '[data-forma]' ? formas : selector === '[data-participante]'
         ? [] : selector.startsWith('[data-campo="cantidad"]')
             ? [cantidad, forma, foto, observacion]
-            : [coches, latas, producto, cantidad, forma, foto, camara, hora, horaVitrina, observacion, empleado, rol];
+            : [coches, latas, producto, cantidad, forma, foto, camara, hora, horaVitrina, ...partesHora, observacion, empleado, rol];
     // Factor deliberadamente distinto: demostrar que el JS consume el dato publicado por Blade.
     const factor = capacidad;
     const formulario = elemento('', { latasPorCoche: String(factor), panUrl: '/produccion', tortaUrl: '/produccion/torta', bocaditoUrl: '/produccion/bocadito' });
     formulario.querySelector = selector => selector === '.detalle-pan' ? detalle : elemento();
+    formulario.querySelectorAll = selector => selector === '[data-selector-hora]' ? [finalizacion.raiz, vitrina.raiz] : [];
     const ids = new Map([
         ['formulario-produccion', formulario], ['fecha', elemento('2026-10-09')],
-        ['turno', elemento('turno')], ['categoria-seleccionada', elemento(categoria)],
+        ['turno', elemento('turno')], ['turno-manana', elemento('turno')], ['categoria-seleccionada', elemento(categoria)],
         ['aviso-familia', elemento()], ['consultar-produccion', elemento('', { url: '/produccion' })],
         ['forma-seleccionada', elemento()], ['btn-cancelar-form', elemento()],
     ]);
@@ -82,13 +96,13 @@ function entorno(categoria = 'pan', capacidad = 7) {
         dataset: { mostrarEn, panRegistro }, style: {}, classList: { contains: () => true },
         querySelectorAll: () => controles,
     });
-    const campos = [condicional('pan', [coches, latas, hora], 'LATA'), condicional('pan torta bocadito', [cantidad], 'UNIDAD'), condicional('torta', [forma, foto, camara, quitarFoto, ...formas])];
-    campos.push(condicional('torta', [horaVitrina]));
+    const campos = [condicional('pan', [coches, latas, hora, finalizacion.hora, finalizacion.minutos], 'LATA'), condicional('pan torta bocadito', [cantidad], 'UNIDAD'), condicional('torta', [forma, foto, camara, quitarFoto, ...formas])];
+    campos.push(condicional('torta', [horaVitrina, vitrina.hora, vitrina.minutos]));
     const error = elemento('', { errorFamilia: categoria });
     const registros = elemento('', { registrosFamilia: categoria });
     document.querySelectorAll = selector => selector === '.btn-categoria' ? botones
         : selector === '.campo-condicional' ? campos : selector === '[data-error-familia]' ? [error] : [];
-    document.querySelector = () => registros;
+    document.querySelector = selector => selector === '[data-registros-familia]' ? registros : null;
     const revocadas = [];
     let numeroUrl = 0;
     const window = elemento();
@@ -100,8 +114,52 @@ function entorno(categoria = 'pan', capacidad = 7) {
     runInNewContext(codigo, { document, window, URL: PreviewURL, queueMicrotask });
     document.emitir('DOMContentLoaded');
     const actualizar = () => detalle.emitir('input', { target: coches });
-    return { empleado, rol, factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, horaVitrina, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
+    return { document, empleado, rol, factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, horaVitrina, finalizacion, vitrina, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
 }
+
+test('selectores combinan HH:MM y no envían horas parciales ni inventan la hora actual', () => {
+    const e = entorno();
+    for (const selector of [e.finalizacion, e.vitrina]) {
+        for (const [hora, minutos, esperado] of [['14', '36', '14:36'], ['00', '00', '00:00'], ['23', '59', '23:59'], ['', '', ''], ['14', '', ''], ['', '36', ''], ['25', '70', '']]) {
+            selector.hora.value = hora;
+            selector.minutos.value = minutos;
+            selector.hora.emitir('change');
+            assert.equal(selector.oculto.value, esperado);
+            selector.minutos.emitir('change');
+            assert.equal(selector.oculto.value, esperado);
+        }
+    }
+});
+
+test('selectores conservan old input al iniciar y limpian ambas partes al cambiar familia o cancelar', async () => {
+    const e = entorno('torta');
+    assert.equal(e.vitrina.hora.value, '14');
+    assert.equal(e.vitrina.minutos.value, '15');
+    assert.equal(e.vitrina.oculto.value, '14:15');
+    e.botones[2].emitir('click');
+    for (const control of [e.vitrina.oculto, e.vitrina.hora, e.vitrina.minutos]) {
+        assert.equal(control.value, '');
+        assert.equal(control.disabled, true);
+    }
+    e.botones[1].emitir('click');
+    e.vitrina.hora.value = '23';
+    e.vitrina.minutos.value = '59';
+    e.vitrina.minutos.emitir('change');
+    assert.equal(e.vitrina.oculto.value, '23:59');
+    e.formulario.emitir('reset');
+    await new Promise(resolve => queueMicrotask(resolve));
+    for (const control of [e.vitrina.oculto, e.vitrina.hora, e.vitrina.minutos]) assert.equal(control.value, '');
+});
+
+test('una inicialización repetida no altera el formulario ya configurado', () => {
+    const e = entorno();
+    const escuchar = e.formulario.addEventListener;
+    e.formulario.addEventListener = () => { throw Error('Listener repetido'); };
+    e.coches.value = '2';
+    e.document.emitir('DOMContentLoaded');
+    assert.equal(e.coches.value, '2');
+    e.formulario.addEventListener = escuchar;
+});
 
 test('hora de vitrina conserva old input en Torta y se limpia y deshabilita al cambiar familia o cancelar', async () => {
     const e = entorno('torta');
@@ -187,7 +245,7 @@ test('cambiar familia selecciona endpoint catálogo campos y errores correspondi
         assert.equal(e.hora.disabled, familia !== 'pan');
         assert.equal(e.hora.value, '');
         assert.equal(e.error.hidden, familia !== 'pan');
-        assert.equal(e.registros.hidden, familia !== 'pan');
+        assert.notEqual(e.registros.hidden, true);
         assert.equal(e.observacion.value, '');
         for (const option of e.producto.options.filter(option => option.dataset.familia)) {
             assert.equal(option.disabled, option.dataset.familia !== familia);
@@ -315,16 +373,13 @@ test('preview fallido permite cambiar foto y BFCache conserva la URL seleccionad
 });
 
 
-test('consulta sigue accesible y utiliza la categoría elegida después de cambiar familia', () => {
+test('cambiar categoría no modifica los resultados consultados', () => {
     const e = entorno();
     for (const categoria of ['torta', 'bocadito', 'pan']) {
         e.botones.find(boton => boton.dataset.categoria === categoria).emitir('click');
-        const boton = e.ids.get('consultar-produccion');
-        boton.emitir('click', { currentTarget: boton });
-        const destino = e.window.location.destino;
-        assert.equal(destino.searchParams.get('fecha'), '2026-10-09');
-        assert.equal(destino.searchParams.get('turno_id'), 'turno');
-        assert.equal(destino.searchParams.get('categoria'), categoria === 'pan' ? null : categoria);
+        assert.notEqual(e.registros.hidden, true);
+        assert.equal(e.ids.get('fecha').value, '2026-10-09');
+        assert.equal(e.ids.get('turno').value, 'turno');
     }
 });
 
@@ -360,7 +415,7 @@ for (const [familia, cantidad, texto] of [['torta', '8', '8 tortas'], ['bocadito
         for (const valor of ['', '0', '-1', '1.5', '2147483648']) {
             e.cantidad.value = valor;
             e.detalle.emitir('input', { target: e.cantidad });
-            assert.equal(e.resultado.textContent, 'Introduce una cantidad entera positiva.');
+            assert.equal(e.resultado.textContent, valor === '' ? '' : 'Introduce una cantidad entera positiva.');
         }
     });
 }

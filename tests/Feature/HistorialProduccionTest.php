@@ -254,6 +254,9 @@ test('historial reúne las tres familias con detalles accesibles y filtros combi
         $datos['categoria'] = strtolower($familia);
         $datos['detalles'][0]['producto_id'] = $this->fixtures['productos'][$familia]->id;
         $datos['detalles'][0]['cantidad'] = 7;
+        if ($familia === 'Bocadito') {
+            array_pop($datos['detalles'][0]['participantes']);
+        }
         $datos['detalles'][0]['forma'] = 'Corazón';
         if ($familia === 'Torta') {
             $datos['detalles'][0]['hora_vitrina'] = '14:15';
@@ -276,7 +279,7 @@ test('historial reúne las tres familias con detalles accesibles y filtros combi
         ]))->assertOk()->assertSeeText(ucfirst($familia).' ficticio');
         expect($response->viewData('detalles'))->toHaveCount(1);
         $html = $response->getContent();
-        expect($html)->toContain('<details class="detalles-produccion">', '<summary>Ver detalles')
+        expect($html)->toContain('<details class="detalles-produccion" name="registros-historial">', 'class="detalle-abrir">Ver detalles')
             ->not->toContain('<details class="detalles-produccion" open');
         foreach (array_diff(['pan', 'torta', 'bocadito'], [$familia]) as $otra) {
             $response->assertDontSeeText(ucfirst($otra).' ficticio');

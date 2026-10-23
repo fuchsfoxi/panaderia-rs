@@ -1,0 +1,47 @@
+/* Componente compartido por Producción e Historial. */
+.carta-historial { min-width: 0; padding: 20px 22px; margin-bottom: 12px; border: 1px solid var(--color-border); border-radius: 20px; background: var(--color-field-bg); color: var(--color-text); box-shadow: 0 3px 12px rgb(51 64 58 / 3%); overflow-wrap: anywhere; }
+.cabecera-carta { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+.cabecera-carta time { font-size: 13px; color: var(--color-text-muted); font-variant-numeric: tabular-nums; }
+.etiqueta-familia { display: inline-block; padding: 5px 10px; border-radius: 8px; background: var(--color-border); color: var(--color-text); font-size: 12px; font-weight: 700; }
+.registro-principal { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.registro-principal h3 { font-size: 19px; line-height: 1.35; margin: 0; font-weight: 600; }
+.registro-cantidad { flex-shrink: 0; margin: 0; font-size: 24px; font-variant-numeric: tabular-nums; }
+.registro-cantidad span { font-size: 13px; font-weight: 400; }
+.registro-maestro { font-size: 14px; margin: 10px 0 0; color: var(--color-text-muted); }
+.registro-maestro strong { color: var(--color-text); font-weight: 500; }
+.turno-carta { color: var(--color-text-muted); font-size: 13px; margin: 8px 0 0; }
+.turno-carta strong { font-weight: 500; }
+.detalles-produccion summary { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-height: 44px; width: fit-content; margin: 4px 0 0 auto; padding: 8px 12px; cursor: pointer; color: var(--color-primary); border-radius: 12px; font-size: 14px; list-style: none; }
+.detalles-produccion summary::-webkit-details-marker { display: none; }
+.detalles-produccion summary:hover { background: var(--color-border); }
+.detalles-produccion summary:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.detalle-cerrar, .detalles-produccion[open] .detalle-abrir { display: none; }
+.detalles-produccion[open] .detalle-cerrar { display: inline; }
+.detalle-flecha { transition: transform 200ms ease; }
+.detalles-produccion[open] .detalle-flecha { transform: rotate(90deg); }
+.contenido-detalles { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; padding-top: 18px; margin-top: 6px; border-top: 1px solid var(--color-border); font-size: 14px; line-height: 1.6; }
+.grupo-detalles { min-width: 0; }
+.grupo-detalles h4 { font-size: 13px; margin: 0 0 6px; color: var(--color-text-muted); font-weight: 600; }
+.grupo-detalles p { margin: 4px 0; }
+.grupo-observacion { grid-column: 1 / -1; }
+.observacion { white-space: pre-wrap; }
+.foto-torta { display: block; width: 100%; height: auto; max-height: 320px; max-width: 480px; object-fit: contain; border-radius: 12px; margin-top: 10px; }
+@supports (interpolate-size: allow-keywords) {
+    .detalles-produccion { interpolate-size: allow-keywords; }
+    .detalles-produccion::details-content { block-size: 0; opacity: 0; overflow: clip; transition: block-size 220ms ease, opacity 180ms ease, content-visibility 220ms allow-discrete; }
+    .detalles-produccion[open]::details-content { block-size: auto; opacity: 1; }
+}
+.paginacion-historial { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin:20px 0; font-size:14px; }
+.paginacion-historial a { display:inline-flex; align-items:center; min-height:44px; padding:8px 14px; border:1px solid var(--color-border); border-radius:12px; color:var(--color-text); text-decoration:none; }
+.solo-lectores { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0; }
+.estado-vacio { padding:24px; border:1px dashed var(--color-border); border-radius:16px; color:var(--color-text-muted); line-height:1.5; }
+@media(max-width:599px) {
+    .carta-historial { padding:16px; }
+    .registro-principal { flex-direction:column; gap:6px; }
+    .registro-principal h3 { font-size:18px; }
+    .registro-cantidad { font-size:22px; }
+    .contenido-detalles { grid-template-columns:minmax(0,1fr); gap:14px; }
+}
+@media(prefers-reduced-motion:reduce) {
+    .detalles-produccion::details-content, .detalle-flecha { transition:none; }
+}

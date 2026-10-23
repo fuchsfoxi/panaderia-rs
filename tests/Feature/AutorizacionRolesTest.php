@@ -164,8 +164,8 @@ test('ambos roles registran las tres familias con turno asignado sin inferirlo d
     $usuario = usuarioConRolDePrueba($this->fixtures, $nombre);
     // El nombre no decide el turno: la relación asignada sí lo hace para Operador.
     $usuario->update(['username' => 'cuenta_manana_ficticia']);
-    $noche = Turno::create(['nombre_turnos' => 'Noche']);
-    $usuario->update(['turno_id' => $nombre === Rol::OPERADOR ? $noche->id : null]);
+    $turno = $familia === 'Pan' ? Turno::create(['nombre_turnos' => 'Noche']) : $this->fixtures['turno'];
+    $usuario->update(['turno_id' => $nombre === Rol::OPERADOR ? $turno->id : null]);
     $this->fixtures['productos']['Pan']->update(['panes_por_lata' => 12]);
     $detalle = [
         'producto_id' => $this->fixtures['productos'][$familia]->id,
@@ -182,7 +182,7 @@ test('ambos roles registran las tres familias con turno asignado sin inferirlo d
         $detalle += ['forma' => 'circular', 'hora_vitrina' => '14:15', 'foto' => UploadedFile::fake()->image('torta-ficticia.jpg')];
     }
     $payload = [
-        'fecha' => '2026-10-12', 'categoria' => strtolower($familia), 'turno_id' => $noche->id,
+        'fecha' => '2026-10-12', 'categoria' => strtolower($familia), 'turno_id' => $turno->id,
         'registrado_por_usuario_id' => 999999, 'rol_id' => 999999, 'detalles' => [$detalle],
     ];
     $ruta = $familia === 'Pan' ? '/produccion' : '/produccion/'.strtolower($familia);
@@ -192,7 +192,7 @@ test('ambos roles registran las tres familias con turno asignado sin inferirlo d
         'Pan' => DetallePan::class, 'Torta' => DetalleTorta::class, default => DetalleBocadito::class,
     };
     $lote = $modelo::sole();
-    expect($produccion->turno_id)->toBe($noche->id)
+    expect($produccion->turno_id)->toBe($turno->id)
         ->and($produccion->registrado_por_usuario_id)->toBe($usuario->id)
         ->and($lote->registrado_por_usuario_id)->toBe($usuario->id)
         ->and($lote->cantidad)->toBe($familia === 'Pan' ? DetallePan::LATAS_POR_COCHE + 2 : 4)
@@ -203,7 +203,7 @@ test('ambos roles registran las tres familias con turno asignado sin inferirlo d
     } elseif ($familia === 'Torta') {
         Storage::disk('public')->assertExists($lote->foto);
     }
-    $this->get('/history')->assertOk()->assertSeeText('Lote de prueba')->assertSeeText('Noche');
+    $this->get('/history')->assertOk()->assertSeeText('Lote de prueba')->assertSeeText($turno->nombre_turnos);
 })->with('roles funcionales')->with(['Pan', 'Torta', 'Bocadito']);
 
 test('la siguiente petición revalida un cambio de rol persistido en una sesión existente', function () {

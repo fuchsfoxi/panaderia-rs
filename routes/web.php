@@ -57,6 +57,7 @@ Route::middleware(['auth', EnsureUsuarioActivo::class, 'auth.session'])->group(f
     });
 
     Route::middleware('can:acceder-operacion')->group(function () {
+        Route::get('/produccion/registros', [ProduccionController::class, 'registros'])->name('produccion.registros');
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
         Route::get('/produccion', [ProduccionController::class, 'index'])->name('produccion.index');
         Route::post('/produccion', [ProduccionController::class, 'store'])->name('produccion.store');

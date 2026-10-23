@@ -79,10 +79,10 @@ test('un invitado no puede guardar producción Pan', function () {
 test('muestra el éxito después de guardar y seguir la redirección', function () {
     $this->actingAs($this->fixtures['usuario']);
     $response = $this->followingRedirects()->post(route('produccion.store'), $this->payload);
-    $response->assertOk()->assertSeeText('Producto de Pan registrado correctamente.')
+    $response->assertOk()->assertSeeText('Pan guardado')
         ->assertSee('role="status"', false)->assertDontSeeText('Revisa los campos indicados');
-    expect(substr_count($response->getContent(), 'Producto de Pan registrado correctamente.'))->toBe(1);
-    $this->get(route('produccion.index'))->assertOk()->assertDontSeeText('Producto de Pan registrado correctamente.');
+    expect(substr_count($response->getContent(), 'Pan guardado'))->toBe(1);
+    $this->get(route('produccion.index'))->assertOk()->assertDontSeeText('Pan guardado');
 });
 
 test('muestra errores del producto y conserva campos y participantes al volver al formulario', function () {
@@ -107,7 +107,9 @@ test('muestra errores del producto y conserva campos y participantes al volver a
             ->and($xpath->query('//input[@name="detalles['.$i.'][coches]"]')->item(0)->getAttribute('value'))->toBe((string) $detalle['coches'])
             ->and($xpath->query('//input[@name="detalles['.$i.'][latas_adicionales]"]')->item(0)->getAttribute('value'))->toBe((string) $detalle['latas_adicionales'])
             ->and($xpath->query('//textarea[@name="detalles['.$i.'][observacion]"]')->item(0)->textContent)->toBe($detalle['observacion'])
-            ->and($xpath->query('//input[@name="detalles[0][hora_finalizacion]"]')->item(0)->getAttribute('value'))->toBe('08:35');
+            ->and($xpath->query('//input[@name="detalles[0][hora_finalizacion]"]')->item(0)->getAttribute('value'))->toBe('08:35')
+            ->and($xpath->query('//select[@id="detalle-hora-finalizacion-hora"]/option[@selected]')->item(0)->getAttribute('value'))->toBe('08')
+            ->and($xpath->query('//select[@id="detalle-hora-finalizacion-minutos"]/option[@selected]')->item(0)->getAttribute('value'))->toBe('35');
         foreach ($detalle['participantes'] as $j => $participante) {
             foreach ($participante as $campo => $id) {
                 expect($xpath->query('//input[@name="detalles['.$i.'][participantes]['.$j.']['.$campo.']"]')->item(0)->getAttribute('value'))->toBe((string) $id);
@@ -164,7 +166,7 @@ test('guarda Pan con cabecera derivada cantidad snapshot y participantes reales'
 
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
         ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors()
-        ->assertSessionHas('success', 'Producto de Pan registrado correctamente.');
+        ->assertSessionHas('success', 'Pan guardado');
 
     $this->assertDatabaseCount('produccion', 1);
     $this->assertDatabaseCount('detalle_pan', 1);
@@ -506,7 +508,7 @@ test('otra fecha u otro turno crea otra sesión de Pan', function (string $conte
     if ($contexto === 'fecha') {
         $this->payload['fecha'] = '2026-10-06';
     } else {
-        $this->payload['turno_id'] = Turno::create(['nombre_turnos' => 'Turno siguiente ficticio'])->id;
+        $this->payload['turno_id'] = Turno::create(['nombre_turnos' => 'Noche'])->id;
     }
     $this->post(route('produccion.store'), $this->payload)
         ->assertRedirect(panContextUrl($this->payload))->assertSessionHasNoErrors();
@@ -540,7 +542,7 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
         ->assertSeeText('Guardar')->assertDontSeeText('Agregar producto')
         ->assertDontSeeText('Eliminar producto')->assertSeeText('Latas adicionales')
         ->assertSeeText('Cancelar')
-        ->assertSeeText('1 coche = 18 latas')->assertDontSee('plantilla-detalle-pan', false);
+        ->assertSee('data-resumen-vacio', false)->assertDontSee('plantilla-detalle-pan', false);
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
@@ -598,11 +600,11 @@ test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y
     $this->payload['detalles'][0]['latas_adicionales'] = 3;
     $this->payload['detalles'][0]['observacion'] = 'Nota de otra tarjeta del mismo producto';
     $this->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
-    $esperados = DetallePan::orderBy('id')->pluck('id')->all();
+    $esperados = DetallePan::orderByDesc('id')->pluck('id')->all();
     $otraFecha = array_replace($this->payload, ['fecha' => '2026-10-06']);
     $otraFecha['detalles'][0]['observacion'] = 'Ocultar otra fecha';
     $this->post(route('produccion.store'), $otraFecha)->assertSessionHasNoErrors();
-    $otroTurno = array_replace($this->payload, ['turno_id' => Turno::create(['nombre_turnos' => 'Turno ajeno ficticio'])->id]);
+    $otroTurno = array_replace($this->payload, ['turno_id' => Turno::create(['nombre_turnos' => 'Noche'])->id]);
     $otroTurno['detalles'][0]['observacion'] = 'Ocultar otro turno';
     $this->post(route('produccion.store'), $otroTurno)->assertSessionHasNoErrors();
     // Registro legacy artificial: comprueba el filtro de categoría sin implementar otra familia.
@@ -617,9 +619,9 @@ test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y
         'observacion' => 'Ocultar otra categoría',
     ]);
     $response = $this->get(panContextUrl($this->payload))->assertOk()
-        ->assertSeeText('Producción registrada — Turno '.$this->fixtures['turno']->nombre_turnos)
-        ->assertSeeText('1 coches + 5 latas (23 latas en total)')
-        ->assertSeeText('2 coches + 3 latas (39 latas en total)')
+        ->assertSeeText('Producción registrada')->assertSeeText('Turno: '.$this->fixtures['turno']->nombre_turnos)
+        ->assertSeeText('1 coches + 5 latas adicionales')
+        ->assertSeeText('2 coches + 3 latas adicionales')
         ->assertSeeText('Nota del primer lote')->assertSeeText('Nota de otra tarjeta del mismo producto')
         ->assertDontSeeText('Ocultar otra fecha')->assertDontSeeText('Ocultar otro turno')->assertDontSeeText('Ocultar otra categoría');
     expect($response->viewData('detallesRegistrados')->modelKeys())->toBe($esperados);
@@ -632,12 +634,12 @@ test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y
         expect($tarjeta->getAttribute('data-detalle-registrado'))->toBe((string) $esperados[$i])
             ->and($xpath->query('.//h3', $tarjeta)->item(0)->textContent)->toBe($this->fixtures['productos']['Pan']->nombre_p);
         foreach (['Maestro' => 0, 'Ayudante' => 1] as $rol => $empleado) {
-            expect($tarjeta->textContent)->toContain($rol.': '.$this->fixtures['empleados'][$empleado]->nombre_empleados);
+            expect($tarjeta->textContent)->toContain(($rol === 'Ayudante' ? 'Ayudantes' : $rol).': '.$this->fixtures['empleados'][$empleado]->nombre_empleados);
         }
     }
 });
 
-test('index sin turno o con consulta inválida no muestra tarjetas ajenas', function (string $caso) {
+test('index sin turno consulta todos los turnos y rechaza contextos inválidos', function (string $caso) {
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
     $consulta = match ($caso) {
         'sin turno' => ['fecha' => $this->payload['fecha']],
@@ -646,8 +648,13 @@ test('index sin turno o con consulta inválida no muestra tarjetas ajenas', func
         'fecha como array' => ['fecha' => ['2026-10-05'], 'turno_id' => $this->payload['turno_id']],
         'turno como array' => ['fecha' => $this->payload['fecha'], 'turno_id' => [$this->payload['turno_id']]],
     };
-    $response = $this->get(route('produccion.index', $consulta))->assertOk()->assertDontSee('data-detalle-registrado=', false);
-    $response->assertSeeText($caso === 'sin turno' ? 'Selecciona una fecha y un turno' : 'La fecha o el turno de consulta no son válidos.');
+    $response = $this->get(route('produccion.index', $consulta))->assertOk();
+    if ($caso === 'sin turno') {
+        $response->assertSee('data-detalle-registrado=', false);
+        expect($response->viewData('detalles')->total())->toBe(1);
+    } else {
+        $response->assertDontSee('data-detalle-registrado=', false)->assertSeeText('La fecha o el turno de consulta no son válidos.');
+    }
 })->with(['sin turno', 'fecha inválida', 'turno inexistente', 'fecha como array', 'turno como array']);
 
 test('rechaza un único detalle enviado con un índice distinto de cero', function () {
@@ -661,7 +668,7 @@ test('rechaza un único detalle enviado con un índice distinto de cero', functi
 test('una tarjeta conserva la observación de texto cero', function () {
     $this->payload['detalles'][0]['observacion'] = '0';
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
-    $this->get(panContextUrl($this->payload))->assertOk()->assertSeeText('Observación: 0');
+    $this->get(panContextUrl($this->payload))->assertOk()->assertSee('class="observacion">0</p>', false);
 });
 
 test('recupera el formulario después de rechazar old input malformado sin HTTP 500', function (string $campo, mixed $valor) {
@@ -779,13 +786,21 @@ test('horas límite válidas se guardan en el detalle sin asignación automátic
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)
         ->assertSessionHasNoErrors();
     expect(DetallePan::sole()->hora_finalizacion)->toBe($hora.':00');
-    $response = $this->get(panContextUrl($this->payload))->assertOk()->assertSeeText('Finalización: '.$hora);
+    $response = $this->get(panContextUrl($this->payload))->assertOk()->assertSeeText('Hora de finalización: '.$hora);
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $input = (new DOMXPath($document))->query('//input[@name="detalles[0][hora_finalizacion]"]')->item(0);
     expect($input->getAttribute('value'))->toBe('')
-        ->and($input->getAttribute('type'))->toBe('time')
-        ->and($input->hasAttribute('required'))->toBeTrue();
+        ->and($input->getAttribute('type'))->toBe('hidden');
+    $xpath = new DOMXPath($document);
+    foreach (['hora' => 24, 'minutos' => 60] as $parte => $opciones) {
+        $select = $xpath->query('//select[@id="detalle-hora-finalizacion-'.$parte.'"]')->item(0);
+        expect($select->hasAttribute('required'))->toBeTrue()
+            ->and($select->hasAttribute('name'))->toBeFalse()
+            ->and($select->getElementsByTagName('option')->length)->toBe($opciones + 1)
+            ->and($xpath->query('//select[@id="detalle-hora-finalizacion-'.$parte.'"]/option[@selected and @value=""]')->length)->toBe(1)
+            ->and($xpath->query('//label[@for="detalle-hora-finalizacion-'.$parte.'"]')->length)->toBe(1);
+    }
 })->with(['00:00', '23:59']);
 
 test('lote histórico sin hora se consulta y no cambia al reutilizar la cabecera', function () {

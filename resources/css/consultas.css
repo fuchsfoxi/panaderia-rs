@@ -1,0 +1,7 @@
+[data-consulta-registros], [data-dashboard] { position:relative; }
+.esqueleto-listado { position:absolute; z-index:1; left:0; right:0; display:grid; gap:12px; pointer-events:none; overflow:hidden; }
+.esqueleto-listado[hidden], [data-error-consulta][hidden] { display:none; }
+.esqueleto-listado span { display:block; min-height:40px; border-radius:16px; background:linear-gradient(100deg,var(--color-border) 25%,var(--color-bg) 45%,var(--color-border) 65%); background-size:200% 100%; animation:consulta-esqueleto 1.2s linear infinite; }
+[data-resultados-registros][aria-busy="true"], [data-dashboard-contenido][aria-busy="true"] { opacity:.6; }
+@keyframes consulta-esqueleto { to { background-position:-200% 0; } }
+@media(prefers-reduced-motion:reduce) { .esqueleto-listado span { animation:none; } }

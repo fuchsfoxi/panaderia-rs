@@ -4,6 +4,8 @@ namespace App\Actions\Produccion;
 
 use App\Models\Categoria;
 use App\Models\Produccion;
+use App\Rules\TurnoPermitidoProduccion;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ResolverCabeceraProduccion
@@ -13,6 +15,9 @@ class ResolverCabeceraProduccion
     public function resolver(string $fecha, int $turnoId, Categoria $categoria, int $usuarioId): Produccion
     {
         $this->turnos->comprobar($usuarioId, $turnoId);
+        Validator::make(['turno_id' => $turnoId], [
+            'turno_id' => [new TurnoPermitidoProduccion($categoria->nombre_categorias)],
+        ])->validate();
 
         $producciones = Produccion::where('fecha', $fecha)
             ->where('categoria_id', $categoria->id)

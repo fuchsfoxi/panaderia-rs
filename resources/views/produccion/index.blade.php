@@ -18,8 +18,9 @@
         </div>
 
         @if (session('success'))
-            <div class="feedback-produccion feedback-produccion-exito" role="status">
-                {{ session('success') }}
+            <div class="notificacion-produccion" data-exito-produccion role="status" aria-live="polite" aria-atomic="true">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m7 12 3 3 7-7"/></svg>
+                <span>{{ session('success') }}</span>
             </div>
         @endif
 
@@ -62,7 +63,7 @@
             <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
         @enderror
 
-        @if ($productosSeleccionados->isEmpty() || $turnos->isEmpty() || $empleados->isEmpty() || ! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante'))
+        @if ($productosSeleccionados->isEmpty() || $turnos->isEmpty() || $empleados->isEmpty() || ! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ($categoriaSeleccionada !== 'torta' && ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante')))
             <div class="feedback-produccion" role="status">
                 <strong>Faltan datos para registrar la producción.</strong>
                 <ul>
@@ -75,8 +76,8 @@
                     @if ($empleados->isEmpty())
                         <li>No hay empleados disponibles.</li>
                     @endif
-                    @if (! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante'))
-                        <li>Faltan los roles Maestro o Ayudante.</li>
+                    @if (! $rolesProduccion->contains('nombre_roles_produccion', 'Maestro') || ($categoriaSeleccionada !== 'torta' && ! $rolesProduccion->contains('nombre_roles_produccion', 'Ayudante')))
+                        <li>{{ $categoriaSeleccionada === 'torta' ? 'Falta el rol Maestro.' : 'Faltan los roles Maestro o Ayudante.' }}</li>
                     @endif
                 </ul>
                 <p>Solicita que se completen estos datos antes de registrar un producto.</p>
@@ -86,7 +87,7 @@
         @php
             $latasPorCoche = \App\Models\DetallePan::LATAS_POR_COCHE;
         @endphp
-        <form id="formulario-produccion" data-latas-por-coche="{{ $latasPorCoche }}" data-pan-url="{{ route('produccion.store') }}" data-torta-url="{{ route('produccion.torta.store') }}" data-bocadito-url="{{ route('produccion.bocadito.store') }}" action="{{ route($rutaRegistro[$categoriaSeleccionada]) }}" method="POST" enctype="multipart/form-data">
+        <form id="formulario-produccion" data-latas-por-coche="{{ $latasPorCoche }}" data-turno-manana="{{ $turnoMananaId }}" @if(auth()->user()->esOperador()) data-turno-operador="{{ auth()->user()->turno_id }}" @endif data-pan-url="{{ route('produccion.store') }}" data-torta-url="{{ route('produccion.torta.store') }}" data-bocadito-url="{{ route('produccion.bocadito.store') }}" action="{{ route($rutaRegistro[$categoriaSeleccionada]) }}" method="POST" enctype="multipart/form-data">
             @csrf
             <input type="hidden" name="categoria" id="categoria-seleccionada" value="{{ $categoriaSeleccionada }}">
 
@@ -131,23 +132,27 @@
                             @enderror
                         </div>
 
-                        <div class="campo" id="campo-turno">
+                        <div class="campo {{ $categoriaSeleccionada !== 'pan' ? 'turno-automatico' : '' }}" id="campo-turno">
                             @if (auth()->user()->esOperador())
-                            <label for="turno-asignado">Turno asignado</label>
-                            <input id="turno-asignado" type="text" value="{{ auth()->user()->turno?->nombre_turnos ?? 'Sin turno asignado' }}" readonly>
-                            <input id="turno" type="hidden" name="turno_id" value="{{ auth()->user()->turno_id }}">
+                            <label for="turno-asignado" data-turno-pan @if($categoriaSeleccionada !== 'pan') hidden @endif>Turno asignado</label>
+                            <input id="turno-asignado" data-turno-pan @if($categoriaSeleccionada !== 'pan') hidden @endif type="text" value="{{ auth()->user()->turno?->nombre_turnos ?? 'Sin turno asignado' }}" readonly>
+                            <input id="turno" type="hidden" name="turno_id" value="{{ auth()->user()->turno_id }}" @disabled($categoriaSeleccionada !== 'pan')>
                             @if (! auth()->user()->turno)
                                 <p class="error-campo" role="alert">Tu cuenta no tiene un turno asignado. Solicita su configuración al Administrador.</p>
                             @endif
                             @else
-                            <label for="turno">Turno</label>
-                            <select id="turno" name="turno_id" required>
+                            <label for="turno" data-turno-pan @if($categoriaSeleccionada !== 'pan') hidden @endif>Turno</label>
+                            <select id="turno" data-turno-pan @if($categoriaSeleccionada !== 'pan') hidden @endif name="turno_id" required @disabled($categoriaSeleccionada !== 'pan')>
                                 <option value="">Selecciona un turno</option>
                                 @foreach ($turnos as $turno)
+                                    @continue(! in_array($turno->nombre_turnos, ['Mañana', 'Noche'], true))
                                     <option value="{{ $turno->id }}" @selected((string) $turnoSeleccionadoId === (string) $turno->id)>{{ $turno->nombre_turnos }}</option>
                                 @endforeach
                             </select>
                             @endif
+                            <span class="solo-lectores" data-turno-fijo @if($categoriaSeleccionada === 'pan') hidden @endif>Turno: <strong>Mañana</strong></span>
+                            <input id="turno-manana" type="hidden" name="turno_id" value="{{ $turnoMananaId }}" @disabled($categoriaSeleccionada === 'pan')>
+                            <p data-error-turno class="error-campo" role="alert"></p>
                             @error('turno_id')
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
@@ -167,15 +172,14 @@
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
-                        <p class="campo campo-ancho" data-tipo-registro>Tipo de registro: {{ $cantidadDirecta ? 'Por unidades' : 'Por latas' }}</p>
-                        <div class="campo campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
+                        <div class="campo campo-pan-cantidad campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <label data-label="coches" for="detalle-{{ $indice }}-coches">Coches</label>
                             <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" @disabled(! $panLata) min="0" step="1" value="{{ $detalle['coches'] ?? '0' }}">
                             @error("detalles.$indice.coches")
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
-                        <div class="campo campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
+                        <div class="campo campo-pan-cantidad campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas adicionales</label>
                             <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" @disabled(! $panLata) min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '0' }}">
                             @error("detalles.$indice.latas_adicionales")
@@ -183,17 +187,17 @@
                             @enderror
                         </div>
                         <div class="campo campo-ancho resumen-latas campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
-                            <span class="total-latas-etiqueta">Total de latas</span>
-                            <output data-total-latas aria-live="polite">0 latas</output>
-                            <small>1 coche = {{ $latasPorCoche }} latas</small>
-                            <span>Panes por lata: <output data-panes-por-lata>Selecciona un producto</output></span>
-                            <span>Total estimado: <output data-total-panes aria-live="polite">Selecciona un producto</output></span>
+                            <p data-resumen-vacio>Selecciona un producto.</p>
+                            <div data-resumen-datos hidden>
+                                <div class="resumen-principal"><span>Total de latas</span><output data-total-latas aria-live="polite">0 latas</output></div>
+                                <output class="resumen-equivalencia" data-equivalencia-latas></output>
+                                <div class="resumen-secundario"><span>Panes por lata <output data-panes-por-lata>—</output></span><span>Total estimado <output data-total-panes aria-live="polite">—</output></span></div>
+                            </div>
                         </div>
                         <div class="campo campo-ancho campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
-                            <label for="detalle-hora-finalizacion">Hora de finalización</label>
-                            <input type="time" data-campo="hora_finalizacion" id="detalle-hora-finalizacion" name="detalles[0][hora_finalizacion]" step="60" required @disabled(! $panLata) value="{{ $detalle['hora_finalizacion'] }}">
+                            <x-selector-hora campo="hora_finalizacion" etiqueta="Hora de finalización" :valor="$detalle['hora_finalizacion']" :disabled="! $panLata" :error="$errors->first('detalles.0.hora_finalizacion')" />
                             @error('detalles.0.hora_finalizacion')
-                                <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
+                                <p id="error-hora_finalizacion" data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
                         <div class="campo campo-condicional" data-mostrar-en="pan torta bocadito" data-pan-registro="UNIDAD" style="display:{{ $cantidadDirecta ? 'flex' : 'none' }}">
@@ -202,18 +206,23 @@
                             @error('detalles.0.cantidad')
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
-                            <small>Unidad: {{ $categoriaSeleccionada === 'torta' ? 'tortas' : 'UNIDAD' }}. Introduce la cantidad producida.</small>
-                            <output data-resultado-directo aria-live="polite">{{ $detalle['cantidad'] ? $detalle['cantidad'].' '.($categoriaSeleccionada === 'torta' ? 'tortas' : 'unidades') : 'Introduce una cantidad entera positiva.' }}</output>
+                            <output data-resultado-directo aria-live="polite">{{ $detalle['cantidad'] ? $detalle['cantidad'].' '.($categoriaSeleccionada === 'torta' ? 'tortas' : 'unidades') : '' }}</output>
                         </div>
                         <div class="campo campo-condicional" data-mostrar-en="torta" style="display:{{ $categoriaSeleccionada === 'torta' ? 'flex' : 'none' }}">
-                            <label for="detalle-hora-vitrina">Hora de vitrina</label>
-                            <input type="time" data-campo="hora_vitrina" id="detalle-hora-vitrina" name="detalles[0][hora_vitrina]" step="60" required @disabled($categoriaSeleccionada !== 'torta') value="{{ $detalle['hora_vitrina'] }}" @error('detalles.0.hora_vitrina') aria-invalid="true" aria-describedby="error-hora-vitrina" @enderror>
+                            <x-selector-hora campo="hora_vitrina" etiqueta="Hora de vitrina" :valor="$detalle['hora_vitrina']" :disabled="$categoriaSeleccionada !== 'torta'" :error="$errors->first('detalles.0.hora_vitrina')" />
                             @error('detalles.0.hora_vitrina')
-                                <p id="error-hora-vitrina" data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
+                                <p id="error-hora_vitrina" data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
                         <div class="campo campo-ancho">
-                            <span class="campo-etiqueta">Participantes</span>
+                            <span class="campo-etiqueta equipo-titulo">Equipo de trabajo</span>
+                            <label for="grupo-produccion" class="solo-lectores">Seleccionar grupo (opcional)</label>
+                            <select id="grupo-produccion">
+                                <option value="">Seleccionar grupo (opcional)</option>
+                                @foreach ($gruposDisponibles as $grupo)
+                                    <option value="{{ $grupo->id }}" data-familia="{{ strtolower($grupo->categoria->nombre_categorias) }}" data-empleados="{{ $grupo->integrantes->pluck('id')->prepend($grupo->maestro_id)->toJson() }}" @disabled(strtolower($grupo->categoria->nombre_categorias) !== $categoriaSeleccionada) @if(strtolower($grupo->categoria->nombre_categorias) !== $categoriaSeleccionada) hidden @endif>{{ $grupo->nombre }}</option>
+                                @endforeach
+                            </select>
                             <div class="participantes-linea">
                                 <div class="empleados-tags" data-participantes>
                                     @foreach (array_values((array) ($detalle['participantes'] ?? [])) as $participante)
@@ -231,14 +240,14 @@
                                         @endif
                                     @endforeach
                                 </div>
-                                <button type="button" class="btn-agregar-participante" data-abrir-participantes aria-label="Agregar participante" aria-controls="editor-participantes" aria-expanded="false">+</button>
+                                <button type="button" class="btn-agregar-participante" data-abrir-participantes aria-label="Agregar participante" aria-controls="editor-participantes" aria-expanded="false">Agregar participante</button>
                             </div>
                             <div id="editor-participantes" class="popover-empleado" hidden>
                                 <label data-label="empleado" for="detalle-{{ $indice }}-empleado">Empleado</label>
                                 <select data-control="empleado" id="detalle-{{ $indice }}-empleado">
                                     <option value="">Selecciona un empleado</option>
                                     @foreach ($empleados as $empleado)
-                                        <option value="{{ $empleado->id }}" data-rol-id="{{ $empleado->rol_produccion_id }}">{{ $empleado->nombre_empleados }} · #{{ $empleado->id }}</option>
+                                        <option value="{{ $empleado->id }}" data-rol-id="{{ $empleado->rol_produccion_id }}" data-nombre="{{ $empleado->nombre_empleados }} · #{{ $empleado->id }}" data-categorias="{{ implode(' ', array_unique($categoriasPorEmpleado[$empleado->id] ?? [])) }}">{{ $empleado->nombre_empleados }} · #{{ $empleado->id }} · {{ $empleado->rolProduccion->nombre_roles_produccion }}</option>
                                     @endforeach
                                 </select>
                                 <label data-label="rol" for="detalle-{{ $indice }}-rol">Rol actual</label>
@@ -250,10 +259,10 @@
                                         @endif
                                     @endforeach
                                 </select>
-                                <small id="ayuda-rol-actual">El rol se administra en Personal. Los Practicantes son adicionales al Maestro y al Ayudante.</small>
+                                <small id="ayuda-rol-actual">Rol administrado en Personal. Practicantes adicionales.</small>
                                 <button type="button" data-agregar-participante>Agregar participante</button>
                             </div>
-                            <p data-estado-participantes aria-live="polite"></p>
+                            <p class="solo-lectores" data-estado-participantes aria-live="polite"></p>
                             <p class="error-campo" data-error-detalle role="alert"></p>
                             @php
                                 $erroresParticipantes = collect($errors->get("detalles.$indice.participantes"))
@@ -270,22 +279,25 @@
                                 </div>
                             @endif
                         </div>
-                        <div class="campo campo-ancho">
-                            <label data-label="observacion" for="detalle-{{ $indice }}-observacion">Observaciones</label>
+                        <details class="observacion-opcional campo-ancho" data-observacion @if(($detalle['observacion'] ?? '') !== '' || $errors->has("detalles.$indice.observacion")) open @endif>
+                            <summary><span class="observacion-abrir">Añadir observación</span><span class="observacion-cerrar">Observación</span><span class="observacion-icono" aria-hidden="true">+</span></summary>
+                            <div class="campo">
+                            <label class="solo-lectores" data-label="observacion" for="detalle-{{ $indice }}-observacion">Observaciones</label>
                             <textarea rows="2" data-control="observacion" data-campo="observacion" id="detalle-{{ $indice }}-observacion" name="detalles[{{ $indice }}][observacion]" placeholder="Notas adicionales o novedades del lote...">{{ $detalle['observacion'] ?? '' }}</textarea>
                             @error("detalles.$indice.observacion")
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
+                        </details>
                     </div>
                     <div class="formulario-botones">
                         <button type="button" id="btn-cancelar-form">Cancelar</button>
-                        <button type="submit" @disabled(auth()->user()->esOperador() && ! auth()->user()->turno_id)>Guardar</button>
+                        <button type="submit" @disabled(auth()->user()->esOperador() && ! auth()->user()->turno_id)><span data-texto-guardar>Guardar</span><span data-carga-guardar hidden><span class="indicador-carga" aria-hidden="true"></span> Guardando…</span></button>
+                        <span class="solo-lectores" data-estado-guardado role="status" aria-live="polite"></span>
                     </div>
                 </div>
                 <aside class="panel-info campo-condicional" data-mostrar-en="torta" style="display:{{ $categoriaSeleccionada === 'torta' ? 'block' : 'none' }}" aria-labelledby="titulo-info-torta">
                     <h3 id="titulo-info-torta" class="panel-info-etiqueta">Información adicional</h3>
-                    <p>Variación de categoría · Torta</p>
                     <div class="campo">
                         <label for="detalle-forma">Forma de Torta</label>
                         <div class="forma-opciones" role="group" aria-label="Formas habituales">
@@ -300,7 +312,6 @@
                     </div>
                     <div class="campo campo-foto">
                         <span class="campo-etiqueta">Foto de la torta <small>(opcional)</small></span>
-                        <small>Control de Calidad</small>
                         <div class="foto-upload">
                             <span data-icono-foto aria-hidden="true"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8" cy="8" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></span>
                             <img data-preview-foto hidden alt="Vista previa de la torta seleccionada">
@@ -323,68 +334,20 @@
             </fieldset>
         </form>
 
-        <button type="button" id="consultar-produccion" data-url="{{ route('produccion.index') }}">Ver producción de esta fecha y turno</button>
-        <section aria-labelledby="titulo-produccion-registrada" data-registros-familia="{{ $categoriaSeleccionada }}">
-            <div class="titulo-historial">
-                <h2 id="titulo-produccion-registrada">Producción registrada{{ $turnoSeleccionado ? ' — Turno '.$turnoSeleccionado->nombre_turnos : '' }}</h2>
-            </div>
-            @if ($errorConsulta)
-                <p data-error-familia="{{ $categoriaSeleccionada }}" class="feedback-produccion feedback-produccion-error" role="alert">{{ $errorConsulta }}</p>
-            @elseif ($cabecerasDuplicadas)
-                @if (! $errors->has('produccion'))
-                    <p data-error-familia="{{ $categoriaSeleccionada }}" class="feedback-produccion feedback-produccion-error" role="alert">Existen varias sesiones de {{ $nombreCategoria }} para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto.</p>
-                @endif
-            @elseif (! $turnoSeleccionado)
-                <p>Selecciona una fecha y un turno para consultar su producción.</p>
-            @else
-                <p>Fecha: {{ $fechaSeleccionada }}</p>
-                <div class="contenedor-produccion" id="contenedor-produccion">
-                    @forelse ($detallesRegistrados as $registro)
-                        <article class="tarjeta-produccion" data-detalle-registrado="{{ $registro->id }}">
-                            <div class="tarjeta-header">
-                                <span class="tarjeta-categoria">{{ $nombreCategoria }}</span>
-                                <span class="tarjeta-fecha">{{ $fechaSeleccionada }} — Turno {{ $turnoSeleccionado->nombre_turnos }}</span>
-                            </div>
-                            <div class="tarjeta-body">
-                                <h3>{{ $registro->producto->nombre_p }}</h3>
-                                @if ($categoriaSeleccionada === 'pan' && $registro->unidadMedida?->codigo === 'LATA')
-                                    <p>{{ intdiv($registro->cantidad, $latasPorCoche) }} coches + {{ $registro->cantidad % $latasPorCoche }} latas ({{ $registro->cantidad }} latas en total)</p>
-                                    <p>Panes por lata utilizado: {{ $registro->panes_por_lata_usado ?? 'Sin factor registrado' }}</p>
-                                    @if ($registro->panes_por_lata_usado > 0)
-                                        <p>Total estimado de panes: {{ $registro->cantidad * $registro->panes_por_lata_usado }}</p>
-                                    @endif
-                                    <p>Finalización: {{ $registro->hora_finalizacion !== null ? substr($registro->hora_finalizacion, 0, 5) : 'Sin hora registrada' }}</p>
-                                @else
-                                    <p>{{ $registro->cantidad }} unidades</p>
-                                    @if ($categoriaSeleccionada === 'torta')
-                                        <p>Hora de vitrina: {{ $registro->hora_vitrina !== null ? substr($registro->hora_vitrina, 0, 5) : 'Sin hora registrada' }}</p>
-                                        <p>Forma: {{ $registro->forma }}</p>
-                                        @if ($registro->foto)
-                                            <a href="{{ asset('storage/'.$registro->foto) }}" target="_blank" rel="noopener">Ver foto</a>
-                                        @endif
-                                    @endif
-                                @endif
-                                @if ($registro->registrado_por_usuario_id !== null)
-                                    <p>Registró el lote: {{ $registro->usuario?->username ?? 'Usuario no disponible' }}</p>
-                                @endif
-                                <div class="tarjeta-empleados">
-                                    @foreach ($registro->empleados as $participanteRegistrado)
-                                        @php
-                                            $rolRegistrado = $rolesProduccion->firstWhere('id', $participanteRegistrado->pivot->rol_produccion_id);
-                                        @endphp
-                                        <span class="empleado-tag">{{ $rolRegistrado?->nombre_roles_produccion }}: {{ $participanteRegistrado->nombre_empleados }}</span>
-                                    @endforeach
-                                </div>
-                                @if ($registro->observacion !== null && $registro->observacion !== '')
-                                    <p class="tarjeta-observacion">Observación: {{ $registro->observacion }}</p>
-                                @endif
-                            </div>
-                        </article>
-                    @empty
-                        <p>Todavía no hay productos registrados para esta fecha y turno.</p>
-                    @endforelse
-                </div>
-            @endif
+        <section class="registros-produccion" aria-labelledby="titulo-produccion-registrada" data-consulta-registros>
+            <div class="titulo-historial"><h2 id="titulo-produccion-registrada">Producción registrada</h2></div>
+            <form class="filtros-registros" method="GET" action="{{ route('history.index') }}" data-filtros-registros data-consulta-url="{{ route('produccion.registros') }}">
+                <div class="campo"><label for="registros-fecha">Fecha</label><input type="date" id="registros-fecha" name="fecha_inicio" value="{{ $filtrosRegistros['fecha_inicio'] }}" required><input type="hidden" name="fecha_fin" value="{{ $filtrosRegistros['fecha_fin'] }}"></div>
+                <div class="campo"><label for="registros-turno">Turno</label><select id="registros-turno" name="turno_id"><option value="">Todos</option>@foreach($turnos as $opcion)@continue(!in_array($opcion->nombre_turnos,['Mañana','Noche'],true))<option value="{{ $opcion->id }}" @selected($filtrosRegistros['turno_id'] === (string)$opcion->id)>{{ $opcion->nombre_turnos }}</option>@endforeach</select></div>
+                <div class="campo"><label for="registros-categoria">Categoría</label><select id="registros-categoria" name="categoria"><option value="">Todas</option>@foreach(['pan'=>'Pan','torta'=>'Torta','bocadito'=>'Bocadito'] as $valor=>$nombre)<option value="{{ $valor }}" @selected($filtrosRegistros['categoria'] === $valor)>{{ $nombre }}</option>@endforeach</select></div>
+                <button type="submit" class="btn-consultar">Consultar</button>
+            </form>
+            <p class="solo-lectores" data-estado-consulta role="status"></p>
+            <p class="error-campo" data-error-consulta role="alert" hidden></p>
+            <div class="esqueleto-listado" data-esqueleto hidden aria-hidden="true"><span></span><span></span></div>
+            @if($errorConsulta)<p class="feedback-produccion feedback-produccion-error" role="alert">{{ $errorConsulta }}</p>@endif
+            @if($cabecerasDuplicadas && !$errors->has('produccion'))<p class="feedback-produccion feedback-produccion-error" role="alert">Existen varias sesiones de {{ $nombreCategoria }} para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto.</p>@endif
+            @include('produccion.registros')
         </section>
 
     </div>

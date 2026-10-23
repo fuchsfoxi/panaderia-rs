@@ -74,6 +74,7 @@ dataset('matriz turnos usuarios', [
 ]);
 
 test('HTTP respeta turno por relación en las tres familias sin dejar residuos al denegar', function (string $rol, ?string $asignado, string $solicitado, bool $permitido, string $familia) {
+    $permitido = $permitido && ($familia === 'Pan' || $solicitado === 'manana');
     $this->fixtures['rol']->update(['nombre_roles' => $rol]);
     $this->usuario->update(['username' => 'turn_manana', 'empleado_id' => null, 'turno_id' => $asignado ? $this->turnos[$asignado]->id : null]);
     $payload = payloadTurnoUsuario($this->fixtures, $familia, $this->turnos[$solicitado]->id);
@@ -123,11 +124,11 @@ test('Admin mantiene selector y Operador ve solo turno asignado sin selector edi
     $xpath = new DOMXPath($document);
     if ($rol === Rol::OPERADOR) {
         $response->assertSeeText('Turno asignado');
-        expect($xpath->query('//select[@name="turno_id"]')->length)->toBe(0)
+        expect($xpath->query('//form[@id="formulario-produccion"]//select[@name="turno_id"]')->length)->toBe(0)
             ->and($xpath->query('//input[@name="turno_id" and @type="hidden"]')->item(0)->getAttribute('value'))->toBe((string) $this->turnos['manana']->id)
             ->and($xpath->query('//input[@id="turno-asignado" and @readonly]')->item(0)->getAttribute('value'))->toBe('Mañana');
     } else {
-        expect($xpath->query('//select[@name="turno_id"]/option[@value!=""]')->length)->toBe(2);
+        expect($xpath->query('//form[@id="formulario-produccion"]//select[@name="turno_id"]/option[@value!=""]')->length)->toBe(2);
     }
 })->with([Rol::ADMINISTRADOR, Rol::OPERADOR]);
 

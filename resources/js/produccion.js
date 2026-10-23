@@ -1,5 +1,10 @@
+import './consultas-produccion.js';
+import './tarjetas-produccion.js';
+
 document.addEventListener('DOMContentLoaded', function () {
     const formulario = document.getElementById('formulario-produccion');
+    if (!formulario || formulario.dataset.inicializado) return;
+    formulario.dataset.inicializado = 'true';
     // Blade publica la constante del backend; el navegador solo calcula una ayuda visual.
     const latasPorCoche = Number(formulario.dataset.latasPorCoche);
     const inputCategoria = document.getElementById('categoria-seleccionada');
@@ -7,6 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const detalle = formulario.querySelector('.detalle-pan');
     const fecha = document.getElementById('fecha');
     const turno = document.getElementById('turno');
+    const turnoManana = document.getElementById('turno-manana');
+    const grupo = document.getElementById('grupo-produccion');
     const guardar = formulario.querySelector('button[type="submit"]');
     const titulo = formulario.querySelector('.formulario-card-header h3');
     const editorParticipantes = detalle.querySelector('#editor-participantes');
@@ -20,6 +27,64 @@ document.addEventListener('DOMContentLoaded', function () {
     const quitarFoto = detalle.querySelector('[data-quitar-foto]');
     const labelFoto = detalle.querySelector('[data-label-foto]');
     let urlFoto = null;
+    let enviando = false;
+
+    const reglasEquipo = {
+        pan: '1 Maestro y mínimo 1 Ayudante.',
+        torta: '1 Maestro. Ayudante opcional.',
+        bocadito: '1 Maestro y exactamente 1 Ayudante.',
+    };
+
+    function actualizarTurno() {
+        if (!turnoManana) return;
+        const pan = inputCategoria.value === 'pan';
+        document.getElementById('campo-turno')?.classList.toggle('turno-automatico', !pan);
+        turno.disabled = !pan;
+        turnoManana.disabled = pan;
+        formulario.querySelectorAll('[data-turno-pan]').forEach(control => { control.hidden = !pan; });
+        formulario.querySelector('[data-turno-fijo]').hidden = pan;
+        const operador = Object.hasOwn(formulario.dataset, 'turnoOperador');
+        const noPermitido = operador && (!formulario.dataset.turnoOperador
+            || (!pan && formulario.dataset.turnoOperador !== formulario.dataset.turnoManana));
+        const sinManana = !pan && !formulario.dataset.turnoManana;
+        formulario.querySelector('[data-error-turno]').textContent = noPermitido
+            ? 'Tu cuenta solo puede registrar en su turno asignado.'
+            : (sinManana ? 'El turno Mañana no está disponible. Solicita su configuración.' : '');
+        guardar.disabled = enviando || noPermitido || sinManana;
+    }
+
+    function estadoEnvio(activo) {
+        enviando = activo;
+        formulario.setAttribute('aria-busy', String(activo));
+        formulario.querySelectorAll('[data-texto-guardar]').forEach(nodo => { nodo.hidden = activo; });
+        formulario.querySelectorAll('[data-carga-guardar]').forEach(nodo => { nodo.hidden = !activo; });
+        const estado = formulario.querySelector('[data-estado-guardado]');
+        if (estado) estado.textContent = activo ? 'Guardando producción…' : '';
+        botonesCategoria.forEach(boton => { boton.disabled = activo; });
+        actualizarTurno();
+        if (!turnoManana) guardar.disabled = activo;
+    }
+
+    // Al volver con Atrás, el navegador puede recuperar el formulario que estaba enviándose.
+    window.addEventListener('pageshow', () => estadoEnvio(false));
+
+    const notificacion = document.querySelector('[data-exito-produccion]');
+    if (notificacion) window.setTimeout(() => { notificacion.hidden = true; }, 3000);
+
+    formulario.querySelectorAll('[data-selector-hora]').forEach(selector => {
+        const valor = selector.querySelector('[data-hora-valor]');
+        const hora = selector.querySelector('[data-hora-parte="hora"]');
+        const minutos = selector.querySelector('[data-hora-parte="minutos"]');
+        function sincronizar() {
+            const completa = /^([01][0-9]|2[0-3])$/.test(hora.value) && /^[0-5][0-9]$/.test(minutos.value);
+            valor.value = completa ? `${hora.value}:${minutos.value}` : '';
+            // Una selección parcial opcional tampoco debe convertirse en una hora distinta.
+            hora.setCustomValidity(!hora.value && minutos.value && !hora.required ? 'Selecciona la hora.' : '');
+            minutos.setCustomValidity(hora.value && !minutos.value && !minutos.required ? 'Selecciona los minutos.' : '');
+        }
+        [hora, minutos].forEach(control => control.addEventListener('change', sincronizar));
+        sincronizar();
+    });
 
     function mostrarEditor(abierto) {
         editorParticipantes.hidden = !abierto;
@@ -96,6 +161,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function actualizarParticipantes(detalle) {
         const tags = participantes(detalle);
+        detalle.querySelector('[data-participantes]').classList.toggle('sin-participantes', tags.length === 0);
         // Solo se renumeran participantes; el producto siempre es detalles[0].
         tags.forEach((tag, j) => {
             tag.querySelectorAll('[data-participante-campo]').forEach(input => {
@@ -109,7 +175,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const selectRol = detalle.querySelector('[data-control="rol"]');
 
         Array.from(selectEmpleado.options).forEach(option => {
-            option.disabled = empleados.has(option.value);
+            const nombreRol = Array.from(selectRol.options).find(rol => rol.value === option.dataset.rolId)?.dataset.rolNombre;
+            option.disabled = empleados.has(option.value) || (nombreRol === 'Maestro' && maestros > 0)
+                || (inputCategoria.value === 'bocadito' && nombreRol === 'Ayudante' && ayudantes > 0);
         });
         Array.from(selectRol.options).forEach(option => {
             option.disabled = option.dataset.rolNombre === 'Maestro' && maestros > 0;
@@ -120,7 +188,22 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         detalle.querySelector('[data-estado-participantes]').textContent =
-            tags.length ? `${maestros} Maestro · ${ayudantes} Ayudante(s)` : '1 Maestro y mínimo 1 Ayudante.';
+            `${reglasEquipo[inputCategoria.value]}${tags.length ? ` Seleccionados: ${maestros} Maestro · ${ayudantes} Ayudante(s).` : ''}`;
+    }
+
+    function actualizarPropuestas() {
+        if (!grupo) return;
+        Array.from(grupo.options).forEach(opcion => {
+            if (!opcion.dataset.familia) return;
+            opcion.disabled = opcion.dataset.familia !== inputCategoria.value;
+            opcion.hidden = opcion.disabled;
+        });
+        const select = detalle.querySelector('[data-control="empleado"]');
+        const opciones = Array.from(select.options).filter(opcion => opcion.value);
+        const preferido = opcion => (opcion.dataset.categorias || '').split(' ').includes(inputCategoria.value);
+        // Orden estable: habituales primero, las demás personas siguen disponibles.
+        opciones.sort((a, b) => Number(preferido(b)) - Number(preferido(a)));
+        opciones.forEach(opcion => { select.appendChild(opcion); });
     }
 
     function codigoPan() {
@@ -146,6 +229,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function actualizarTotal(detalle) {
+        const elegido = detalle.querySelector('[data-campo="producto_id"]').selectedOptions[0]?.value;
+        const vacio = detalle.querySelector('[data-resumen-vacio]');
+        const datos = detalle.querySelector('[data-resumen-datos]');
+        if (vacio) vacio.hidden = Boolean(elegido);
+        if (datos) datos.hidden = !elegido;
         if (inputCategoria.value !== 'pan' || codigoPan() === 'UNIDAD') {
             detalle.querySelector('output[data-panes-por-lata]').textContent = '';
             detalle.querySelector('[data-total-panes]').textContent = '';
@@ -154,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const valido = !cantidad.validity.badInput && Number.isInteger(numero) && numero > 0 && numero <= 2147483647;
             detalle.querySelector('[data-resultado-directo]').textContent = valido
                 ? `${numero} ${inputCategoria.value === 'torta' ? 'tortas' : 'unidades'}`
-                : 'Introduce una cantidad entera positiva.';
+                : (cantidad.value === '' && !cantidad.validity.badInput ? '' : 'Introduce una cantidad entera positiva.');
             return;
         }
         if (codigoPan() !== 'LATA') {
@@ -176,6 +264,8 @@ document.addEventListener('DOMContentLoaded', function () {
         detalle.querySelector('[data-total-latas]').textContent = valido
             ? `${total} latas`
             : `Introduce coches enteros y de 0 a ${latasPorCoche - 1} latas.`;
+        const equivalencia = detalle.querySelector('[data-equivalencia-latas]');
+        if (equivalencia) equivalencia.textContent = valido ? `${Math.floor(total / latasPorCoche)} coches + ${total % latasPorCoche} latas` : '';
 
         const producto = detalle.querySelector('[data-campo="producto_id"]').selectedOptions[0];
         const factor = Number(producto?.dataset.panesPorLata);
@@ -207,10 +297,14 @@ document.addEventListener('DOMContentLoaded', function () {
             mostrarEditor(false);
             detalle.querySelector('[data-participantes]').replaceChildren();
             detalle.querySelector('[data-error-detalle]').textContent = '';
-            actualizarParticipantes(detalle);
+            if (grupo) grupo.value = '';
+            const observacion = detalle.querySelector('[data-observacion]');
+            if (observacion) observacion.open = false;
         }
         actualizarForma();
         inputCategoria.value = categoria;
+        actualizarPropuestas();
+        actualizarParticipantes(detalle);
         actualizarCamposProducto(true);
         actualizarTotal(detalle);
         formulario.action = formulario.dataset[`${categoria}Url`];
@@ -223,14 +317,17 @@ document.addEventListener('DOMContentLoaded', function () {
             error.hidden = error.dataset.errorFamilia !== categoria;
         });
         // Las tarjetas consultadas pertenecen a la familia cargada por el GET.
-        const registros = document.querySelector('[data-registros-familia]');
-        if (registros) registros.hidden = registros.dataset.registrosFamilia !== categoria;
-        guardar.disabled = false;
+        // La consulta de registros es independiente del lote que se está editando.
+        actualizarTurno();
         titulo.textContent = `Detalles de Producción de ${nombres[categoria]}`;
         detalle.querySelector('[data-label="producto_id"]').textContent = `Producto ${nombres[categoria]}`;
+        if (cambio && detalle.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            detalle.getAnimations().forEach(animacion => animacion.cancel());
+            detalle.animate([{ opacity: 0.75, transform: 'translateY(3px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 160, easing: 'ease-out' });
+        }
     }
 
-    function agregarParticipante(detalle) {
+    function agregarParticipante(detalle, desdeGrupo = false) {
         const selectEmpleado = detalle.querySelector('[data-control="empleado"]');
         const selectRol = detalle.querySelector('[data-control="rol"]');
         const empleado = selectEmpleado.selectedOptions[0];
@@ -250,12 +347,17 @@ document.addEventListener('DOMContentLoaded', function () {
             error.textContent = 'Este producto ya tiene un Maestro.';
             return;
         }
+        if (inputCategoria.value === 'bocadito' && rol.dataset.rolNombre === 'Ayudante'
+            && tags.some(tag => tag.dataset.rolNombre === 'Ayudante')) {
+            error.textContent = 'Bocadito admite exactamente un Ayudante.';
+            return;
+        }
 
         const tag = document.createElement('span');
         tag.className = 'empleado-tag';
         tag.dataset.participante = '';
         tag.dataset.rolNombre = rol.dataset.rolNombre;
-        tag.appendChild(document.createTextNode(`${empleado.textContent} — ${rol.textContent} `));
+        tag.appendChild(document.createTextNode(`${empleado.dataset.nombre || empleado.textContent} — ${rol.textContent} `));
         const quitar = document.createElement('button');
         quitar.type = 'button';
         quitar.dataset.quitarParticipante = '';
@@ -274,9 +376,29 @@ document.addEventListener('DOMContentLoaded', function () {
         selectRol.value = '';
         error.textContent = '';
         actualizarParticipantes(detalle);
-        mostrarEditor(false);
-        abrirParticipantes.focus();
+        if (!desdeGrupo) {
+            mostrarEditor(false);
+            abrirParticipantes.focus();
+        }
     }
+
+    grupo?.addEventListener('change', () => {
+        const opcion = grupo.selectedOptions[0];
+        if (!opcion?.value || opcion.dataset.familia !== inputCategoria.value) return;
+        const select = detalle.querySelector('[data-control="empleado"]');
+        let conflictos = false;
+        for (const id of JSON.parse(opcion.dataset.empleados)) {
+            const existente = participantes(detalle).some(tag => tag.querySelector('[data-participante-campo="empleado_id"]').value === String(id));
+            if (existente) continue;
+            const empleado = Array.from(select.options).find(item => item.value === String(id));
+            if (!empleado || empleado.disabled) { conflictos = true; continue; }
+            select.value = String(id);
+            agregarParticipante(detalle, true);
+        }
+        if (conflictos) detalle.querySelector('[data-error-detalle]').textContent =
+            'Se conservaron tus participantes. Revisa los roles ocupados antes de completar el grupo.';
+        grupo.value = '';
+    });
 
     botonesCategoria.forEach(boton => {
         boton.addEventListener('click', () => mostrarCamposDe(boton.dataset.categoria));
@@ -315,15 +437,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     detalle.querySelector('[data-campo="producto_id"]').addEventListener('change', () => { actualizarCamposProducto(true); actualizarTotal(detalle); });
 
-    document.getElementById('consultar-produccion').addEventListener('click', event => {
-        if (!fecha.reportValidity() || !turno.reportValidity()) return;
-        const url = new URL(event.currentTarget.dataset.url, window.location.href);
-        url.searchParams.set('fecha', fecha.value);
-        url.searchParams.set('turno_id', turno.value);
-        if (inputCategoria.value !== 'pan') url.searchParams.set('categoria', inputCategoria.value);
-        window.location.assign(url);
-    });
-
     document.getElementById('btn-cancelar-form').addEventListener('click', () => formulario.reset());
     formulario.addEventListener('reset', () => {
         const contexto = { fecha: fecha.value, turno: turno.value, categoria: inputCategoria.value };
@@ -344,20 +457,30 @@ document.addEventListener('DOMContentLoaded', function () {
             limpiarFoto();
             mostrarEditor(false);
             actualizarForma();
+            const observacion = detalle.querySelector('[data-observacion]');
+            if (observacion) observacion.open = false;
         });
     });
 
     formulario.addEventListener('submit', event => {
+        if (enviando || guardar.disabled) {
+            event.preventDefault();
+            return;
+        }
         const tags = participantes(detalle);
         const ids = tags.map(tag => tag.querySelector('[data-participante-campo="empleado_id"]').value);
+        const ayudantes = tags.filter(tag => tag.dataset.rolNombre === 'Ayudante').length;
         const valido = tags.filter(tag => tag.dataset.rolNombre === 'Maestro').length === 1
-            && tags.some(tag => tag.dataset.rolNombre === 'Ayudante') && new Set(ids).size === ids.length;
+            && (inputCategoria.value === 'torta' || (inputCategoria.value === 'bocadito' ? ayudantes === 1 : ayudantes >= 1))
+            && new Set(ids).size === ids.length;
         detalle.querySelector('[data-error-detalle]').textContent = valido ? ''
-            : 'Cada producto necesita exactamente 1 Maestro, mínimo 1 Ayudante y empleados sin repetir.';
+            : `${reglasEquipo[inputCategoria.value]} Selecciona empleados sin repetir.`;
         if (!valido) {
             event.preventDefault();
             mostrarEditor(true);
+            return;
         }
+        estadoEnvio(true);
         // Estas ayudas no reemplazan la validación definitiva de store().
     });
 

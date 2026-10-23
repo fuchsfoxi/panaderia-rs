@@ -511,7 +511,7 @@ test('cantidad directa atraviesa Producto Producción e Historial sin factores n
         ->and($detalle->getAttributes())->not->toHaveKeys(['panes_por_lata', 'panes_por_lata_usado', 'unidad_medida_id'])
         ->and(DetallePan::count())->toBe(0);
     $filtros = ['categoria' => strtolower($familia), 'fecha' => $payload['fecha'], 'turno_id' => $payload['turno_id']];
-    $response = $this->get(route('produccion.index', $filtros))->assertOk()->assertSeeText($cantidad.' unidades');
+    $response = $this->get(route('produccion.index', $filtros))->assertOk()->assertSeeText($cantidad.' '.($familia === 'Torta' ? 'tortas' : 'bocaditos'));
     $dom = new DOMDocument;
     @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($dom);
