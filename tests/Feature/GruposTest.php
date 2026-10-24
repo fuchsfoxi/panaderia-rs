@@ -109,7 +109,7 @@ test('rechaza composición incompatible sin crear grupo ni integrantes', functio
     ['Pan sin Ayudantes', 'integrantes'], ['Torta con Ayudante', 'integrantes'],
     ['Bocadito sin Ayudante', 'integrantes'], ['Bocadito dos Ayudantes', 'integrantes'],
     ['duplicado', 'integrantes.0'], ['Maestro como Ayudante', 'integrantes.0'],
-    ['responsable Ayudante', 'maestro_id'], ['Practicante', 'integrantes.0'],
+    ['responsable Ayudante', 'maestro_id'], ['Practicante', 'integrantes'],
     ['Ayudante inactivo', 'integrantes.0'], ['Maestro inactivo', 'maestro_id'],
     ['sin rol', 'integrantes.0'], ['otra categoría', 'categoria_id'],
 ]);
@@ -182,7 +182,12 @@ test('cambio de rol o estado advierte sin corregir asignaciones y bloquea reacti
             'rol_produccion_id' => $this->fixtures['roles']['Practicante']->id, 'activo' => 1], $this->admin->id, $empleado->id);
     }
     $this->get('/grupos')->assertOk()->assertSeeText('Revisar composición del grupo.');
-    $this->get('/grupos/'.$grupo->id.'/editar')->assertOk()->assertSeeText('Asignación no válida');
+    $edicion = $this->get('/grupos/'.$grupo->id.'/editar')->assertOk();
+    if ($persona === 'Maestro' || $cambio === 'estado') {
+        $edicion->assertSeeText('Asignación no válida');
+    } else {
+        $edicion->assertSeeText('Practicante');
+    }
     expect($grupo->fresh()->activo)->toBeTrue()->and($grupo->fresh()->integrantes->modelKeys())->toBe($this->datosGrupo['integrantes']);
     $this->patch('/grupos/'.$grupo->id.'/estado', ['activo' => 0])->assertSessionHasNoErrors();
     $this->patch('/grupos/'.$grupo->id.'/estado', ['activo' => 1])->assertSessionHasErrors();
@@ -339,3 +344,26 @@ test('mutaciones de grupos exigen CSRF real', function (?string $token, int $sta
     $this->withSession(['_token' => 'csrf-ficticio-grupos'])->post('/grupos', $this->datosGrupo + ($token === null ? [] : ['_token' => $token]))->assertStatus($status);
     expect(GrupoProduccion::count())->toBe($status === 302 ? 1 : 0);
 })->with([[null, 419], ['incorrecto', 419], ['csrf-ficticio-grupos', 302]]);
+
+test('grupo Pan admite dos Ayudantes y Practicante visible y propuesto en producción', function () {
+    $arturo = Empleado::create(['nombre_empleados' => 'Arturo', 'rol_produccion_id' => $this->fixtures['roles']['Practicante']->id, 'activo' => true]);
+    $datos = array_replace($this->datosGrupo, ['integrantes' => [$this->fixtures['empleados'][1]->id, $this->fixtures['empleados'][2]->id, $arturo->id]]);
+    $this->post('/grupos', $datos)->assertSessionHasNoErrors();
+    $grupo = GrupoProduccion::sole();
+    expect($grupo->ayudantes())->toHaveCount(2)->and($grupo->practicantes()->modelKeys())->toBe([$arturo->id])->and($grupo->problemasComposicion())->toBe([]);
+    $this->get('/grupos')->assertOk()->assertSeeText('Practicantes')->assertSeeText('Arturo');
+    $this->get('/grupos/'.$grupo->id.'/editar')->assertOk()->assertSeeText('Arturo')->assertSeeText('Practicante');
+    $disponibles = $this->get('/produccion')->assertOk()->viewData('gruposDisponibles');
+    expect($disponibles->sole()->integrantes->modelKeys())->toBe($datos['integrantes']);
+});
+
+test('Practicante adicional respeta conteos por categoría de grupos', function (string $categoria, int $ayudantes, bool $valido) {
+    $practicante = Empleado::create(['nombre_empleados' => 'Aprendiz ficticio', 'rol_produccion_id' => $this->fixtures['roles']['Practicante']->id, 'activo' => true]);
+    $datos = array_replace($this->datosGrupo, [
+        'categoria_id' => $this->fixtures['productos'][$categoria]->categoria_id,
+        'integrantes' => [...$this->fixtures['empleados']->slice(1, $ayudantes)->pluck('id')->all(), $practicante->id],
+    ]);
+    $respuesta = $this->post('/grupos', $datos);
+    $valido ? $respuesta->assertSessionHasNoErrors() : $respuesta->assertSessionHasErrors('integrantes');
+    expect(GrupoProduccion::count())->toBe($valido ? 1 : 0);
+})->with([['Pan', 0, false], ['Pan', 1, true], ['Torta', 0, true], ['Torta', 1, false], ['Bocadito', 0, false], ['Bocadito', 1, true], ['Bocadito', 2, false]]);

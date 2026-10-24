@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -37,6 +38,16 @@ class GrupoProduccion extends Model
             ->using(GrupoIntegrante::class)->orderBy('empleados.id');
     }
 
+    public function ayudantes(): Collection
+    {
+        return $this->integrantes->filter(fn ($empleado) => $empleado->rolProduccion?->nombre_roles_produccion === 'Ayudante')->values();
+    }
+
+    public function practicantes(): Collection
+    {
+        return $this->integrantes->filter(fn ($empleado) => $empleado->rolProduccion?->nombre_roles_produccion === 'Practicante')->values();
+    }
+
     /** Se usa para advertir al consultar y para validar datos bloqueados al guardar. */
     public function problemasComposicion(): array
     {
@@ -48,7 +59,7 @@ class GrupoProduccion extends Model
         if (! $this->maestro?->activo || $this->maestro->rolProduccion?->nombre_roles_produccion !== 'Maestro') {
             $errores['maestro_id'] = 'El responsable debe ser un empleado activo con rol actual Maestro.';
         }
-        $cantidad = $this->integrantes->count();
+        $cantidad = $this->ayudantes()->count();
         $mensaje = match ($categoria) {
             'Pan' => $cantidad < 1 ? 'Un grupo de Pan necesita uno o más Ayudantes habituales.' : null,
             'Torta' => $cantidad !== 0 ? 'Un grupo de Torta no tiene Ayudantes habituales.' : null,
@@ -60,9 +71,9 @@ class GrupoProduccion extends Model
         }
         foreach ($this->integrantes as $indice => $empleado) {
             if ($empleado->id === $this->maestro_id) {
-                $errores['integrantes.'.$indice] = 'El Maestro responsable no puede aparecer también como Ayudante.';
-            } elseif (! $empleado->activo || $empleado->rolProduccion?->nombre_roles_produccion !== 'Ayudante') {
-                $errores['integrantes.'.$indice] = 'El integrante #'.$empleado->id.' debe estar activo y tener el rol actual Ayudante.';
+                $errores['integrantes.'.$indice] = 'El Maestro responsable no puede aparecer también como integrante.';
+            } elseif (! $empleado->activo || ! in_array($empleado->rolProduccion?->nombre_roles_produccion, ['Ayudante', 'Practicante'], true)) {
+                $errores['integrantes.'.$indice] = 'El integrante #'.$empleado->id.' debe estar activo y tener el rol actual Ayudante o Practicante.';
             }
         }
 

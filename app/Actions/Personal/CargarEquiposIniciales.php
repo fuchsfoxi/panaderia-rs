@@ -16,10 +16,10 @@ use LogicException;
 class CargarEquiposIniciales
 {
     public const EQUIPOS = [
-        ['nombre' => 'Panaderos 1', 'categoria' => 'Pan', 'maestro' => 'Joshelo', 'ayudantes' => ['Joel']],
-        ['nombre' => 'Panaderos 2', 'categoria' => 'Pan', 'maestro' => 'Nilson', 'ayudantes' => ['Paul']],
-        ['nombre' => 'Tortas', 'categoria' => 'Torta', 'maestro' => 'Chuy', 'ayudantes' => []],
-        ['nombre' => 'Bocaditos', 'categoria' => 'Bocadito', 'maestro' => 'Ibar', 'ayudantes' => ['Alberto']],
+        ['nombre' => 'Panaderos 1', 'categoria' => 'Pan', 'maestro' => 'Joshelo', 'ayudantes' => ['Joel'], 'practicantes' => []],
+        ['nombre' => 'Panaderos 2', 'categoria' => 'Pan', 'maestro' => 'Nilson', 'ayudantes' => ['Paul', 'Leo'], 'practicantes' => ['Arturo']],
+        ['nombre' => 'Tortas', 'categoria' => 'Torta', 'maestro' => 'Chuy', 'ayudantes' => [], 'practicantes' => []],
+        ['nombre' => 'Bocaditos', 'categoria' => 'Bocadito', 'maestro' => 'Ibar', 'ayudantes' => ['Alberto'], 'practicantes' => []],
     ];
 
     public function __construct(private AdministrarEmpleados $empleados, private AdministrarGrupos $grupos) {}
@@ -66,8 +66,8 @@ class CargarEquiposIniciales
                 $this->grupos->guardar([
                     'nombre' => $grupo['nombre'], 'categoria_id' => $grupo['categoria_id'],
                     'maestro_id' => $ids[$grupo['maestro']],
-                    'integrantes' => array_map(fn ($nombre) => $ids[$nombre], $grupo['ayudantes']), 'activo' => true,
-                ], $plan['actor_id']);
+                    'integrantes' => array_map(fn ($nombre) => $ids[$nombre], array_merge($grupo['ayudantes'], $grupo['practicantes'])), 'activo' => true,
+                ], $plan['actor_id'], $grupo['id']);
             }
 
             return $plan;
@@ -94,11 +94,14 @@ class CargarEquiposIniciales
             foreach ($equipo['ayudantes'] as $ayudante) {
                 $nombres[$ayudante] = 'Ayudante';
             }
+            foreach ($equipo['practicantes'] as $practicante) {
+                $nombres[$practicante] = 'Practicante';
+            }
         }
         // Bloquear grupos existentes antes de roles evita invertir el protocolo de AdministrarGrupos.
         $consultaGrupos = GrupoProduccion::whereIn(DB::raw('TRIM(nombre)'), array_column(self::EQUIPOS, 'nombre'))->orderBy('id');
         $existentesGrupos = ($bloquear ? $consultaGrupos->lockForUpdate() : $consultaGrupos)->get();
-        $consultaRoles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])->orderBy('id');
+        $consultaRoles = RolProduccion::whereIn('nombre_roles_produccion', RolProduccion::NOMBRES)->orderBy('id');
         // Serializa cargas y altas de empleados que usan las Actions existentes, sin UNIQUE global de nombres.
         $roles = ($bloquear ? $consultaRoles->lockForUpdate() : $consultaRoles)->get();
         $consultaCategorias = Categoria::whereIn('nombre_categorias', GrupoProduccion::CATEGORIAS)->orderBy('id');
@@ -107,7 +110,7 @@ class CargarEquiposIniciales
         $existentes = ($bloquear ? $consultaEmpleados->lockForUpdate() : $consultaEmpleados)->get();
         $errores = $personas = $grupos = $advertencias = [];
         $rolIds = $categoriaIds = [];
-        foreach (['Maestro', 'Ayudante'] as $nombre) {
+        foreach (RolProduccion::NOMBRES as $nombre) {
             $coincidencias = $roles->filter(fn ($rol) => $this->coincideEnBase('roles_produccion', 'nombre_roles_produccion', $rol->id, $nombre, $bloquear));
             if ($coincidencias->count() !== 1 || $coincidencias->sole()->nombre_roles_produccion !== $nombre) {
                 $errores[] = 'El catálogo debe contener exactamente un rol '.$nombre.'.';
@@ -167,17 +170,29 @@ class CargarEquiposIniciales
                 $fila['id'] = $grupo->id;
                 $consulta = DB::table('grupo_integrantes')->where('grupo_id', $grupo->id)->orderBy('empleado_id');
                 $integrantes = ($bloquear ? $consulta->lockForUpdate() : $consulta)->pluck('empleado_id')->all();
-                $esperados = array_map(fn ($nombre) => $personas[$nombre]['id'], $equipo['ayudantes']);
+                $esperados = array_map(fn ($nombre) => $personas[$nombre]['id'], array_merge($equipo['ayudantes'], $equipo['practicantes']));
                 sort($esperados);
                 $compatible = $this->normalizar($grupo->nombre) === $this->normalizar($equipo['nombre'])
                     && $grupo->activo && $grupo->categoria_id === $fila['categoria_id']
-                    && $grupo->maestro_id === $personas[$equipo['maestro']]['id'] && $integrantes === $esperados;
-                $fila['operacion'] = $compatible ? 'Reutilizar' : 'Conflicto';
-                if (! $compatible) {
+                    && $grupo->maestro_id === $personas[$equipo['maestro']]['id'];
+                $sinContradiccion = $compatible && array_diff($integrantes, $esperados) === [];
+                $fila['operacion'] = ! $sinContradiccion ? 'Conflicto' : ($integrantes === $esperados ? 'Reutilizar' : 'Completar integrantes');
+                if (! $sinContradiccion) {
                     $errores[] = 'El grupo '.$equipo['nombre'].' #'.$grupo->id.' tiene otra composición, categoría o estado; no se modificará automáticamente.';
                 }
             }
             $grupos[] = $fila;
+        }
+
+        $arturoId = $personas['Arturo']['id'];
+        if ($arturoId !== null) {
+            $otros = GrupoProduccion::where(fn ($query) => $query->where('maestro_id', $arturoId)
+                ->orWhereHas('integrantes', fn ($query) => $query->where('empleados.id', $arturoId)))
+                ->whereNotIn('id', array_filter(array_column(array_filter($grupos, fn ($grupo) => $grupo['nombre'] === 'Panaderos 2'), 'id')))
+                ->get(['id', 'nombre']);
+            foreach ($otros as $otro) {
+                $errores[] = 'Arturo #'.$arturoId.' pertenece también al grupo #'.$otro->id.' «'.$otro->nombre.'». Revise esa asociación antes de cargar; solo debe pertenecer a Panaderos 2.';
+            }
         }
 
         return ['actor_id' => $actores->sole()->id, 'empleados' => array_values($personas), 'grupos' => $grupos,

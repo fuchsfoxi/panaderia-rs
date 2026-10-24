@@ -40,7 +40,8 @@
                         <p class="producto-contexto">{{ $grupo->categoria?->nombre_categorias ?? 'Categoría no disponible' }} · {{ $grupo->disponibilidad() }}</p>
                         <dl class="usuario-detalles">
                             <div><dt>Maestro responsable</dt><dd>{{ $grupo->maestro?->nombre_empleados ?? 'No disponible' }} · #{{ $grupo->maestro_id }}</dd></div>
-                            <div><dt>Ayudantes habituales</dt><dd>{{ $grupo->integrantes->map(fn ($empleado) => $empleado->nombre_empleados.' · #'.$empleado->id)->implode(', ') ?: 'Sin Ayudantes habituales' }}</dd></div>
+                            <div><dt>Ayudantes habituales</dt><dd>{{ $grupo->ayudantes()->map(fn ($empleado) => $empleado->nombre_empleados.' · #'.$empleado->id)->implode(', ') ?: 'Sin Ayudantes habituales' }}</dd></div>
+                            <div><dt>Practicantes</dt><dd>{{ $grupo->practicantes()->map(fn ($empleado) => $empleado->nombre_empleados.' · #'.$empleado->id)->implode(', ') ?: 'Sin Practicantes' }}</dd></div>
                         </dl>
                         @include('grupos.advertencias')
                     </div>

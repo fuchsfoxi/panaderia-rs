@@ -39,7 +39,8 @@ return [
     |
     */
 
-    'debug' => (bool) env('APP_DEBUG', false),
+    // Mantener las trazas desactivadas también al exponer el entorno local por túnel.
+    'debug' => false,
 
     /*
     |--------------------------------------------------------------------------

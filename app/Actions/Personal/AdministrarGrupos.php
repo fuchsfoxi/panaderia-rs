@@ -58,7 +58,7 @@ class AdministrarGrupos
     private function validarComposicion(GrupoProduccion $grupo, array $ids): void
     {
         $categoria = Categoria::whereKey($grupo->categoria_id)->sharedLock()->first();
-        $roles = RolProduccion::whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])
+        $roles = RolProduccion::whereIn('nombre_roles_produccion', RolProduccion::NOMBRES)
             ->orderBy('id')->sharedLock()->get()->keyBy('id');
         // Compatible con AdministrarEmpleados: roles antes de empleados, IDs ordenados.
         $empleados = Empleado::whereIn('id', array_merge([$grupo->maestro_id], $ids))

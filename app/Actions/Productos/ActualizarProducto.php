@@ -18,7 +18,7 @@ class ActualizarProducto
             $categoriaActual = Producto::whereKey($productoId)->value('categoria_id');
             $categoriaDestino = $datos['categoria_id'] ?? $categoriaActual;
             $categoriasBloqueadas = Categoria::whereIn('id', array_unique([$categoriaActual, $categoriaDestino]))
-                ->orderBy('id')->sharedLock()->pluck('id')->all();
+                ->orderBy('id')->lockForUpdate()->pluck('id')->all();
             $producto = Producto::whereKey($productoId)->lockForUpdate()->firstOrFail();
             if (! in_array($producto->categoria_id, $categoriasBloqueadas, true)) {
                 throw ValidationException::withMessages(['producto' => 'La categoría del producto cambió mientras editabas. Vuelve a abrir el formulario antes de guardar.']);

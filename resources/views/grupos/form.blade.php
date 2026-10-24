@@ -52,12 +52,12 @@
             @if ($maestros->isEmpty())<p class="productos-ayuda">No hay Maestros activos disponibles. Configura su rol y estado en Empleados.</p>@endif
         </div>
         <fieldset class="grupo-ayudantes productos-campo-completo" aria-describedby="reglas-grupo">
-            <legend>Ayudantes habituales</legend>
-            <p id="reglas-grupo" class="productos-ayuda">Pan: uno o más Ayudantes, sin turno fijo. Torta: sin Ayudantes, solo Mañana. Bocadito: exactamente un Ayudante, solo Mañana.</p>
+            <legend>Ayudantes y Practicantes habituales</legend>
+            <p id="reglas-grupo" class="productos-ayuda">Pan: uno o más Ayudantes, sin turno fijo. Torta: sin Ayudantes, solo Mañana. Bocadito: exactamente un Ayudante, solo Mañana. Los Practicantes son adicionales y no sustituyen a los Ayudantes.</p>
             @forelse ($ayudantes as $ayudante)
                 <label class="grupo-ayudante" for="ayudante-{{ $ayudante->id }}">
                     <input type="checkbox" id="ayudante-{{ $ayudante->id }}" name="integrantes[]" value="{{ $ayudante->id }}" @checked(in_array((string) $ayudante->id, $seleccionados, true))>
-                    <span>{{ $ayudante->nombre_empleados }} · #{{ $ayudante->id }}{{ ! $ayudante->activo || $ayudante->rolProduccion?->nombre_roles_produccion !== 'Ayudante' ? ' · Asignación no válida: retirar' : '' }}</span>
+                    <span>{{ $ayudante->nombre_empleados }} · #{{ $ayudante->id }} · {{ $ayudante->rolProduccion?->nombre_roles_produccion ?? 'Sin rol' }}{{ ! $ayudante->activo || ! in_array($ayudante->rolProduccion?->nombre_roles_produccion, ['Ayudante', 'Practicante'], true) ? ' · Asignación no válida: retirar' : '' }}</span>
                 </label>
             @empty
                 <p class="productos-ayuda">No hay Ayudantes activos disponibles. Torta puede registrarse solo con su Maestro.</p>

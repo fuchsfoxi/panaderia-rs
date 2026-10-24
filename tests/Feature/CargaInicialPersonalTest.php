@@ -58,11 +58,11 @@ test('dry run bloquea el rol incompatible de Joshelo y no cambia una sola fila',
         ->expectsOutputToContain('Vista previa READ ONLY')->expectsOutputToContain('Carga bloqueada')->assertFailed();
     $plan = $this->carga->previsualizar($this->actor);
     expect($plan['errores'])->not->toBe([])->and($plan['advertencias'])->toHaveCount(1)
-        ->and(collect($plan['empleados'])->where('operacion', 'Crear'))->toHaveCount(6)
+        ->and(collect($plan['empleados'])->where('operacion', 'Crear'))->toHaveCount(8)
         ->and(filasCarga($tablas))->toBe($antes);
 });
 
-test('vista previa confirmada es READ ONLY y planifica seis altas una promoción y cuatro grupos', function () {
+test('vista previa confirmada es READ ONLY y planifica ocho altas una promoción y cuatro grupos', function () {
     $antes = filasCarga(['empleados', 'grupos_produccion', 'grupo_integrantes', 'usuarios_sistema']);
     DB::enableQueryLog();
     DB::flushQueryLog();
@@ -73,7 +73,7 @@ test('vista previa confirmada es READ ONLY y planifica seis altas una promoción
     } finally {
         DB::disableQueryLog();
     }
-    expect($plan['errores'])->toBe([])->and(collect($plan['empleados'])->where('operacion', 'Crear'))->toHaveCount(6)
+    expect($plan['errores'])->toBe([])->and(collect($plan['empleados'])->where('operacion', 'Crear'))->toHaveCount(8)
         ->and(collect($plan['empleados'])->where('operacion', 'Modificar rol'))->toHaveCount(1)
         ->and(collect($plan['grupos'])->where('operacion', 'Crear'))->toHaveCount(4)
         ->and(filasCarga(array_keys($antes)))->toBe($antes);
@@ -83,15 +83,17 @@ test('vista previa confirmada es READ ONLY y planifica seis altas una promoción
 
 test('aplica toda la carga reutilizando Joshelo y repetición no reescribe datos ni timestamps', function () {
     $this->artisan('personal:cargar-equipos-iniciales', ['--aplicar' => true] + $this->opciones)->assertSuccessful();
-    $personas = Empleado::whereIn(DB::raw('LOWER(nombre_empleados)'), ['joshelo', 'joel', 'nilson', 'paul', 'chuy', 'ibar', 'alberto'])->get();
-    expect($personas)->toHaveCount(7)->and($personas->firstWhere('nombre_empleados', 'joshelo')->id)->toBe($this->joshelo->id)
+    $personas = Empleado::whereIn(DB::raw('LOWER(nombre_empleados)'), ['joshelo', 'joel', 'nilson', 'paul', 'leo', 'arturo', 'chuy', 'ibar', 'alberto'])->get();
+    expect($personas)->toHaveCount(9)->and($personas->firstWhere('nombre_empleados', 'joshelo')->id)->toBe($this->joshelo->id)
         ->and($personas->filter(fn ($e) => $e->rolProduccion->nombre_roles_produccion === 'Maestro'))->toHaveCount(4)
-        ->and($personas->filter(fn ($e) => $e->rolProduccion->nombre_roles_produccion === 'Ayudante'))->toHaveCount(3);
+        ->and($personas->filter(fn ($e) => $e->rolProduccion->nombre_roles_produccion === 'Ayudante'))->toHaveCount(4)
+        ->and($personas->filter(fn ($e) => $e->rolProduccion->nombre_roles_produccion === 'Practicante'))->toHaveCount(1);
     foreach (CargarEquiposIniciales::EQUIPOS as $equipo) {
         $grupo = GrupoProduccion::where('nombre', $equipo['nombre'])->sole();
         expect($grupo->problemasComposicion())->toBe([])->and($grupo->categoria->nombre_categorias)->toBe($equipo['categoria'])
             ->and(mb_strtolower($grupo->maestro->nombre_empleados))->toBe(mb_strtolower($equipo['maestro']))
-            ->and($grupo->integrantes->pluck('nombre_empleados')->all())->toBe($equipo['ayudantes']);
+            ->and($grupo->ayudantes()->pluck('nombre_empleados')->all())->toBe($equipo['ayudantes'])
+            ->and($grupo->practicantes()->pluck('nombre_empleados')->all())->toBe($equipo['practicantes']);
     }
     $tablas = ['empleados', 'grupos_produccion', 'grupo_integrantes', 'usuarios_sistema', 'roles_produccion', 'categorias'];
     // Un timestamp antiguo hace observable cualquier reescritura innecesaria al repetir.
@@ -105,16 +107,16 @@ test('aplica toda la carga reutilizando Joshelo y repetición no reescribe datos
         ->and(collect($plan['grupos'])->pluck('operacion')->unique()->all())->toBe(['Reutilizar']);
 });
 
-test('con siete personas ausentes crea el equipo completo y repetir conserva todas las filas', function () {
+test('con nueve personas ausentes crea el equipo completo y repetir conserva todas las filas', function () {
     $this->joshelo->update(['nombre_empleados' => 'Trabajador anterior de prueba']);
     $opciones = ['--administrador' => $this->actor];
     $plan = $this->carga->previsualizar($this->actor);
     expect($plan['errores'])->toBe([])
-        ->and(collect($plan['empleados'])->where('operacion', 'Crear'))->toHaveCount(7);
+        ->and(collect($plan['empleados'])->where('operacion', 'Crear'))->toHaveCount(9);
 
     $this->artisan('personal:cargar-equipos-iniciales', ['--aplicar' => true] + $opciones)->assertSuccessful();
-    expect(Empleado::count())->toBe(10)->and(GrupoProduccion::count())->toBe(5)
-        ->and(DB::table('grupo_integrantes')->count())->toBe(5)
+    expect(Empleado::count())->toBe(12)->and(GrupoProduccion::count())->toBe(5)
+        ->and(DB::table('grupo_integrantes')->count())->toBe(7)
         ->and($this->anterior->fresh()->problemasComposicion())->toBe([]);
     $antes = filasCarga(['empleados', 'grupos_produccion', 'grupo_integrantes']);
     $this->artisan('personal:cargar-equipos-iniciales', ['--aplicar' => true] + $opciones)->assertSuccessful();
@@ -127,9 +129,11 @@ test('reutiliza una carga parcial compatible y completa solo las personas y grup
         'rol_produccion_id' => $this->fixtures['roles']['Maestro']->id, 'activo' => true]);
     $ayudante = Empleado::create(['nombre_empleados' => $equipo['ayudantes'][0],
         'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id, 'activo' => true]);
+    $leo = Empleado::create(['nombre_empleados' => 'Leo', 'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id, 'activo' => true]);
+    $arturo = Empleado::create(['nombre_empleados' => 'Arturo', 'rol_produccion_id' => $this->fixtures['roles']['Practicante']->id, 'activo' => true]);
     $grupo = app(AdministrarGrupos::class)->guardar([
         'nombre' => $equipo['nombre'], 'categoria_id' => $this->fixtures['productos']['Pan']->categoria_id,
-        'maestro_id' => $maestro->id, 'integrantes' => [$ayudante->id], 'activo' => true,
+        'maestro_id' => $maestro->id, 'integrantes' => [$ayudante->id, $leo->id, $arturo->id], 'activo' => true,
     ], $this->actor);
     $antes = [$maestro->fresh()->getAttributes(), $ayudante->fresh()->getAttributes(), $grupo->fresh()->getAttributes()];
     $plan = $this->carga->previsualizar($this->actor, $this->joshelo->id);
@@ -139,8 +143,8 @@ test('reutiliza una carga parcial compatible y completa solo las personas y grup
 
     $this->artisan('personal:cargar-equipos-iniciales', ['--aplicar' => true] + $this->opciones)->assertSuccessful();
     expect([$maestro->fresh()->getAttributes(), $ayudante->fresh()->getAttributes(), $grupo->fresh()->getAttributes()])->toBe($antes)
-        ->and(Empleado::count())->toBe(9)->and(GrupoProduccion::count())->toBe(5)
-        ->and(DB::table('grupo_integrantes')->count())->toBe(5);
+        ->and(Empleado::count())->toBe(11)->and(GrupoProduccion::count())->toBe(5)
+        ->and(DB::table('grupo_integrantes')->count())->toBe(7);
 });
 
 test('conserva otras personas cuentas grupos y las tres familias históricas', function () {
@@ -229,7 +233,7 @@ test('el actor debe seguir siendo Administrador activo y la identidad confirmada
     expect(filasCarga(array_keys($antes)))->toBe($antes);
 })->with(['Operador', 'inactivo', 'otra identidad']);
 
-test('un fallo de pivote revierte seis altas promoción y todos los grupos nuevos', function () {
+test('un fallo de pivote revierte ocho altas promoción y todos los grupos nuevos', function () {
     $antes = filasCarga(['empleados', 'grupos_produccion', 'grupo_integrantes', 'usuarios_sistema']);
     $dispatcher = Model::getEventDispatcher();
     Model::setEventDispatcher(clone $dispatcher);
@@ -295,8 +299,8 @@ test('dos cargas simultáneas reutilizan las filas confirmadas sin duplicar pers
             expect(proc_close($proceso))->toBe(0, $error)->and($salida)->toBe('APLICADO');
         }
         $procesos = [];
-        expect(Empleado::count())->toBe(9)->and(GrupoProduccion::count())->toBe(5)
-            ->and(DB::table('grupo_integrantes')->count())->toBe(5);
+        expect(Empleado::count())->toBe(11)->and(GrupoProduccion::count())->toBe(5)
+            ->and(DB::table('grupo_integrantes')->count())->toBe(7);
         $plan = $this->carga->previsualizar($this->actor);
         expect($plan['errores'])->toBe([])->and(collect($plan['empleados'])->pluck('operacion')->unique()->all())->toBe(['Reutilizar'])
             ->and(collect($plan['grupos'])->pluck('operacion')->unique()->all())->toBe(['Reutilizar']);
@@ -317,3 +321,37 @@ test('dos cargas simultáneas reutilizan las filas confirmadas sin duplicar pers
         }
     }
 });
+
+test('completa Panaderos 2 anterior agregando solo Leo y Arturo y conserva el resto', function () {
+    $nilson = Empleado::create(['nombre_empleados' => 'Nilson', 'rol_produccion_id' => $this->fixtures['roles']['Maestro']->id]);
+    $paul = Empleado::create(['nombre_empleados' => 'Paul', 'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id]);
+    $grupo = app(AdministrarGrupos::class)->guardar([
+        'nombre' => 'Panaderos 2', 'categoria_id' => $this->fixtures['productos']['Pan']->categoria_id,
+        'maestro_id' => $nilson->id, 'integrantes' => [$paul->id], 'activo' => true,
+    ], $this->actor);
+    $plan = $this->carga->previsualizar($this->actor, $this->joshelo->id);
+    expect($plan['errores'])->toBe([])->and(collect($plan['grupos'])->firstWhere('nombre', 'Panaderos 2')['operacion'])->toBe('Completar integrantes');
+    $this->carga->aplicar($this->actor, $this->joshelo->id);
+    $grupo->refresh();
+    expect($grupo->maestro_id)->toBe($nilson->id)->and($grupo->ayudantes()->pluck('nombre_empleados')->all())->toBe(['Paul', 'Leo'])
+        ->and($grupo->practicantes()->pluck('nombre_empleados')->all())->toBe(['Arturo'])
+        ->and(GrupoProduccion::where('nombre', 'Panaderos 2')->count())->toBe(1);
+    expect($this->carga->previsualizar($this->actor)['errores'])->toBe([]);
+});
+
+test('bloquea Leo como Practicante Arturo en otro grupo o Joel en Panaderos 2 sin corregir silenciosamente', function (string $caso) {
+    if ($caso === 'Leo') {
+        Empleado::create(['nombre_empleados' => 'Leo', 'rol_produccion_id' => $this->fixtures['roles']['Practicante']->id]);
+    } elseif ($caso === 'Arturo') {
+        $arturo = Empleado::create(['nombre_empleados' => 'Arturo', 'rol_produccion_id' => $this->fixtures['roles']['Practicante']->id]);
+        $this->anterior->integrantes()->attach($arturo->id);
+    } else {
+        $this->anterior->update(['nombre' => 'Panaderos 2']);
+        $joel = Empleado::create(['nombre_empleados' => 'Joel', 'rol_produccion_id' => $this->fixtures['roles']['Ayudante']->id]);
+        $this->anterior->integrantes()->attach($joel->id);
+    }
+    $antes = filasCarga(['empleados', 'grupos_produccion', 'grupo_integrantes']);
+    expect($this->carga->previsualizar($this->actor, $this->joshelo->id)['errores'])->not->toBe([]);
+    $this->artisan('personal:cargar-equipos-iniciales', ['--aplicar' => true] + $this->opciones)->assertFailed();
+    expect(filasCarga(array_keys($antes)))->toBe($antes);
+})->with(['Leo', 'Arturo', 'Joel']);

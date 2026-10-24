@@ -16,7 +16,7 @@ class CargarEquiposInicialesCommand extends Command
         {--administrador= : ID de Administrador activo; se deriva solo si hay uno}
         {--confirmar-joshelo= : ID cuya identidad y promoción de Joshelo a Maestro fueron confirmadas}';
 
-    protected $description = 'Carga puntual e idempotente de los siete empleados y cuatro equipos iniciales';
+    protected $description = 'Carga puntual e idempotente de los nueve trabajadores y cuatro equipos iniciales';
 
     public function handle(CargarEquiposIniciales $carga): int
     {
@@ -46,8 +46,8 @@ class CargarEquiposInicialesCommand extends Command
             $this->table(['Empleado', 'ID', 'Rol actual', 'Rol previsto', 'Operación'], array_map(fn ($persona) => [
                 $persona['nombre_actual'] ?? $persona['nombre'], $persona['id'] ?? 'Nuevo', $persona['rol_actual'], $persona['rol'], $persona['operacion'],
             ], $plan['empleados']));
-            $this->table(['Grupo', 'Categoría', 'Maestro', 'Ayudantes', 'Operación'], array_map(fn ($grupo) => [
-                $grupo['nombre'], $grupo['categoria'], $grupo['maestro'], implode(', ', $grupo['ayudantes']) ?: 'Ninguno', $grupo['operacion'],
+            $this->table(['Grupo', 'Categoría', 'Maestro', 'Ayudantes', 'Practicantes', 'Operación'], array_map(fn ($grupo) => [
+                $grupo['nombre'], $grupo['categoria'], $grupo['maestro'], implode(', ', $grupo['ayudantes']) ?: 'Ninguno', implode(', ', $grupo['practicantes']) ?: 'Ninguno', $grupo['operacion'],
             ], $plan['grupos']));
             foreach ($plan['advertencias'] as $advertencia) {
                 $this->warn($advertencia);

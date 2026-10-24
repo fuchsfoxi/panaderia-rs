@@ -70,7 +70,7 @@ class GrupoController extends Controller
         $categorias = $this->categorias();
         $empleados = Empleado::with('rolProduccion')->where(function ($query) use ($grupo) {
             $query->where(fn ($aptos) => $aptos->where('activo', true)
-                ->whereHas('rolProduccion', fn ($roles) => $roles->whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante'])));
+                ->whereHas('rolProduccion', fn ($roles) => $roles->whereIn('nombre_roles_produccion', ['Maestro', 'Ayudante', 'Practicante'])));
             if ($grupo->exists) {
                 // Mostrar asignaciones obsoletas permite identificarlas y retirarlas explícitamente.
                 $query->orWhere('empleados.id', $grupo->maestro_id)->orWhereHas('gruposComoAyudante', fn ($grupos) => $grupos->whereKey($grupo->id));
@@ -79,7 +79,7 @@ class GrupoController extends Controller
         $maestros = $empleados->filter(fn ($empleado) => $empleado->id === $grupo->maestro_id
             || ($empleado->activo && $empleado->rolProduccion?->nombre_roles_produccion === 'Maestro'));
         $ayudantes = $empleados->filter(fn ($empleado) => $grupo->integrantes->contains('id', $empleado->id)
-            || ($empleado->activo && $empleado->rolProduccion?->nombre_roles_produccion === 'Ayudante'));
+            || ($empleado->activo && in_array($empleado->rolProduccion?->nombre_roles_produccion, ['Ayudante', 'Practicante'], true)));
 
         return view('grupos.form', compact('grupo', 'categorias', 'maestros', 'ayudantes'));
     }
