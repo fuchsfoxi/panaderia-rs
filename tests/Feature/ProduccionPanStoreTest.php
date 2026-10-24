@@ -271,6 +271,8 @@ test('rechaza composición inválida de participantes sin dejar registros', func
             $participantes[1]['rol_produccion_id'] = RolProduccion::max('id') + 100;
             break;
     }
+    // Una petición HTTP no conserva referencias de PHP dentro del payload.
+    unset($participantes);
     $this->actingAs($this->fixtures['usuario'])->from(route('produccion.index'))
         ->post(route('produccion.store'), $this->payload)->assertRedirect(route('produccion.index'))
         ->assertSessionHasErrors($campo)->assertSessionHasInput('detalles', $this->payload['detalles']);

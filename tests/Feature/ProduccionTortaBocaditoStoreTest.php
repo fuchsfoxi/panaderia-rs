@@ -241,6 +241,8 @@ test('cada familia exige un Maestro empleados distintos y su número permitido d
         case 'otro rol': $participantes[1]['rol_produccion_id'] = $this->fixtures['roles']['Practicante']->id;
             break;
     }
+    // Una petición HTTP no conserva referencias de PHP dentro del payload.
+    unset($participantes);
     if ($familia === 'Torta' && $caso === 'sin Ayudante') {
         $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
         expect(DetalleTorta::sole()->empleados)->toHaveCount(1);
