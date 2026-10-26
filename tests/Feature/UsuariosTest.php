@@ -3,6 +3,7 @@
 use App\Actions\Usuarios\AdministrarUsuarios;
 use App\Models\Rol;
 use App\Models\Usuario;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -249,3 +250,70 @@ test('no existe DELETE de usuarios', function () {
     $this->actingAs($this->admin)->delete('/usuarios/'.$this->operador->id)->assertStatus(405);
     expect(Usuario::count())->toBe(2);
 });
+
+test('cambio de contraseña revoca también la sesión antes de su primera visita protegida', function (string $driver) {
+    config(['session.driver' => $driver, 'session.connection' => 'sprint4_test']);
+    app('session')->forgetDrivers();
+    app()->forgetInstance('session.store');
+    Auth::forgetGuards();
+    $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])
+        ->assertRedirect('/dashboard');
+    $this->withCookie(config('session.cookie'), session()->getId());
+    app(AdministrarUsuarios::class)->password($this->operador->id, Str::random(32), $this->admin->id);
+    Auth::forgetGuards();
+    $this->get('/dashboard')->assertRedirect('/login');
+    $this->assertGuest();
+})->with(['array', 'database']);
+
+test('reactivar una cuenta no recupera sus sesiones database anteriores', function () {
+    config(['session.driver' => 'database', 'session.connection' => 'sprint4_test']);
+    app('session')->forgetDrivers();
+    app()->forgetInstance('session.store');
+    Auth::forgetGuards();
+    $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])
+        ->assertRedirect('/dashboard');
+    $this->withCookie(config('session.cookie'), session()->getId());
+    $this->get('/dashboard')->assertOk();
+    app(AdministrarUsuarios::class)->estado($this->operador->id, false, $this->admin->id);
+    expect(DB::table('sessions')->where('user_id', $this->operador->id)->count())->toBe(0);
+    app(AdministrarUsuarios::class)->estado($this->operador->id, true, $this->admin->id);
+    // Otra petición de navegador crea un Store nuevo, sin atributos PHP en memoria.
+    app('session')->forgetDrivers();
+    app()->forgetInstance('session.store');
+    Auth::forgetGuards();
+    $this->get('/dashboard')->assertRedirect('/login');
+    $this->assertGuest();
+});
+
+test('desactivar una cuenta elimina solo sus sesiones persistidas', function () {
+    config(['session.driver' => 'database', 'session.connection' => 'sprint4_test']);
+    $sesiones = [
+        ['id' => Str::random(40), 'user_id' => $this->admin->id],
+        ['id' => Str::random(40), 'user_id' => $this->operador->id],
+        ['id' => Str::random(40), 'user_id' => $this->operador->id],
+    ];
+    foreach ($sesiones as $sesion) {
+        DB::table('sessions')->insert($sesion + ['payload' => base64_encode('{}'), 'last_activity' => time()]);
+    }
+    app(AdministrarUsuarios::class)->estado($this->operador->id, false, $this->admin->id);
+    expect(DB::table('sessions')->where('user_id', $this->operador->id)->count())->toBe(0)
+        ->and(DB::table('sessions')->where('id', $sesiones[0]['id'])->exists())->toBeTrue();
+});
+
+test('las mutaciones protegidas rechazan peticiones sin CSRF antes de escribir', function (string $method, string $path) {
+    $middleware = Mockery::mock(PreventRequestForgery::class, [app(), app('encrypter')])
+        ->makePartial()->shouldAllowMockingProtectedMethods();
+    $middleware->shouldReceive('runningUnitTests')->andReturnFalse();
+    app()->instance(PreventRequestForgery::class, $middleware);
+    $tables = ['usuarios_sistema', 'empleados', 'grupos_produccion', 'productos', 'produccion', 'detalle_pan', 'detalle_torta', 'detalle_bocadito'];
+    $before = collect($tables)->mapWithKeys(fn ($table) => [$table => DB::table($table)->count()])->all();
+    $this->actingAs($this->admin)->call($method, str_replace('{usuario}', $this->operador->id, $path), [
+        'activo' => false, 'rol_id' => $this->admin->rol_id,
+    ])->assertStatus(419);
+    expect(collect($tables)->mapWithKeys(fn ($table) => [$table => DB::table($table)->count()])->all())->toBe($before);
+})->with([
+    ['POST', '/usuarios'], ['PATCH', '/usuarios/{usuario}/estado'], ['PATCH', '/usuarios/{usuario}/password'],
+    ['POST', '/empleados'], ['POST', '/grupos'], ['POST', '/productos'],
+    ['POST', '/produccion'], ['POST', '/produccion/torta'], ['POST', '/produccion/bocadito'],
+    ['DELETE', '/history/pan/1'], ['POST', '/logout'],
+]);

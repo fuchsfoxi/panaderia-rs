@@ -3,6 +3,16 @@
 .env
 .env.backup
 .env.production
+.env.*
+!.env.example
+*.sql
+*.sql.gz
+*.dump
+*.bak
+*.pem
+*.key
+# Transcripciones locales: pueden contener credenciales y no deben versionarse.
+/session-ses_*.md
 .phpactor.json
 .phpunit.result.cache
 /.codex

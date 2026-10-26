@@ -49,6 +49,11 @@ class AdministrarUsuarios
                 $this->protegerUltimoAdministrador($usuario, $roles, 'activo');
             }
             $usuario->update(['activo' => $activo]);
+            if (! $activo && config('session.driver') === 'database') {
+                // La reactivación no debe recuperar cookies de sesiones anteriores.
+                DB::connection(config('session.connection'))->table(config('session.table', 'sessions'))
+                    ->where('user_id', $usuario->id)->delete();
+            }
         }, 3);
     }
 
