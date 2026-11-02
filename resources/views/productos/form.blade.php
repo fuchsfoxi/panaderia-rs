@@ -17,7 +17,7 @@
     @if ($categorias->isEmpty() || ! $unidades->has(\App\Models\UnidadMedida::LATA) || ! $unidades->has(\App\Models\UnidadMedida::UNIDAD))
         <p class="productos-aviso" role="status">Para guardar un producto necesitas categorías y unidades de medida disponibles. Revisa el catálogo con el responsable del sistema.</p>
     @endif
-    <form class="productos-formulario" data-form-producto action="{{ $producto->exists ? route('productos.update', $producto) : route('productos.store') }}" method="POST">
+    <form data-carga-texto="Guardando…" class="productos-formulario" data-form-producto action="{{ $producto->exists ? route('productos.update', $producto) : route('productos.store') }}" method="POST">
         @csrf
         @if ($producto->exists) @method('PATCH') @endif
         <div class="productos-campo productos-campo-completo">

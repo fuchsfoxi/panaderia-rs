@@ -12,6 +12,7 @@
     @vite(['resources/css/login.css', 'resources/js/login.js'])
 </head>
 <body>
+    <x-indicador-carga />
 
     {{-- * VIDEO DE FONDO
          * Reproduce una animación decorativa automáticamente,
@@ -62,7 +63,7 @@
             {{-- * FORMULARIO DE AUTENTICACIÓN
                  * Envía las credenciales al servidor mediante POST.
             --}}
-            <form action="{{ url('login') }}" method="POST" class="campos-formulario">
+            <form action="{{ url('login') }}" method="POST" class="campos-formulario" data-carga-texto="Ingresando…">
 
                 {{-- ! SEGURIDAD: No eliminar @csrf.
                      Protege las solicitudes POST contra ataques CSRF.
@@ -180,8 +181,8 @@
                     {{-- * BOTÓN DE INICIO DE SESIÓN
                          * Envía el formulario cuando no existe un bloqueo.
                     --}}
-                    <input type="submit" value="Iniciar sesión" class="btn-enviar" data-login-submit
-                           @if ($bloqueado) disabled aria-describedby="login-wait" @endif>
+                    <button type="submit" class="btn-enviar" data-login-submit
+                            @if ($bloqueado) disabled aria-describedby="login-wait" @endif>Iniciar sesión</button>
 
                     {{-- TODO: Al modificar este formulario, comprobar
                          los mensajes de error, el contador y el desbloqueo.

@@ -5,7 +5,8 @@ import { runInNewContext } from 'node:vm';
 import { inicializarContrasenas } from '../../resources/js/contrasenas.js';
 
 const codigo = readFileSync(new URL('../../resources/js/login.js', import.meta.url), 'utf8')
-    .replace("import { inicializarContrasenas } from './contrasenas.js';", '');
+    .replace("import { inicializarContrasenas } from './contrasenas.js';", '')
+    .replace("import './indicadores-carga.js';", '');
 
 function entorno(segundos = null) {
     let reloj = 1_000_000;

@@ -11,7 +11,7 @@
             return is_scalar($valor) ? (string) $valor : '';
         };
     @endphp
-    <form class="productos-formulario" method="POST" action="{{ route('usuarios.update', $usuario) }}" data-editar-usuario>
+    <form data-carga-texto="Guardando…" class="productos-formulario" method="POST" action="{{ route('usuarios.update', $usuario) }}" data-editar-usuario>
         @csrf
         @method('PATCH')
         @include('usuarios.account-fields')

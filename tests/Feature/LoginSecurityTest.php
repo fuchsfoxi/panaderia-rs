@@ -88,7 +88,7 @@ test('fallo genérico visible conserva solo username y nunca contraseña', funct
         ->and($xpath->query('//*[@id="login-errors"]')->length)->toBe(0)
         ->and(trim($xpath->query('//*[@id="login-credentials"]')->item(0)?->textContent ?? ''))
         ->toBe('Las credenciales ingresadas no son correctas.')
-        ->and($xpath->query('//*[@id="login-credentials"]/following-sibling::input[@type="submit"]')->length)->toBe(1)
+        ->and($xpath->query('//*[@id="login-credentials"]/following-sibling::button[@type="submit"]')->length)->toBe(1)
         ->and($xpath->query('//input[@name="password"]')->item(0)->getAttribute('aria-describedby'))->toBe('login-credentials');
 })->with(['login.ficticio', 'no-existe.ficticio']);
 
@@ -155,7 +155,7 @@ test('cinco fallos limitan el sexto intento incluso válido y muestran segundos 
         ->and((int) $seconds)->toBeGreaterThan(0)->toBeLessThanOrEqual(60)
         ->and(trim($wait->textContent))->toBe('Demasiados intentos. Inténtalo de nuevo en '.$seconds.' s.')
         ->and($xpath->query('//*[@data-login-seconds]')->item(0)->textContent)->toBe($seconds)
-        ->and($xpath->query('//input[@type="submit" and @disabled and @aria-describedby="login-wait"]')->length)->toBe(1)
+        ->and($xpath->query('//button[@type="submit" and @disabled and @aria-describedby="login-wait"]')->length)->toBe(1)
         ->and($xpath->query('//input[(@name="username" or @name="password") and @disabled]')->length)->toBe(0);
 
     // Quitar disabled o adelantar un contador en el cliente no altera el límite real.

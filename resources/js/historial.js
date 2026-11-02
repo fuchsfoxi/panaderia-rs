@@ -1,4 +1,5 @@
 import './tarjetas-produccion.js';
+import { mostrarNavegacion } from './indicadores-carga.js';
 
 const dialogo = document.querySelector('[data-confirmacion-eliminar]');
 if (dialogo && typeof dialogo.showModal === 'function') {
@@ -49,6 +50,7 @@ if (dialogo && typeof dialogo.showModal === 'function') {
             }
             tarjeta.remove();
             // Recargar la consulta confirmada conserva filtros, conteo y paginación del servidor.
+            mostrarNavegacion();
             window.location.assign(datos.redirect);
         } catch (fallo) {
             error.textContent = fallo.message || 'No se pudo confirmar la eliminación. Actualiza el historial antes de reintentar.';

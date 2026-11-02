@@ -6,7 +6,7 @@
 
 @section('contenido')
     <p class="productos-aviso">Cuenta: {{ $usuario->username }}. Sus sesiones anteriores se revalidarán en la siguiente petición protegida.</p>
-    <form class="productos-formulario" method="POST" action="{{ route('usuarios.password.update', $usuario) }}">
+    <form data-carga-texto="Guardando…" class="productos-formulario" method="POST" action="{{ route('usuarios.password.update', $usuario) }}">
         @csrf
         @method('PATCH')
         @include('usuarios.password-fields')

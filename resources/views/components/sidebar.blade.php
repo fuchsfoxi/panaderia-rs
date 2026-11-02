@@ -1,5 +1,6 @@
 {{-- Navegación compartida; sin JS, el menú móvil permanece en el flujo normal. --}}
 @vite('resources/js/app.js')
+<x-indicador-carga />
 <button type="button" class="sidebar-menu" data-sidebar-abrir hidden
         aria-label="Abrir menú de navegación" aria-expanded="false" aria-controls="sidebar-panel">
     <svg class="sidebar-icono" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 6h16M4 12h16M4 18h16" /></svg>

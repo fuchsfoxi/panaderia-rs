@@ -14,7 +14,7 @@
         $anteriores = old('integrantes', $grupo->integrantes->modelKeys());
         $seleccionados = is_array($anteriores) ? array_map('strval', array_filter($anteriores, 'is_scalar')) : [];
     @endphp
-    <form class="productos-formulario" method="POST" action="{{ $grupo->exists ? route('grupos.update', $grupo) : route('grupos.store') }}">
+    <form data-carga-texto="Guardando…" class="productos-formulario" method="POST" action="{{ $grupo->exists ? route('grupos.update', $grupo) : route('grupos.store') }}">
         @csrf
         @if ($grupo->exists) @method('PATCH') @endif
         <div class="productos-campo productos-campo-completo">

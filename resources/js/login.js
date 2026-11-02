@@ -1,4 +1,5 @@
 import { inicializarContrasenas } from './contrasenas.js';
+import './indicadores-carga.js';
 
 document.addEventListener('DOMContentLoaded', function () {
     inicializarContrasenas();

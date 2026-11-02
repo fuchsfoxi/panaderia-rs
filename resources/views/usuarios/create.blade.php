@@ -6,7 +6,7 @@
 
 @section('contenido')
     @php($textoAnterior = fn ($campo) => is_scalar(old($campo)) ? (string) old($campo) : '')
-    <form class="productos-formulario" method="POST" action="{{ route('usuarios.store') }}" data-crear-usuario>
+    <form data-carga-texto="Guardando…" class="productos-formulario" method="POST" action="{{ route('usuarios.store') }}" data-crear-usuario>
         @csrf
         @include('usuarios.account-fields')
         @include('usuarios.password-fields')

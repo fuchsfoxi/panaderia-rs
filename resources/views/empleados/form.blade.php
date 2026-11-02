@@ -11,7 +11,7 @@
             return is_scalar($dato) ? (string) $dato : '';
         };
     @endphp
-    <form class="productos-formulario" method="POST" action="{{ $empleado->exists ? route('empleados.update', $empleado) : route('empleados.store') }}">
+    <form data-carga-texto="Guardando…" class="productos-formulario" method="POST" action="{{ $empleado->exists ? route('empleados.update', $empleado) : route('empleados.store') }}">
         @csrf
         @if ($empleado->exists) @method('PATCH') @endif
         <div class="productos-campo productos-campo-completo">
