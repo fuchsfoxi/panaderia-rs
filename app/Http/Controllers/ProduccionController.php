@@ -5,8 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\Produccion\RegistrarProduccionBocadito;
 use App\Actions\Produccion\RegistrarProduccionPan;
 use App\Actions\Produccion\RegistrarProduccionTorta;
-use App\Http\Requests\ConsultarHistorialProduccionRequest;
 use App\Http\Requests\ConsultarProduccionRequest;
+use App\Http\Requests\ConsultarRegistrosProduccionRequest;
 use App\Http\Requests\RegistrarProduccionBocaditoRequest;
 use App\Http\Requests\RegistrarProduccionPanRequest;
 use App\Http\Requests\RegistrarProduccionTortaRequest;
@@ -74,14 +74,10 @@ class ProduccionController extends Controller
             $cabecerasDuplicadas = $producciones->count() > 1;
         }
 
-        // Contexto inicial explícito; las consultas posteriores no modifican el formulario.
-        $filtrosRegistros = ['fecha_inicio' => $fechaSeleccionada, 'fecha_fin' => $fechaSeleccionada,
-            'turno_id' => (string) $turnoSeleccionadoId, 'categoria' => $categoriaSeleccionada];
+        // El listado depende de la sección, no de la fecha/turno del lote en edición.
+        $filtrosRegistros = ['categoria' => $categoriaSeleccionada];
         $erroresFiltros = new MessageBag;
-        $detalles = new LengthAwarePaginator([], 0, 15, 1);
-        if ($request->consultaValida() && ! $cabecerasDuplicadas) {
-            $detalles = $consultar->ejecutar($filtrosRegistros)->withPath(route('produccion.registros'));
-        }
+        $detalles = $consultar->ejecutar($filtrosRegistros)->withPath(route('produccion.registros'));
         $detallesRegistrados = new Collection($detalles->items());
 
         return view('produccion.index', compact(
@@ -93,7 +89,7 @@ class ProduccionController extends Controller
         ));
     }
 
-    public function registros(ConsultarHistorialProduccionRequest $request, ConsultarHistorialProduccion $consultar): View
+    public function registros(ConsultarRegistrosProduccionRequest $request, ConsultarHistorialProduccion $consultar): View
     {
         $erroresFiltros = $request->erroresFiltros();
         $detalles = $request->consultaValida()

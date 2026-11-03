@@ -81,6 +81,8 @@ function entorno(categoria = 'pan', capacidad = 7) {
     // Factor deliberadamente distinto: demostrar que el JS consume el dato publicado por Blade.
     const factor = capacidad;
     const formulario = elemento('', { latasPorCoche: String(factor), panUrl: '/produccion', tortaUrl: '/produccion/torta', bocaditoUrl: '/produccion/bocadito' });
+    formulario.secciones = [];
+    formulario.dispatchEvent = event => formulario.secciones.push(event.detail.categoria);
     formulario.querySelector = selector => selector === '.detalle-pan' ? detalle : elemento();
     formulario.querySelectorAll = selector => selector === '[data-selector-hora]' ? [finalizacion.raiz, vitrina.raiz] : [];
     const ids = new Map([
@@ -111,7 +113,8 @@ function entorno(categoria = 'pan', capacidad = 7) {
         static createObjectURL() { return `blob:foto-${++numeroUrl}`; }
         static revokeObjectURL(url) { revocadas.push(url); }
     }
-    runInNewContext(codigo, { document, window, URL: PreviewURL, queueMicrotask });
+    const CustomEvent = class { constructor(type, options) { this.type = type; this.detail = options.detail; } };
+    runInNewContext(codigo, { document, window, URL: PreviewURL, queueMicrotask, CustomEvent });
     document.emitir('DOMContentLoaded');
     const actualizar = () => detalle.emitir('input', { target: coches });
     return { document, empleado, rol, factorPan, totalPanes, resultado, coches, latas, producto, observacion, output, formulario, ids, factor, actualizar, cantidad, forma, foto, botones, campos, error, registros, camara, hora, horaVitrina, finalizacion, vitrina, preview, nombreFoto, iconoFoto, quitarFoto, labelFoto, revocadas, formas, editor, abrir, detalle, window };
@@ -373,14 +376,20 @@ test('preview fallido permite cambiar foto y BFCache conserva la URL seleccionad
 });
 
 
-test('cambiar categoría no modifica los resultados consultados', () => {
+test('cambiar sección notifica el listado sin modificar fecha y turno del formulario', () => {
     const e = entorno();
+    assert.equal(e.formulario.secciones.length, 0);
     for (const categoria of ['torta', 'bocadito', 'pan']) {
         e.botones.find(boton => boton.dataset.categoria === categoria).emitir('click');
-        assert.notEqual(e.registros.hidden, true);
+        assert.equal(e.formulario.secciones.at(-1), categoria);
         assert.equal(e.ids.get('fecha').value, '2026-10-09');
         assert.equal(e.ids.get('turno').value, 'turno');
     }
+    assert.equal(e.formulario.secciones.length, 3);
+    e.coches.value = '2';
+    e.botones[0].emitir('click');
+    assert.equal(e.formulario.secciones.length, 4);
+    assert.equal(e.coches.value, '2');
 });
 
 

@@ -199,7 +199,7 @@ test('logout exige protección CSRF válida con el middleware activo', function 
     'token válido' => ['token-valido', 302],
 ]);
 
-test('login conserva el acceso al dashboard y el destino solicitado', function (?string $destino) {
+test('login de Operador prioriza Producción sobre el destino solicitado', function (?string $destino) {
     // Solo se simula la lectura de la cuenta; la validación del hash, guard,
     // controlador y sesión son reales. No se usa una base de datos compartida.
     $provider = Mockery::mock(EloquentUserProvider::class, [app('hash'), Usuario::class])->makePartial();
@@ -217,11 +217,11 @@ test('login conserva el acceso al dashboard y el destino solicitado', function (
     $this->post(route('login'), [
         'username' => 'usuario.prueba',
         'password' => 'clave-de-prueba',
-    ])->assertRedirect(route($destino ?? 'dashboard'));
+    ])->assertRedirect(route('produccion.index'))->assertSessionMissing('url.intended');
     $this->assertAuthenticatedAs($this->usuario);
     expect(app('session.store')->getId())->not->toBe($oldId);
-    $this->get(route($destino ?? 'dashboard'))->assertOk();
-    $this->get(route('login'))->assertRedirect(route('dashboard'));
+    $this->get(route('produccion.index'))->assertOk();
+    $this->get(route('login'))->assertRedirect(route('produccion.index'));
 })->with([null, 'produccion.index', 'history.index']);
 
 test('login formularios y logout conservan el esquema público con HTTP interno', function (bool $proxyHttps) {
@@ -272,7 +272,7 @@ test('login formularios y logout conservan el esquema público con HTTP interno'
         expect($form->getAttribute('action'))->toBe($publicRoot.$path)
             ->and($form->getAttribute('method'))->toBe('POST');
     }
-    $this->get($internalRoot.'/login')->assertRedirect($publicRoot.'/dashboard');
+    $this->get($internalRoot.'/login')->assertRedirect($publicRoot.'/produccion');
     $this->get($internalRoot.'/logout')->assertStatus(405);
     $this->assertAuthenticatedAs($this->usuario);
 

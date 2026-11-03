@@ -171,7 +171,7 @@ test('rehash del login escribe password_hash y conserva login logout y navegaciÃ
 
     DB::flushQueryLog();
     DB::enableQueryLog();
-    $this->post('/login', ['username' => $usuario->username, 'password' => 'clave-ficticia-sprint4'])->assertRedirect('/dashboard');
+    $this->post('/login', ['username' => $usuario->username, 'password' => 'clave-ficticia-sprint4'])->assertRedirect('/produccion');
     $this->assertAuthenticatedAs($usuario);
     $updated = $usuario->fresh()->password_hash;
     expect($updated)->not->toBe($previous)
@@ -191,8 +191,8 @@ test('rehash del login escribe password_hash y conserva login logout y navegaciÃ
     foreach (['/dashboard', '/produccion', '/history'] as $url) {
         $this->get($url)->assertRedirect('/login');
     }
-    // La Ãºltima visita como invitado conserva /history como destino intended.
-    $this->post('/login', ['username' => $usuario->username, 'password' => 'clave-ficticia-sprint4'])->assertRedirect('/history');
+    // El destino por rol prevalece incluso tras visitar Historial como invitado.
+    $this->post('/login', ['username' => $usuario->username, 'password' => 'clave-ficticia-sprint4'])->assertRedirect('/produccion');
     expect($usuario->fresh()->password_hash)->toBe($updated);
 });
 

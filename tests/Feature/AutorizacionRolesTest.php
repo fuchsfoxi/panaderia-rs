@@ -209,7 +209,7 @@ test('ambos roles registran las tres familias con turno asignado sin inferirlo d
 test('la siguiente petición revalida un cambio de rol persistido en una sesión existente', function () {
     $usuario = $this->fixtures['usuario'];
     $this->post('/login', ['username' => $usuario->username, 'password' => 'clave-ficticia-sprint4'])
-        ->assertRedirect('/dashboard');
+        ->assertRedirect('/produccion');
     $this->get('/dashboard')->assertOk();
     $this->fixtures['rol']->update(['nombre_roles' => 'Encargado']);
     Auth::forgetGuards(); // Simular la nueva solicitud HTTP que recarga la identidad desde Eloquent.

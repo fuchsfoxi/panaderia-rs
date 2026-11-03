@@ -279,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 : (Number.isSafeInteger(estimado) ? `${estimado} panes` : 'Estimación fuera del rango de precisión.'));
     }
 
-    function mostrarCamposDe(categoria) {
+    function mostrarCamposDe(categoria, consultarRegistros = false) {
         const nombres = { pan: 'Pan', torta: 'Torta', bocadito: 'Bocadito' };
         if (!Object.hasOwn(nombres, categoria)) categoria = 'pan';
         const cambio = inputCategoria.value !== categoria;
@@ -316,8 +316,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('[data-error-familia]').forEach(error => {
             error.hidden = error.dataset.errorFamilia !== categoria;
         });
-        // Las tarjetas consultadas pertenecen a la familia cargada por el GET.
-        // La consulta de registros es independiente del lote que se está editando.
+        if (cambio || consultarRegistros) formulario.dispatchEvent(new CustomEvent('produccion:seccion', { detail: { categoria } }));
         actualizarTurno();
         titulo.textContent = `Detalles de Producción de ${nombres[categoria]}`;
         detalle.querySelector('[data-label="producto_id"]').textContent = `Producto ${nombres[categoria]}`;
@@ -401,7 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     botonesCategoria.forEach(boton => {
-        boton.addEventListener('click', () => mostrarCamposDe(boton.dataset.categoria));
+        boton.addEventListener('click', () => mostrarCamposDe(boton.dataset.categoria, true));
     });
 
     detalle.querySelector('[data-control="empleado"]').addEventListener('change', event => {

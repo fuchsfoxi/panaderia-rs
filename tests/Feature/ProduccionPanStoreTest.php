@@ -596,19 +596,20 @@ test('producción explica los datos faltantes sin impedir el renderizado del for
     ['roles', 'Faltan los roles Maestro o Ayudante.'],
 ]);
 
-test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y categoría Pan', function () {
+test('index muestra tarjetas ordenadas de Pan de todas las fechas y turnos', function () {
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
     $this->payload['detalles'][0]['coches'] = 2;
     $this->payload['detalles'][0]['latas_adicionales'] = 3;
     $this->payload['detalles'][0]['observacion'] = 'Nota de otra tarjeta del mismo producto';
     $this->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
-    $esperados = DetallePan::orderByDesc('id')->pluck('id')->all();
     $otraFecha = array_replace($this->payload, ['fecha' => '2026-10-06']);
-    $otraFecha['detalles'][0]['observacion'] = 'Ocultar otra fecha';
+    $otraFecha['detalles'][0]['observacion'] = 'Mostrar otra fecha';
     $this->post(route('produccion.store'), $otraFecha)->assertSessionHasNoErrors();
     $otroTurno = array_replace($this->payload, ['turno_id' => Turno::create(['nombre_turnos' => 'Noche'])->id]);
-    $otroTurno['detalles'][0]['observacion'] = 'Ocultar otro turno';
+    $otroTurno['detalles'][0]['observacion'] = 'Mostrar otro turno';
     $this->post(route('produccion.store'), $otroTurno)->assertSessionHasNoErrors();
+    $esperados = DetallePan::join('produccion', 'produccion.id', '=', 'detalle_pan.produccion_id')
+        ->orderByDesc('produccion.fecha')->orderByDesc('detalle_pan.id')->pluck('detalle_pan.id')->all();
     // Registro legacy artificial: comprueba el filtro de categoría sin implementar otra familia.
     $otraCategoria = Produccion::create([
         'fecha' => $this->payload['fecha'], 'turno_id' => $this->payload['turno_id'],
@@ -625,13 +626,13 @@ test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y
         ->assertSeeText('1 coches + 5 latas adicionales')
         ->assertSeeText('2 coches + 3 latas adicionales')
         ->assertSeeText('Nota del primer lote')->assertSeeText('Nota de otra tarjeta del mismo producto')
-        ->assertDontSeeText('Ocultar otra fecha')->assertDontSeeText('Ocultar otro turno')->assertDontSeeText('Ocultar otra categoría');
+        ->assertSeeText('Mostrar otra fecha')->assertSeeText('Mostrar otro turno')->assertDontSeeText('Ocultar otra categoría');
     expect($response->viewData('detallesRegistrados')->modelKeys())->toBe($esperados);
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($document);
     $tarjetas = $xpath->query('//article[@data-detalle-registrado]');
-    expect($tarjetas->length)->toBe(2);
+    expect($tarjetas->length)->toBe(4);
     foreach ($tarjetas as $i => $tarjeta) {
         expect($tarjeta->getAttribute('data-detalle-registrado'))->toBe((string) $esperados[$i])
             ->and($xpath->query('.//h3', $tarjeta)->item(0)->textContent)->toBe($this->fixtures['productos']['Pan']->nombre_p);
@@ -641,7 +642,7 @@ test('index muestra tarjetas independientes ordenadas y filtra por fecha turno y
     }
 });
 
-test('index sin turno consulta todos los turnos y rechaza contextos inválidos', function (string $caso) {
+test('index conserva registros de la sección aunque el contexto del formulario sea inválido', function (string $caso) {
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
     $consulta = match ($caso) {
         'sin turno' => ['fecha' => $this->payload['fecha']],
@@ -650,12 +651,13 @@ test('index sin turno consulta todos los turnos y rechaza contextos inválidos',
         'fecha como array' => ['fecha' => ['2026-10-05'], 'turno_id' => $this->payload['turno_id']],
         'turno como array' => ['fecha' => $this->payload['fecha'], 'turno_id' => [$this->payload['turno_id']]],
     };
-    $response = $this->get(route('produccion.index', $consulta))->assertOk();
+    $response = $this->get(route('produccion.index', $consulta))->assertOk()->assertSee('data-detalle-registrado=', false);
+    expect($response->viewData('detalles')->total())->toBe(1);
     if ($caso === 'sin turno') {
         $response->assertSee('data-detalle-registrado=', false);
         expect($response->viewData('detalles')->total())->toBe(1);
     } else {
-        $response->assertDontSee('data-detalle-registrado=', false)->assertSeeText('La fecha o el turno de consulta no son válidos.');
+        $response->assertSeeText('La fecha o el turno de consulta no son válidos.');
     }
 })->with(['sin turno', 'fecha inválida', 'turno inexistente', 'fecha como array', 'turno como array']);
 

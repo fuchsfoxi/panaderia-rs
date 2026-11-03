@@ -3,6 +3,7 @@
 use App\Models\Cargo;
 use App\Models\Empleado;
 use App\Models\Rol;
+use App\Models\Turno;
 use App\Models\Usuario;
 use Illuminate\Cache\RateLimiter as CacheRateLimiter;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -67,6 +68,30 @@ test('credenciales válidas autentican en web y regeneran la sesión', function 
         ->and($this->usuario->getTable())->toBe('usuarios_sistema')
         ->and($this->usuario->getAuthPasswordName())->toBe('password_hash');
 });
+
+test('login y guest respetan rol y turno aunque exista un destino pendiente', function (string $rol, ?string $turno, ?string $pendiente) {
+    $this->usuario->rol->update(['nombre_roles' => $rol]);
+    $this->usuario->update(['turno_id' => $turno ? Turno::create(['nombre_turnos' => $turno])->id : null]);
+    $destino = $rol === Rol::OPERADOR ? '/produccion' : '/dashboard';
+    $this->get('/login')->assertOk();
+    if ($pendiente !== null) {
+        $this->withSession(['url.intended' => url($pendiente)]);
+    }
+    $this->post('/login', ['username' => $this->usuario->username, 'password' => 'clave-exclusiva-de-pruebas'])
+        ->assertRedirect($destino)->assertSessionMissing('url.intended');
+    $this->assertAuthenticatedAs($this->usuario);
+    Auth::forgetGuards();
+    $this->get($destino)->assertOk();
+    foreach (['GET', 'POST'] as $metodo) {
+        $this->withSession(['url.intended' => url('/history')])
+            ->call($metodo, '/login')->assertRedirect($destino)->assertSessionMissing('url.intended');
+    }
+    $this->get('/usuarios')->assertStatus($rol === Rol::ADMINISTRADOR ? 200 : 403);
+    $this->post('/logout')->assertRedirect('/login');
+    Auth::forgetGuards();
+    $this->get($destino)->assertRedirect('/login');
+})->with([[Rol::ADMINISTRADOR, null], [Rol::OPERADOR, 'Mañana'], [Rol::OPERADOR, 'Noche']])
+    ->with([null, '/produccion', '/dashboard', '/history']);
 
 test('fallo genérico visible conserva solo username y nunca contraseña', function (string $username) {
     $this->from('/login')->post('/login', [

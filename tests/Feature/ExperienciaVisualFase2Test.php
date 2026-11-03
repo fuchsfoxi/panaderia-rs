@@ -49,35 +49,69 @@ function loteVisualFase2(array $f, string $familia = 'Pan', string $fecha = '202
     return $detalle;
 }
 
-test('consulta independiente filtra fecha turno y familia con las mismas identidades que Historial', function (string $categoria, string $turno, int $total) {
+test('registros de Producción filtran solo sección y reutilizan las identidades de Historial', function (string $categoria, int $total) {
     foreach (['Pan', 'Torta', 'Bocadito'] as $familia) {
         loteVisualFase2($this->f, $familia);
     }
     loteVisualFase2($this->f, 'Pan', '2026-10-23', $this->noche->id);
     loteVisualFase2($this->f, 'Pan', '2026-10-22');
-    $filtros = ['fecha_inicio' => '2026-10-23', 'fecha_fin' => '2026-10-23', 'categoria' => $categoria, 'turno_id' => $turno === 'manana' ? $this->f['turno']->id : ($turno === 'noche' ? $this->noche->id : '')];
-    $response = $this->get(route('produccion.registros', $filtros))->assertOk()->assertSee('data-resultados-registros', false)->assertDontSee('data-eliminar-registro', false)->assertDontSee('id="formulario-produccion"', false);
+    $filtros = ['categoria' => $categoria];
+    // Parámetros antiguos no restringen el listado automático ni agregan familias.
+    $response = $this->get(route('produccion.registros', $filtros + ['fecha_inicio' => '2026-10-23', 'fecha_fin' => '2026-10-23', 'turno_id' => $this->noche->id]))->assertOk()->assertSee('data-resultados-registros', false)->assertDontSee('data-eliminar-registro', false)->assertDontSee('id="formulario-produccion"', false);
     $historial = $this->get(route('history.index', $filtros))->assertOk();
     $identidad = fn ($detalle) => get_class($detalle).':'.$detalle->id;
     expect($response->viewData('detalles')->total())->toBe($total)
         ->and($response->viewData('detalles')->map($identidad)->all())->toBe($historial->viewData('detalles')->map($identidad)->all());
-})->with([['', '', 4], ['pan', '', 2], ['torta', '', 1], ['bocadito', 'manana', 1], ['', 'noche', 1], ['torta', 'noche', 0]]);
+})->with([['pan', 3], ['torta', 1], ['bocadito', 1]]);
 
-test('consulta independiente pagina y conserva los filtros sin tocar registros', function () {
+test('la carga inicial muestra solo la sección activa sin filtros manuales', function (string $categoria) {
+    foreach (['Pan', 'Torta', 'Bocadito'] as $familia) {
+        loteVisualFase2($this->f, $familia, '2026-10-22');
+    }
+    $response = $this->get('/produccion?categoria='.$categoria)->assertOk()
+        ->assertDontSee('data-filtros-registros', false)->assertDontSee('id="registros-fecha"', false)
+        ->assertDontSee('id="registros-turno"', false)->assertDontSee('id="registros-categoria"', false);
+    expect($response->viewData('detalles'))->toHaveCount(1)
+        ->and($response->viewData('detalles')->first()->producto->categoria->nombre_categorias)->toBe(ucfirst($categoria));
+    $dom = new DOMDocument;
+    @$dom->loadHTML($response->getContent());
+    $xpath = new DOMXPath($dom);
+    expect($xpath->query('//section[@data-consulta-registros]//article[@data-familia="'.$categoria.'"]')->length)->toBe(1)
+        ->and($xpath->query('//section[@data-consulta-registros]//article[@data-familia!="'.$categoria.'"]')->length)->toBe(0);
+})->with(['pan', 'torta', 'bocadito']);
+
+test('la sección inicial predeterminada es Pan y el vacío corresponde a la sección activa', function () {
+    loteVisualFase2($this->f, 'Torta');
+    $this->get('/produccion')->assertOk()->assertSeeText('No hay registros en esta sección.')
+        ->assertDontSee('data-detalle-registrado=', false)->assertViewHas('categoriaSeleccionada', 'pan');
+    $this->get('/produccion/registros')->assertOk()->assertSeeText('No hay registros en esta sección.')
+        ->assertDontSee('data-detalle-registrado=', false);
+    foreach (['pan', 'bocadito'] as $categoria) {
+        $this->get('/produccion/registros?categoria='.$categoria)->assertOk()
+            ->assertSeeText('No hay registros en esta sección.')->assertDontSee('data-detalle-registrado=', false);
+    }
+});
+
+test('listado automático pagina conservando sección sin tocar registros', function () {
     foreach (range(1, 17) as $n) {
         loteVisualFase2($this->f);
     }
-    $filtros = ['fecha_inicio' => '2026-10-23', 'fecha_fin' => '2026-10-23', 'categoria' => 'pan', 'page' => 2];
+    loteVisualFase2($this->f, 'Torta');
+    $filtros = ['categoria' => 'pan', 'page' => 2];
     $response = $this->get(route('produccion.registros', $filtros))->assertOk()->assertSeeText('Página 2 de 2');
     expect($response->viewData('detalles')->total())->toBe(17)->and($response->viewData('detalles'))->toHaveCount(2);
+    expect($response->viewData('detalles')->previousPageUrl())->toContain('categoria=pan')->not->toContain('fecha_inicio');
+    $this->get('/produccion?categoria=pan&page=2')->assertOk()->assertSeeText('Página 2 de 2')
+        ->assertViewHas('detalles', fn ($detalles) => $detalles->count() === 2 && $detalles->total() === 17);
+    $this->get('/produccion/registros?categoria=pan&page=3')->assertOk()->assertSeeText('No hay registros en esta página.');
     $this->assertDatabaseCount('detalle_pan', 17);
 });
 
-test('consulta independiente rechaza filtros malformados sin consultar tarjetas ajenas', function (array $filtros) {
+test('listado automático rechaza sección o página malformadas sin mostrar tarjetas', function (array $filtros) {
     loteVisualFase2($this->f);
-    $response = $this->get(route('produccion.registros', $filtros))->assertOk()->assertSeeText('Revisa los filtros indicados.')->assertDontSee('data-detalle-registrado=', false);
+    $response = $this->get(route('produccion.registros', $filtros))->assertOk()->assertSeeText('No se pudieron cargar los registros.')->assertDontSee('data-detalle-registrado=', false);
     expect($response->viewData('detalles'))->toBeEmpty();
-})->with([[['fecha_inicio' => ['incorrecto']]], [['turno_id' => 999999]], [['categoria' => ['pan']]], [['fecha_inicio' => '2026-10-23', 'fecha_fin' => '2026-10-22']], [['page' => 0]]]);
+})->with([[['categoria' => ['pan']]], [['categoria' => '']], [['categoria' => 'otra']], [['page' => 0]], [['page' => ['2']]]]);
 
 test('Dashboard filtra periodo real sin sumar unidades o familias distintas como latas', function () {
     loteVisualFase2($this->f, 'Pan', '2026-10-22', null, ['cantidad' => 18]);
@@ -128,7 +162,10 @@ test('exporta vistas ficticias de Fase 2 con recursos compilados sin Vite de des
     }
     loteVisualFase2($this->f, 'Pan', '2026-10-23', $this->noche->id, ['cantidad' => 23]);
     loteVisualFase2($this->f, 'Pan', '2026-10-22', null, ['cantidad' => 12]);
-    foreach (['pan' => '/produccion?fecha=2026-10-23&turno_id='.$this->f['turno']->id, 'torta' => '/produccion?categoria=torta', 'bocadito' => '/produccion?categoria=bocadito', 'history' => '/history', 'dashboard' => '/dashboard', 'registros' => '/produccion/registros?fecha_inicio=2026-10-23&fecha_fin=2026-10-23', 'dashboard-periodo' => '/dashboard?fecha_inicio=2026-10-22&fecha_fin=2026-10-24', 'registros-torta' => '/produccion/registros?fecha_inicio=2026-10-23&fecha_fin=2026-10-23&categoria=torta', 'registros-noche' => '/produccion/registros?fecha_inicio=2026-10-23&fecha_fin=2026-10-23&turno_id='.$this->noche->id, 'registros-vacio' => '/produccion/registros?fecha_inicio=2026-10-21&fecha_fin=2026-10-21', 'personal' => '/empleados'] as $nombre => $ruta) {
+    foreach (range(1, 13) as $n) {
+        loteVisualFase2($this->f, 'Pan');
+    }
+    foreach (['pan' => '/produccion?fecha=2026-10-23&turno_id='.$this->f['turno']->id, 'torta' => '/produccion?categoria=torta', 'bocadito' => '/produccion?categoria=bocadito', 'history' => '/history', 'dashboard' => '/dashboard', 'registros' => '/produccion/registros?categoria=pan', 'dashboard-periodo' => '/dashboard?fecha_inicio=2026-10-22&fecha_fin=2026-10-24', 'registros-torta' => '/produccion/registros?categoria=torta', 'registros-bocadito' => '/produccion/registros?categoria=bocadito', 'registros-pan-2' => '/produccion/registros?categoria=pan&page=2', 'registros-vacio' => '/produccion/registros?categoria=bocadito&page=2', 'personal' => '/empleados'] as $nombre => $ruta) {
         $response = $this->get($ruta)->assertOk();
         if (! str_starts_with($nombre, 'registros')) {
             $response->assertSee('/build/assets/', false)->assertDontSee('@vite/client', false);

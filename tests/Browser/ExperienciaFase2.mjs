@@ -46,7 +46,8 @@ try {
                 if (url.pathname === '/produccion') nombre = url.searchParams.get('categoria') || 'pan';
                 else if (url.pathname === '/produccion/registros') {
                     if (bloquearConsulta) await new Promise(resolve => { liberarConsulta = resolve; });
-                    nombre = url.searchParams.get('categoria') === 'torta' ? 'registros-torta' : url.searchParams.get('fecha_inicio') === '2026-10-21' ? 'registros-vacio' : url.searchParams.get('turno_id') ? 'registros-noche' : 'registros';
+                    const categoria = url.searchParams.get('categoria');
+                    nombre = categoria === 'torta' ? 'registros-torta' : categoria === 'bocadito' ? 'registros-bocadito' : url.searchParams.get('page') === '2' ? 'registros-pan-2' : 'registros';
                 } else if (url.pathname === '/dashboard') {
                     if (bloquearConsulta) await new Promise(resolve => { liberarConsulta = resolve; });
                     nombre = url.search ? 'dashboard-periodo' : 'dashboard';
@@ -77,7 +78,13 @@ try {
             return Math.max(...tiempos);
         });
         assert.ok(maxCambio < 1000);
+        await page.waitForFunction(() => document.querySelector('[data-esqueleto]').hidden);
+        assert.equal(await page.$$eval('[data-filtros-registros], #registros-fecha, #registros-turno, #registros-categoria', e => e.length), 0);
         await page.click('[data-categoria="pan"]');
+        await page.waitForFunction(() => document.querySelector('[data-esqueleto]').hidden && [...document.querySelectorAll('[data-resultados-registros] article')].every(e => e.dataset.familia === 'pan'));
+        await page.click('[data-resultados-registros] a[rel="next"]');
+        await page.waitForFunction(() => document.querySelector('[data-esqueleto]').hidden && document.querySelector('[data-resultados-registros]').textContent.includes('Página 2 de 2'));
+        assert.ok(await page.$$eval('[data-resultados-registros] article', e => e.length === 1 && e.every(a => a.dataset.familia === 'pan')));
         await page.select('[data-campo="producto_id"]', await page.$eval('[data-campo="producto_id"] option[data-familia="pan"]', e => e.value));
         await page.$eval('[data-campo="coches"]', e => { e.value = '1'; e.dispatchEvent(new Event('input', { bubbles: true })); });
         await page.$eval('[data-campo="latas_adicionales"]', e => { e.value = '5'; e.dispatchEvent(new Event('input', { bubbles: true })); });
@@ -91,7 +98,11 @@ try {
         await page.select('#detalle-hora-finalizacion-hora', '08');
         await page.select('#detalle-hora-finalizacion-minutos', '35');
         assert.deepEqual(await page.$eval('#formulario-produccion', e => new FormData(e).getAll('detalles[0][hora_finalizacion]')), ['08:35']);
+        bloquearConsulta = true;
         await page.click('[data-categoria="torta"]');
+        await page.waitForSelector('[data-esqueleto]:not([hidden])');
+        assert.equal(await page.$$eval('[data-resultados-registros] article', e => e.length), 0, 'No conservar tarjetas de Pan durante la carga de Torta.');
+        await page.waitForFunction(() => document.querySelector('#categoria-seleccionada').value === 'torta');
         assert.ok(await page.$eval('#detalle-hora-finalizacion-hora', e => e.disabled && e.value === ''));
         assert.equal(await page.$eval('#campo-turno', e => getComputedStyle(e).display), 'contents');
         assert.ok(await page.$eval('[data-turno-fijo]', e => e.getBoundingClientRect().width <= 1));
@@ -120,21 +131,15 @@ try {
         await page.select('#grupo-produccion', await page.$eval('#grupo-produccion option[data-familia="torta"]', e => e.value));
         assert.equal(await page.$$eval('[data-participante]', e => e.length), 1);
         const estadoLote = await page.$eval('#formulario-produccion', e => [...new FormData(e)].filter(([nombre]) => nombre !== '_token'));
-        bloquearConsulta = true;
-        await page.select('#registros-categoria', 'torta');
-        await page.click('[data-filtros-registros] button');
-        await page.waitForSelector('[data-esqueleto]:not([hidden])');
         assert.deepEqual(await page.$eval('#formulario-produccion', e => [...new FormData(e)].filter(([nombre]) => nombre !== '_token')), estadoLote);
         bloquearConsulta = false;
         assert.ok(liberarConsulta); liberarConsulta();
         await page.waitForFunction(() => document.querySelector('[data-esqueleto]').hidden && document.querySelectorAll('[data-resultados-registros] article').length === 1);
         assert.equal(await page.$eval('[data-resultados-registros] article', e => e.dataset.familia), 'torta');
         assert.deepEqual(await page.$eval('#formulario-produccion', e => [...new FormData(e)].filter(([nombre]) => nombre !== '_token')), estadoLote);
-        await page.select('#registros-categoria', '');
-        await page.$eval('#registros-fecha', e => { e.value = '2026-10-21'; });
-        await page.click('[data-filtros-registros] button');
-        await page.waitForFunction(() => document.querySelector('[data-resultados-registros]').textContent.includes('No se encontraron'));
-        assert.equal(await page.$eval('[data-campo="observacion"]', e => e.value), 'Texto sin guardar');
+        await page.click('[data-categoria="bocadito"]');
+        await page.waitForFunction(() => document.querySelector('[data-esqueleto]').hidden && document.querySelector('[data-resultados-registros] article')?.dataset.familia === 'bocadito');
+        assert.equal(await page.$$eval('[data-resultados-registros] article:not([data-familia="bocadito"])', e => e.length), 0);
         await sinOverflow(page);
         await page.screenshot({ path: resolve(directorio, `produccion-${ancho}.png`), fullPage: false });
 

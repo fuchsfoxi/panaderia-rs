@@ -77,9 +77,10 @@ class LoginController extends Controller
             // así evito el session fixation (que alguien reutilice una sesión vieja)
             $request->session()->regenerate();
 
-            // mando al usuario a la página que quería visitar antes del login
-            // si no había ninguna, va al dashboard
-            return redirect()->intended('dashboard');
+            // El destino por rol prevalece sobre cualquier página pendiente.
+            $request->session()->forget('url.intended');
+
+            return redirect()->route($request->user()->esOperador() ? 'produccion.index' : 'dashboard');
         }
 
         RateLimiter::hit($limite, 60);

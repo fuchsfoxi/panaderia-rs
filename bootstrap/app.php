@@ -27,7 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->prepend(PreventPageCaching::class);
         $middleware->prepend(SecurityHeaders::class);
-        $middleware->redirectUsersTo('/dashboard');
+        $middleware->redirectUsersTo(function (Request $request): string {
+            $request->session()->forget('url.intended');
+
+            return route($request->user()?->esOperador() ? 'produccion.index' : 'dashboard');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // QueryException puede incluir contraseñas y otros datos en sus bindings.

@@ -334,14 +334,8 @@
             </fieldset>
         </form>
 
-        <section class="registros-produccion" aria-labelledby="titulo-produccion-registrada" data-consulta-registros>
+        <section class="registros-produccion" aria-labelledby="titulo-produccion-registrada" data-consulta-registros data-consulta-url="{{ route('produccion.registros') }}">
             <div class="titulo-historial"><h2 id="titulo-produccion-registrada">Producción registrada</h2></div>
-            <form class="filtros-registros" method="GET" action="{{ route('history.index') }}" data-filtros-registros data-consulta-url="{{ route('produccion.registros') }}">
-                <div class="campo"><label for="registros-fecha">Fecha</label><input type="date" id="registros-fecha" name="fecha_inicio" value="{{ $filtrosRegistros['fecha_inicio'] }}" required><input type="hidden" name="fecha_fin" value="{{ $filtrosRegistros['fecha_fin'] }}"></div>
-                <div class="campo"><label for="registros-turno">Turno</label><select id="registros-turno" name="turno_id"><option value="">Todos</option>@foreach($turnos as $opcion)@continue(!in_array($opcion->nombre_turnos,['Mañana','Noche'],true))<option value="{{ $opcion->id }}" @selected($filtrosRegistros['turno_id'] === (string)$opcion->id)>{{ $opcion->nombre_turnos }}</option>@endforeach</select></div>
-                <div class="campo"><label for="registros-categoria">Categoría</label><select id="registros-categoria" name="categoria"><option value="">Todas</option>@foreach(['pan'=>'Pan','torta'=>'Torta','bocadito'=>'Bocadito'] as $valor=>$nombre)<option value="{{ $valor }}" @selected($filtrosRegistros['categoria'] === $valor)>{{ $nombre }}</option>@endforeach</select></div>
-                <button type="submit" class="btn-consultar">Consultar</button>
-            </form>
             <p class="solo-lectores" data-estado-consulta role="status"></p>
             <p class="error-campo" data-error-consulta role="alert" hidden></p>
             <div class="esqueleto-listado" data-esqueleto hidden aria-hidden="true"><span></span><span></span></div>

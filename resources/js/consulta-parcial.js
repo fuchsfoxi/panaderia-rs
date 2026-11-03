@@ -1,7 +1,8 @@
 // Carga HTML del servidor y sustituye únicamente la región acordada.
-export function iniciarConsulta(formulario, { contenedor, selector, despues = () => {} }) {
-    if (!formulario || formulario.dataset.consultaIniciada) return;
-    formulario.dataset.consultaIniciada = 'true';
+export function iniciarConsulta(formulario, { contenedor, selector, despues = () => {}, limpiar = false }) {
+    const origen = formulario || contenedor;
+    if (!origen || origen.dataset.consultaIniciada) return;
+    origen.dataset.consultaIniciada = 'true';
     let pendiente;
     const estado = contenedor.querySelector('[data-estado-consulta]');
     const error = contenedor.querySelector('[data-error-consulta]');
@@ -14,6 +15,7 @@ export function iniciarConsulta(formulario, { contenedor, selector, despues = ()
         region().setAttribute('aria-busy', 'true');
         esqueleto.style.top = `${region().offsetTop}px`;
         esqueleto.style.height = `${Math.max(40, Math.min(region().offsetHeight, 240))}px`;
+        if (limpiar) region().replaceChildren();
         esqueleto.hidden = false;
         error.hidden = true;
         estado.textContent = 'Consultando producciones…';
@@ -29,7 +31,7 @@ export function iniciarConsulta(formulario, { contenedor, selector, despues = ()
             estado.textContent = nuevo.querySelector('[role="status"]')?.textContent || 'Consulta actualizada.';
             if (paginando) nuevo.focus({ preventScroll: true });
         } catch (fallo) {
-            if (fallo.name !== 'AbortError') {
+            if (pendiente === actual && fallo.name !== 'AbortError') {
                 error.textContent = fallo.message;
                 error.hidden = false;
                 estado.textContent = 'No se actualizó la consulta.';
@@ -42,7 +44,7 @@ export function iniciarConsulta(formulario, { contenedor, selector, despues = ()
             }
         }
     }
-    formulario.addEventListener('submit', event => {
+    formulario?.addEventListener('submit', event => {
         event.preventDefault();
         if (!formulario.reportValidity()) return;
         const fin = formulario.querySelector('[name="fecha_fin"]');
@@ -58,4 +60,5 @@ export function iniciarConsulta(formulario, { contenedor, selector, despues = ()
         event.preventDefault();
         consultar(enlace.href, true);
     });
+    return consultar;
 }
