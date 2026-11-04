@@ -306,5 +306,6 @@ test('dashboard mantiene consultas acotadas al pasar de uno a varios lotes recie
     foreach (range(1, 9) as $numero) {
         crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id);
     }
-    expect($medir())->toBe($consultas)->toBeLessThanOrEqual(9);
+    // Dos lecturas agregadas preparan métricas fijas y actividad de tres familias.
+    expect($medir())->toBe($consultas)->toBeLessThanOrEqual(11);
 });

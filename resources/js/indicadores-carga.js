@@ -3,6 +3,7 @@ import '../css/indicadores-carga.css';
 // Solo presentación de envíos nativos. Producción y fetch conservan sus mecanismos.
 const envios = new Map();
 let esperaNavegacion;
+let navegacionActual = 0;
 
 function mostrarEstado(texto, navegando = false) {
     const estado = document.querySelector('[data-carga-pagina]');
@@ -12,8 +13,7 @@ function mostrarEstado(texto, navegando = false) {
     estado.hidden = false;
 }
 
-function restaurar() {
-    clearTimeout(esperaNavegacion);
+function restaurarEnvios() {
     for (const [formulario, original] of envios) {
         if (original.boton) {
             original.boton.replaceChildren(...original.contenido);
@@ -27,6 +27,12 @@ function restaurar() {
         else formulario.setAttribute('aria-busy', original.ocupado);
     }
     envios.clear();
+}
+
+function restaurar() {
+    navegacionActual++;
+    clearTimeout(esperaNavegacion);
+    restaurarEnvios();
     const estado = document.querySelector('[data-carga-pagina]');
     if (estado) {
         estado.hidden = true;
@@ -35,15 +41,21 @@ function restaurar() {
 }
 
 export function mostrarNavegacion() {
-    if (envios.size || document.querySelector('#formulario-produccion[aria-busy="true"]')) return;
-    mostrarEstado('Cargando…', true);
+    const navegacion = ++navegacionActual;
     clearTimeout(esperaNavegacion);
     // Un enlace abortado en navegadores antiguos no siempre emite otro evento.
     if (!window.navigation) {
         esperaNavegacion = setTimeout(() => {
-            if (!envios.size) restaurar();
+            if (navegacion === navegacionActual && !envios.size) restaurar();
         }, 15000);
     }
+    if (envios.size || document.querySelector('#formulario-produccion[aria-busy="true"]')) return navegacion;
+    mostrarEstado('Cargando…', true);
+    return navegacion;
+}
+
+function restaurarNavegacion(navegacion) {
+    if (navegacion === navegacionActual) restaurar();
 }
 
 function destinoInterno(direccion) {
@@ -95,12 +107,19 @@ window.addEventListener('submit', evento => {
         boton.classList.add('carga-boton');
     }
     envios.set(formulario, original);
+    const navegacion = navegacionActual;
     formulario.setAttribute('aria-busy', 'true');
     mostrarEstado(texto);
     // La presentación es inmediata, antes de que el navegador inicie la petición.
     // Si otro listener cancela después, recuperar la UI al terminar el evento.
     setTimeout(() => {
-        if (evento.defaultPrevented && envios.get(formulario) === original) restaurar();
+        if (evento.defaultPrevented && envios.get(formulario) === original) {
+            if (navegacion === navegacionActual) restaurar();
+            else {
+                restaurarEnvios();
+                if (!document.querySelector('#formulario-produccion[aria-busy="true"]')) mostrarEstado('Cargando…', true);
+            }
+        }
     }, 0);
     // No se deshabilitan controles: FormData conserva campos, CSRF y submitter.
 });
@@ -111,12 +130,13 @@ if (window.navigation) {
         if (evento.hashChange || evento.destination.sameDocument || evento.downloadRequest !== null
             || !destinoInterno(evento.destination.url)) return;
         if (evento.defaultPrevented) return;
-        mostrarNavegacion();
-        evento.signal.addEventListener('abort', restaurar, { once: true });
-        setTimeout(() => { if (evento.defaultPrevented) restaurar(); }, 0);
+        const navegacion = mostrarNavegacion();
+        evento.signal.addEventListener('abort', () => restaurarNavegacion(navegacion), { once: true });
+        setTimeout(() => { if (evento.defaultPrevented) restaurarNavegacion(navegacion); }, 0);
     });
-    window.navigation.addEventListener('navigateerror', restaurar);
-    window.navigation.addEventListener('navigatesuccess', restaurar);
+    // Un error aborta la señal de su NavigateEvent; el éxito de una navegación
+    // entre documentos se limpia con pagehide/pageshow. Los eventos globales
+    // no identifican la navegación que terminó.
 } else {
     window.addEventListener('click', evento => {
         const enlace = evento.target.closest?.('a[href]');
@@ -127,8 +147,8 @@ if (window.navigation) {
         const actual = new URL(window.location.href);
         if (destino.pathname === actual.pathname && destino.search === actual.search
             && (destino.hash || enlace.getAttribute('href').startsWith('#'))) return;
-        mostrarNavegacion();
-        setTimeout(() => { if (evento.defaultPrevented) restaurar(); }, 0);
+        const navegacion = mostrarNavegacion();
+        setTimeout(() => { if (evento.defaultPrevented) restaurarNavegacion(navegacion); }, 0);
     });
 }
 

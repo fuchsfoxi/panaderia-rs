@@ -7,11 +7,13 @@ use App\Models\DetallePan;
 use App\Models\Produccion;
 use App\Models\Turno;
 use App\Models\UnidadMedida;
+use App\Queries\ConsultarDashboard;
+use Carbon\CarbonImmutable;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(ConsultarDashboardRequest $request): View
+    public function index(ConsultarDashboardRequest $request, ConsultarDashboard $consultar): View
     {
         $fechaHoy = now()->startOfDay();
         $erroresFiltros = $request->erroresFiltros();
@@ -66,9 +68,11 @@ class DashboardController extends Controller
             ->orderByDesc('detalle_pan.id')
             ->limit(5)->get();
 
+        $datosDashboard = $consultar->ejecutar(CarbonImmutable::now('America/Lima'));
+
         return view('dashboard.index', compact(
             'fechaHoy', 'totalLotesHoy', 'totalLatasHoy', 'produccionPorTurno', 'ultimasProducciones',
-            'inicio', 'fin', 'periodoExplicito', 'erroresFiltros',
+            'inicio', 'fin', 'periodoExplicito', 'erroresFiltros', 'datosDashboard',
         ));
     }
 }
