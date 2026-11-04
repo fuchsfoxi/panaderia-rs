@@ -273,10 +273,30 @@ test('cabeceras duplicadas bloquean cada familia sin seleccionar una arbitraria'
     $payload = cantidadPayload($this->fixtures, $familia);
     $this->actingAs($this->fixtures['usuario'])->post(rutaCantidad($familia), $payload)->assertSessionHasNoErrors();
     Produccion::create(Produccion::sole()->only(['fecha', 'categoria_id', 'turno_id', 'registrado_por_usuario_id']));
-    $this->post(rutaCantidad($familia), $payload)->assertSessionHasErrors('produccion');
-    expect(Produccion::count())->toBe(2)->and(modeloCantidad($familia)::count())->toBe(1);
-    $this->get(route('produccion.index', ['categoria' => strtolower($familia), 'fecha' => $payload['fecha'], 'turno_id' => $payload['turno_id']]))
-        ->assertOk()->assertDontSee('data-detalle-registrado=', false);
+    $cabecerasOriginales = Produccion::orderBy('id')->get()->map->getAttributes()->all();
+    $detalle = modeloCantidad($familia)::sole();
+    $detalleOriginal = $detalle->getAttributes();
+    $tablaEquipo = 'detalle_'.strtolower($familia).'_empleado';
+    $equipoOriginal = DB::table($tablaEquipo)->orderBy('empleado_id')->get()->map(fn ($fila) => (array) $fila)->all();
+    $archivosOriginales = Storage::disk('public')->allFiles();
+    $contexto = route('produccion.index', ['categoria' => strtolower($familia), 'fecha' => $payload['fecha'], 'turno_id' => $payload['turno_id']]);
+    $this->from($contexto)->post(rutaCantidad($familia), $payload)->assertRedirect($contexto)
+        ->assertSessionHasErrors(['produccion' => "Existen varias sesiones de $familia para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto."])
+        ->assertSessionHasInput('detalles', $payload['detalles']);
+    expect(Produccion::count())->toBe(2)->and(modeloCantidad($familia)::count())->toBe(1)
+        ->and(Produccion::orderBy('id')->get()->map->getAttributes()->all())->toBe($cabecerasOriginales)
+        ->and($detalle->fresh()->getAttributes())->toBe($detalleOriginal)
+        ->and($detalle->fresh()->cantidad)->toBe(4)
+        ->and($equipoOriginal)->toHaveCount(2)
+        ->and(DB::table($tablaEquipo)->orderBy('empleado_id')->get()->map(fn ($fila) => (array) $fila)->all())->toBe($equipoOriginal)
+        ->and(Storage::disk('public')->allFiles())->toBe($archivosOriginales)
+        ->and(DetallePan::count())->toBe(0)
+        ->and(($familia === 'Torta' ? DetalleBocadito::class : DetalleTorta::class)::count())->toBe(0);
+    $response = $this->get($contexto)->assertOk()
+        ->assertSeeText("Existen varias sesiones de $familia para esta fecha y turno.")
+        ->assertSee('data-familia="'.strtolower($familia).'"', false)
+        ->assertSee('data-detalle-registrado="'.$detalle->id.'"', false);
+    expect($response->viewData('detallesRegistrados')->pluck('id')->all())->toBe([$detalle->id]);
 })->with(['Torta', 'Bocadito']);
 
 test('los tres registros conviven y la consulta solo carga la familia seleccionada', function () {

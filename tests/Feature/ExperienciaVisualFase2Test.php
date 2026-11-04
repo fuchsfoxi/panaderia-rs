@@ -111,7 +111,14 @@ test('listado automático rechaza sección o página malformadas sin mostrar tar
     loteVisualFase2($this->f);
     $response = $this->get(route('produccion.registros', $filtros))->assertOk()->assertSeeText('No se pudieron cargar los registros.')->assertDontSee('data-detalle-registrado=', false);
     expect($response->viewData('detalles'))->toBeEmpty();
-})->with([[['categoria' => ['pan']]], [['categoria' => '']], [['categoria' => 'otra']], [['page' => 0]], [['page' => ['2']]]]);
+})->with([[['categoria' => ['pan']]], [['categoria' => '']], [['categoria' => '   ']], [['categoria' => 'otra']], [['page' => 0]], [['page' => ['2']]]]);
+
+test('categoría ausente consulta Pan aun cuando existan otras familias', function () {
+    $pan = loteVisualFase2($this->f, 'Pan');
+    loteVisualFase2($this->f, 'Torta');
+    $response = $this->get('/produccion/registros')->assertOk();
+    expect($response->viewData('detalles')->pluck('id')->all())->toBe([$pan->id]);
+});
 
 test('Dashboard filtra periodo real sin sumar unidades o familias distintas como latas', function () {
     loteVisualFase2($this->f, 'Pan', '2026-10-22', null, ['cantidad' => 18]);

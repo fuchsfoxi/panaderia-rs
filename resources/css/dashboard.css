@@ -87,3 +87,50 @@ body { margin:0; font-family:'Huninn',sans-serif; background:var(--color-bg); co
     .dashboard-tabla td:before { content:attr(data-etiqueta); display:block; font-size:11px; color:var(--color-text-muted); margin-bottom:4px; }
 }
 @media(prefers-reduced-motion:reduce) { .entrada-dashboard:before, .entrada-dashboard [data-entrada] { animation:none; } }
+
+/* Dashboard: superficies y jerarquía locales, sin modificar los tokens compartidos. */
+.panel-fijo { margin-top:38px; }
+.dashboard-kicker { color:#4E6254; font-size:12px; font-weight:700; letter-spacing:.09em; margin-bottom:6px!important; }
+.tarjetas-hoy, .rankings-dashboard { display:grid; gap:14px; }
+.tarjetas-hoy { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.rankings-dashboard { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.tarjeta-hoy, .tarjeta-ranking, .tarjeta-evolucion, .actividad-lista { min-width:0; background:#FFF; border:1px solid #DCD6C4; border-radius:18px; padding:20px; }
+.tarjeta-hoy h3, .tarjeta-ranking h3 { font-size:16px; font-weight:600; }
+.tarjeta-cabecera { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.selector-dashboard select { max-width:100%; min-height:44px; border:1px solid #7D9481; border-radius:10px; padding:8px 28px 8px 10px; background:#FFF; color:#33403A; font:inherit; font-size:14px; cursor:pointer; }
+.tarjeta-numero { font-size:clamp(30px,3vw,42px); line-height:1.1; font-variant-numeric:tabular-nums; margin:22px 0 6px!important; overflow-wrap:anywhere; }
+.tarjeta-unidad, .ranking-unidad, .ranking-vacio, .actividad-nota, .explicacion-grafico { color:#4E6254; font-size:14px; line-height:1.5; }
+.aviso-parcial { color:#7A3325; }
+.aviso-explicacion { margin-top:10px!important; color:#7A3325; font-size:14px; line-height:1.5; }
+.ranking-unidad { margin:12px 0 4px!important; }
+.lista-ranking { margin:0; padding-left:24px; }
+.lista-ranking li { padding:12px 0 12px 4px; border-bottom:1px solid #DCD6C4; }
+.lista-ranking li:last-child { border:0; }
+.lista-ranking li span { overflow-wrap:anywhere; }
+.lista-ranking li strong { display:block; font-variant-numeric:tabular-nums; margin-top:4px; }
+.lista-ranking small { font-size:12px; font-weight:400; }
+.ranking-vacio { padding:16px 0; }
+.leyenda-dashboard { display:flex; flex-wrap:wrap; gap:18px; padding:18px 0 8px; font-size:14px; }
+.leyenda-dashboard span { display:flex; align-items:center; gap:7px; }
+.leyenda-dashboard i { width:13px; height:13px; display:inline-block; background:#33403A; }
+.leyenda-dashboard .marca-pan { border-radius:50%; }
+.leyenda-dashboard .marca-torta { background:#855332; }
+.leyenda-dashboard .marca-bocadito { background:#23577A; clip-path:polygon(50% 0,100% 100%,0 100%); }
+.tabla-serie { margin-top:16px; }
+.tabla-serie summary { cursor:pointer; color:#33403A; min-height:44px; padding:10px 0; text-decoration:underline; }
+.tabla-serie table { width:100%; border-collapse:collapse; text-align:left; font-size:14px; }
+.tabla-serie th, .tabla-serie td { padding:8px 4px; border-bottom:1px solid #DCD6C4; }
+.tabla-serie caption { text-align:left; padding-bottom:8px; }
+.actividad-nota { margin-bottom:14px!important; }
+.actividad-lista { padding:4px 20px; }
+.actividad-fila { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.3fr); gap:16px; padding:16px 0; }
+.actividad-fila + .actividad-fila { border-top:1px solid #DCD6C4; }
+.actividad-categoria { color:#4E6254; font-size:13px; }
+.actividad-fila h3 { font-size:16px; overflow-wrap:anywhere; }
+.actividad-fila dl { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.actividad-fila dt { color:#4E6254; font-size:12px; }
+.actividad-fila dd { margin-top:4px; font-size:14px; overflow-wrap:anywhere; }
+.historico { border-top:1px solid #DCD6C4; padding-top:26px; }
+@media(max-width:900px) { .tarjetas-hoy { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:767px) { .panel-fijo { margin-top:28px; } .rankings-dashboard { grid-template-columns:minmax(0,1fr); } .tarjeta-hoy,.tarjeta-ranking,.tarjeta-evolucion { padding:16px; } .actividad-fila { grid-template-columns:minmax(0,1fr); gap:10px; } .actividad-fila dl { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:360px) { .tarjetas-hoy { grid-template-columns:minmax(0,1fr); } }

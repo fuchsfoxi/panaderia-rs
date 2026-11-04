@@ -525,16 +525,24 @@ test('rechaza cabeceras duplicadas sin elegir una ni alterar los registros exist
     $this->actingAs($this->fixtures['usuario'])->post(route('produccion.store'), $this->payload)->assertSessionHasNoErrors();
     $original = Produccion::sole();
     Produccion::create($original->only(['fecha', 'categoria_id', 'turno_id', 'registrado_por_usuario_id']));
-    $detalleOriginal = DetallePan::sole()->toArray();
+    $cabecerasOriginales = Produccion::orderBy('id')->get()->map->getAttributes()->all();
+    $detalle = DetallePan::sole();
+    $detalleOriginal = $detalle->toArray();
+    $equipoOriginal = DB::table('detalle_pan_empleado')->orderBy('empleado_id')->get()->map(fn ($fila) => (array) $fila)->all();
     $this->from(panContextUrl($this->payload))->post(route('produccion.store'), $this->payload)
-        ->assertRedirect(panContextUrl($this->payload))->assertSessionHasErrors('produccion')
+        ->assertRedirect(panContextUrl($this->payload))
+        ->assertSessionHasErrors(['produccion' => 'Existen varias sesiones de Pan para esta fecha y turno. Revise las cabeceras duplicadas antes de registrar otro producto.'])
         ->assertSessionHasInput('detalles', $this->payload['detalles']);
     expect(Produccion::count())->toBe(2)->and(DetallePan::sole()->toArray())->toBe($detalleOriginal)
-        ->and(DB::table('detalle_pan_empleado')->count())->toBe(2);
+        ->and(Produccion::orderBy('id')->get()->map->getAttributes()->all())->toBe($cabecerasOriginales)
+        ->and(DB::table('detalle_pan_empleado')->count())->toBe(2)
+        ->and(DB::table('detalle_pan_empleado')->orderBy('empleado_id')->get()->map(fn ($fila) => (array) $fila)->all())->toBe($equipoOriginal)
+        ->and(DB::table('detalle_torta')->count())->toBe(0)->and(DB::table('detalle_bocadito')->count())->toBe(0);
     $response = $this->withCookie(config('session.cookie'), app('session.store')->getId())
         ->get(panContextUrl($this->payload))->assertOk()
         ->assertSeeText('Existen varias sesiones de Pan para esta fecha y turno.')
-        ->assertDontSee('data-detalle-registrado=', false);
+        ->assertSee('data-familia="pan"', false)->assertSee('data-detalle-registrado="'.$detalle->id.'"', false);
+    expect($response->viewData('detallesRegistrados')->pluck('id')->all())->toBe([$detalle->id]);
     expect(substr_count($response->getContent(), 'Existen varias sesiones de Pan para esta fecha y turno.'))->toBe(1);
 });
 

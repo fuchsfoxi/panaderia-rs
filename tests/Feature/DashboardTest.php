@@ -77,7 +77,7 @@ test('dashboard autenticado sin producción muestra ceros estados vacíos y acce
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
         ->assertSeeText('No hay producción registrada hoy.')
         ->assertSeeText('Aún no hay lotes de Pan registrados.')
-        ->assertDontSee('<canvas', false)->assertDontSee('modal-torta', false);
+        ->assertSee('data-grafico-turnos', false)->assertDontSee('modal-torta', false);
     expect($response->viewData('totalLotesHoy'))->toBe(0)
         ->and($response->viewData('totalLatasHoy'))->toBe(0)
         ->and($response->viewData('ultimasProducciones'))->toBeEmpty();
@@ -249,7 +249,8 @@ test('hoy y la fecha por defecto siguen el día de Lima sin desplazar DATE ni fi
 
         $produccion = $this->get(route('produccion.index', ['turno_id' => $turnoId]))->assertOk();
         expect($produccion->viewData('fechaSeleccionada'))->toBe($fechaLocal)
-            ->and($produccion->viewData('detallesRegistrados')->pluck('id')->all())->toBe([$lote->id]);
+            ->and($produccion->viewData('detallesRegistrados')->pluck('id')->all())->toBe([$diaDiez->id, $diaNueve->id])
+            ->and($produccion->viewData('detallesRegistrados')->pluck('id')->all())->toContain($lote->id);
         $produccion->assertSee('name="fecha" value="'.$fechaLocal.'"', false);
 
         $historial = $this->get(route('history.index', [

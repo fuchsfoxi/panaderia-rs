@@ -9,8 +9,10 @@ class ConsultarRegistrosProduccionRequest extends ConsultarHistorialProduccionRe
     public function validationData(): array
     {
         // Producción solo consulta la sección activa; Historial conserva sus filtros.
+        $consulta = $this->query->all();
+
         return [
-            'categoria' => $this->query('categoria', 'pan'),
+            'categoria' => array_key_exists('categoria', $consulta) ? $consulta['categoria'] : 'pan',
             'page' => $this->query('page'),
         ];
     }
