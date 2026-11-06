@@ -68,7 +68,8 @@ test('Administrador cambia su propia contraseña por formulario y revoca sus dos
         ->assertRedirect('/login');
     $this->assertGuest();
     $freshSession();
-    // La visita protegida rechazada conserva /usuarios como destino previsto.
-    $this->post('/login', ['username' => $this->admin->username, 'password' => $new])->assertRedirect('/usuarios');
+    // El destino por rol prevalece sobre la visita protegida previa.
+    $this->post('/login', ['username' => $this->admin->username, 'password' => $new])
+        ->assertRedirect('/dashboard')->assertSessionMissing('url.intended');
     $this->assertAuthenticatedAs($this->admin);
 });

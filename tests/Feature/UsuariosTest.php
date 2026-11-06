@@ -184,7 +184,7 @@ test('desactivación revoca una sesión abierta en la siguiente petición proteg
     app('session')->forgetDrivers();
     app()->forgetInstance('session.store');
     Auth::forgetGuards();
-    $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])->assertRedirect('/dashboard');
+    $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])->assertRedirect('/produccion');
     $this->withCookie(config('session.cookie'), session()->getId());
     $this->get('/dashboard')->assertOk();
     $this->withSession(['dato_privado' => 'ficticio']);
@@ -200,7 +200,7 @@ test('desactivación revoca una sesión abierta en la siguiente petición proteg
 test('una cuenta reactivada puede autenticar sin cambiar su contraseña', function () {
     app(AdministrarUsuarios::class)->estado($this->operador->id, false, $this->admin->id);
     app(AdministrarUsuarios::class)->estado($this->operador->id, true, $this->admin->id);
-    $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])->assertRedirect('/dashboard');
+    $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])->assertRedirect('/produccion');
     $this->assertAuthenticatedAs($this->operador);
 });
 
@@ -215,7 +215,7 @@ test('cambiar contraseña actualiza solo la cuenta indicada y nueva autentica an
     Auth::forgetGuards();
     $this->from('/login')->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])->assertSessionHasErrors('username');
     $this->assertGuest();
-    $this->post('/login', ['username' => $this->operador->username, 'password' => $nueva])->assertRedirect('/dashboard');
+    $this->post('/login', ['username' => $this->operador->username, 'password' => $nueva])->assertRedirect('/produccion');
     $this->assertAuthenticatedAs($this->operador);
 });
 
@@ -257,7 +257,7 @@ test('cambio de contraseña revoca también la sesión antes de su primera visit
     app()->forgetInstance('session.store');
     Auth::forgetGuards();
     $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])
-        ->assertRedirect('/dashboard');
+        ->assertRedirect('/produccion');
     $this->withCookie(config('session.cookie'), session()->getId());
     app(AdministrarUsuarios::class)->password($this->operador->id, Str::random(32), $this->admin->id);
     Auth::forgetGuards();
@@ -271,7 +271,7 @@ test('reactivar una cuenta no recupera sus sesiones database anteriores', functi
     app()->forgetInstance('session.store');
     Auth::forgetGuards();
     $this->post('/login', ['username' => $this->operador->username, 'password' => $this->claveOperador])
-        ->assertRedirect('/dashboard');
+        ->assertRedirect('/produccion');
     $this->withCookie(config('session.cookie'), session()->getId());
     $this->get('/dashboard')->assertOk();
     app(AdministrarUsuarios::class)->estado($this->operador->id, false, $this->admin->id);
