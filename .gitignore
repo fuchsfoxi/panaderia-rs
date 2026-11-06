@@ -13,6 +13,9 @@
 *.key
 # Transcripciones locales: pueden contener credenciales y no deben versionarse.
 /session-ses_*.md
+# Informes históricos archivados fuera del repositorio.
+/docs/
+/dato_optimizar/
 .phpactor.json
 .phpunit.result.cache
 /.codex
