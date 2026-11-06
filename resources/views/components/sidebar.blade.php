@@ -73,3 +73,9 @@
     </form>
 
 </aside>
+{{-- Inicializa antes del contenido; si el archivo falta, se conserva la navegación sin JS. --}}
+@if (is_readable(resource_path('js/sidebar.js')))
+    <script>(() => {
+        {!! file_get_contents(resource_path('js/sidebar.js')) !!}
+    })();</script>
+@endif

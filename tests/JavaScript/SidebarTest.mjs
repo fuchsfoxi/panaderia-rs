@@ -69,7 +69,9 @@ test('móvil abre el diálogo, actualiza ARIA y enfoca el botón de cerrar', () 
     const e = entorno();
     assert.equal(e.panel.inert, true);
     assert.equal(e.abrir.hidden, false);
+    assert.equal(e.document.body.classList.contains('sidebar-animado'), false);
     e.abrir.emitir('click');
+    assert.equal(e.document.body.classList.contains('sidebar-animado'), true);
     assert.equal(e.panel.inert, false);
     assert.equal(e.panel.getAttribute('role'), 'dialog');
     assert.equal(e.panel.getAttribute('aria-modal'), 'true');

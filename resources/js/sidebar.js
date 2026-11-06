@@ -5,7 +5,6 @@ const overlay = document.querySelector('[data-sidebar-overlay]');
 
 if (panel && abrir && cerrar && overlay) {
     const movil = window.matchMedia('(max-width: 767px)');
-    const contenido = document.querySelector('.dashboard, .pagina-produccion, .pagina-historial, .pagina-productos');
     let abierto = false;
 
     const controles = () => [...panel.querySelectorAll('a[href], button:not([disabled])')]
@@ -19,6 +18,8 @@ if (panel && abrir && cerrar && overlay) {
         abrir.hidden = !movil.matches;
         cerrar.hidden = !movil.matches;
         overlay.hidden = !abierto;
+        // El componente se inicializa antes de que se haya interpretado el contenido principal.
+        const contenido = document.querySelector('.dashboard, .pagina-produccion, .pagina-historial, .pagina-productos');
         if (contenido) contenido.inert = abierto;
 
         if (abierto) {
@@ -39,7 +40,10 @@ if (panel && abrir && cerrar && overlay) {
         }
     };
 
-    abrir.addEventListener('click', () => cambiarEstado(!abierto, abierto));
+    abrir.addEventListener('click', () => {
+        document.body.classList.add('sidebar-animado');
+        cambiarEstado(!abierto, abierto);
+    });
     cerrar.addEventListener('click', () => cambiarEstado(false, true));
     overlay.addEventListener('click', () => cambiarEstado(false, true));
     panel.querySelectorAll('a[href]').forEach((enlace) => {

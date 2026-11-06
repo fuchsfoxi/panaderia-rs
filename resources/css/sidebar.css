@@ -254,11 +254,15 @@ body.pagina-con-sidebar {
         margin: 0;
         visibility: hidden;
         transform: translateX(calc(-100% - 16px));
-        transition: transform 160ms ease, visibility 160ms;
+        transition: none;
         overscroll-behavior: contain;
     }
 
-    .sidebar-enhanced .sidebar-abierto {
+    .sidebar-enhanced.sidebar-animado .sidebar {
+        transition: transform 160ms ease, visibility 160ms;
+    }
+
+    .sidebar-enhanced.sidebar-animado .sidebar-abierto {
         visibility: visible;
         transform: translateX(0);
         /* Visibilidad inmediata para que cerrar.focus() funcione al abrir. */
@@ -274,7 +278,7 @@ body.pagina-con-sidebar {
 @media (prefers-reduced-motion: reduce) {
     .sidebar,
     .sidebar-texto,
-    .sidebar-enhanced .sidebar {
+    .sidebar-enhanced.sidebar-animado .sidebar {
         transition: none;
     }
 }

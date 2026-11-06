@@ -1,4 +1,3 @@
-import './sidebar.js';
 import './indicadores-carga.js';
 
 // BFCache puede restaurar el documento sin consultar al middleware auth.
