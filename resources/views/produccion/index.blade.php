@@ -97,7 +97,7 @@
                 $anterior = is_array($anterior) ? $anterior : [];
                 $detalle = [];
                 foreach (['producto_id', 'coches', 'latas_adicionales', 'cantidad', 'forma', 'hora_finalizacion', 'hora_vitrina', 'observacion'] as $campo) {
-                    $valor = $anterior[$campo] ?? (in_array($campo, ['coches', 'latas_adicionales'], true) ? 0 : null);
+                    $valor = $anterior[$campo] ?? null;
                     $detalle[$campo] = is_scalar($valor) ? (string) $valor : '';
                 }
                 $participantesAnteriores = $anterior['participantes'] ?? [];
@@ -172,20 +172,29 @@
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
+
+                    {{-- * campo para rellenar la cantidad de coches de una produccion --}}
                         <div class="campo campo-pan-cantidad campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <label data-label="coches" for="detalle-{{ $indice }}-coches">Coches</label>
-                            <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" @disabled(! $panLata) min="0" step="1" value="{{ $detalle['coches'] ?? '0' }}">
+                            <input type="number" data-control="coches" data-campo="coches" id="detalle-{{ $indice }}-coches" name="detalles[{{ $indice }}][coches]" @disabled(! $panLata) min="0" step="1" value="{{ $detalle['coches'] ?? '' }}" placeholder="0">
                             @error("detalles.$indice.coches")
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
+                       
+                        {{-- ! campo de para rellenar datos de entra, de la cantidad producida de la produccion a anotar --}}
                         <div class="campo campo-pan-cantidad campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
+                          
                             <label data-label="latas_adicionales" for="detalle-{{ $indice }}-latas_adicionales">Latas adicionales</label>
-                            <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" @disabled(! $panLata) min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '0' }}">
+                            
+                            <input type="number" data-control="latas_adicionales" data-campo="latas_adicionales" id="detalle-{{ $indice }}-latas_adicionales" name="detalles[{{ $indice }}][latas_adicionales]" @disabled(! $panLata) min="0" max="{{ $latasPorCoche - 1 }}" step="1" value="{{ $detalle['latas_adicionales'] ?? '' }}" placeholder="0">
+                           
                             @error("detalles.$indice.latas_adicionales")
                                 <p data-error-familia="{{ $categoriaSeleccionada }}" class="error-campo" role="alert">{{ $message }}</p>
                             @enderror
                         </div>
+
+
                         <div class="campo campo-ancho resumen-latas campo-condicional" data-mostrar-en="pan" data-pan-registro="LATA" style="display:{{ $panLata ? 'flex' : 'none' }}">
                             <p data-resumen-vacio>Selecciona un producto.</p>
                             <div data-resumen-datos hidden>
