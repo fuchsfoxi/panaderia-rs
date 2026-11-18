@@ -216,14 +216,14 @@ test('preview distingue valores negativos decimales fuera de rango y badInput de
     assert.match(e.output.textContent, /^Introduce coches enteros/);
 });
 
-test('limpiar producto deja cantidades en cero y conserva fecha y turno', async () => {
+test('limpiar producto deja cantidades vacías y conserva fecha y turno', async () => {
     const e = entorno();
     e.coches.value = '2';
     e.latas.value = '3';
     e.formulario.emitir('reset');
     await new Promise(resolve => queueMicrotask(resolve));
-    assert.equal(e.coches.value, '0');
-    assert.equal(e.latas.value, '0');
+    assert.equal(e.coches.value, '');
+    assert.equal(e.latas.value, '');
     assert.equal(e.producto.value, '');
     assert.equal(e.observacion.value, '');
     assert.equal(e.ids.get('fecha').value, '2026-10-09');

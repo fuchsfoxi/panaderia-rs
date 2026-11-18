@@ -439,8 +439,8 @@ test('registra cantidades por coches y latas sin depender del cálculo del naveg
         $this->assertDatabaseHas('detalle_pan_empleado', ['detalle_pan_id' => $detalle->id] + $participante);
     }
     $dashboard = $this->get(route('dashboard'))->assertOk();
-    expect($dashboard->viewData('totalLotesHoy'))->toBe(1)
-        ->and($dashboard->viewData('totalLatasHoy'))->toBe($detalle->cantidad);
+    expect($dashboard->viewData('datosDashboard')['hoy']['registros'])->toBe(1)
+        ->and($dashboard->viewData('datosDashboard')['hoy']['pan']['latas'])->toBe($detalle->cantidad);
     $historial = $this->get(route('history.index'))->assertOk()
         ->assertSeeText('Cantidad: '.$detalle->cantidad.' latas');
     expect($historial->viewData('detalles')->sole()->id)->toBe($detalle->id);
@@ -560,8 +560,10 @@ test('éxito conserva fecha y turno y deja un único formulario de producto limp
         ->and($xpath->query('//select[@name="turno_id"]/option[@selected]')->item(0)->getAttribute('value'))->toBe((string) $this->payload['turno_id'])
         ->and($xpath->query('//fieldset[contains(@class, "detalle-pan")]')->length)->toBe(1)
         ->and($xpath->query('//select[@name="detalles[0][producto_id]"]/option[@selected]')->length)->toBe(0)
-        ->and($xpath->query('//input[@name="detalles[0][coches]"]')->item(0)->getAttribute('value'))->toBe('0')
-        ->and($xpath->query('//input[@name="detalles[0][latas_adicionales]"]')->item(0)->getAttribute('value'))->toBe('0')
+        ->and($xpath->query('//input[@name="detalles[0][coches]"]')->item(0)->getAttribute('value'))->toBe('')
+        ->and($xpath->query('//input[@name="detalles[0][coches]"]')->item(0)->getAttribute('placeholder'))->toBe('0')
+        ->and($xpath->query('//input[@name="detalles[0][latas_adicionales]"]')->item(0)->getAttribute('value'))->toBe('')
+        ->and($xpath->query('//input[@name="detalles[0][latas_adicionales]"]')->item(0)->getAttribute('placeholder'))->toBe('0')
         ->and($xpath->query('//textarea[@name="detalles[0][observacion]"]')->item(0)->textContent)->toBe('')
         ->and($xpath->query('//fieldset//input[@data-participante-campo]')->length)->toBe(0)
         ->and($xpath->query('//article[@data-detalle-registrado]')->length)->toBe(1);

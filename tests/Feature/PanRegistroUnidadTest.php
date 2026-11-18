@@ -66,7 +66,8 @@ test('Dashboard cuenta latas históricas sin sumar las unidades de Pan', functio
     foreach (['LATA' => 18, 'UNIDAD' => 20] as $codigo => $cantidad) {
         IsolatedMariaDb::detail(DetallePan::class, $cabecera, $this->fixtures, ['cantidad' => $cantidad, 'unidad_medida_id' => UnidadMedida::where('codigo', $codigo)->sole()->id]);
     }
-    $this->get('/dashboard')->assertOk()->assertViewHas('totalLatasHoy', 18)->assertViewHas('totalLotesHoy', 2);
+    $hoy = $this->get('/dashboard')->assertOk()->viewData('datosDashboard')['hoy'];
+    expect($hoy['pan']['latas'])->toBe(18)->and($hoy['registros'])->toBe(2);
 });
 
 test('Productos valida registro semántico por familia y factor compatible', function (string $familia, string $codigo, ?int $factor, bool $valido, string $campo) {

@@ -12,6 +12,8 @@ if (dashboard) {
     const diario = dashboard.querySelector('[data-unidad-diaria]');   // selector Latas/Unidades de "Producción de hoy"
     const mensual = dashboard.querySelector('[data-unidad-mensual]'); // selector Latas/Unidades del ranking mensual
     const periodo = dashboard.querySelector('[data-serie]');          // selector Últimos 7 días / Mes actual
+    const medida = dashboard.querySelector('[data-medida]');          // selector Latas / Unidades del gráfico
+    const descripcion = dashboard.querySelector('[data-descripcion-serie]'); // texto que explica qué se ve en el gráfico
     const canvas = dashboard.querySelector('[data-grafico-turnos]');  // ? nombre histórico: hoy dibuja la evolución, no turnos
     const error = dashboard.querySelector('[data-error-grafico]');    // mensaje si Chart.js no carga
 
@@ -37,8 +39,6 @@ if (dashboard) {
         // * El CSS anima los elementos con [data-entrada] cuando el contenedor tiene esta clase
         dashboard.classList.add('entrada-dashboard');
     }
-    // TODO: antes aquí había un contador que "subía" los números de la sección Consulta de Pan (data-contador).
-    // TODO: esa sección se eliminó. Si quieres el efecto en las tarjetas de hoy, ponles data-contador="{{ valor }}" en el Blade
 
     // ================= 3. SELECTORES LATAS / UNIDADES =================
     // * Muestra solo el panel cuyo atributo coincide con lo elegido en el select; oculta el otro
@@ -59,15 +59,36 @@ if (dashboard) {
     dashboard.querySelector('[data-control-diario]').hidden = false;
     dashboard.querySelector('[data-control-mensual]').hidden = false;
     dashboard.querySelector('[data-control-serie]').hidden = false;
+    dashboard.querySelector('[data-control-medida]').hidden = false;
 
     // ================= 4. GRÁFICO DE EVOLUCIÓN =================
     // * Colores por familia. Deben coincidir con la leyenda de dashboard.css (.marca-pan, .marca-torta, .marca-bocadito)
     // TODO: el azul de Bocadito (#23577A) es el único color fuera de la paleta verde/beige/marrón de la marca
-    const FAMILIAS = [
-        { key: 'pan', label: 'Pan', color: '#33403A' },
-        { key: 'torta', label: 'Torta', color: '#855332' },
-        { key: 'bocadito', label: 'Bocadito', color: '#23577A' },
-    ];
+    // ? "key" es el campo de cada día en la serie. Latas y unidades nunca se mezclan en el mismo gráfico:
+    // ?   latas    → solo Pan (Torta y Bocadito no se miden en latas)
+    // ?   unidades → Pan (incluye latas convertidas con su factor), Torta y Bocadito
+    const FAMILIAS = {
+        latas: [
+            { key: 'pan_latas', label: 'Pan', color: '#33403A' },
+        ],
+        unidades: [
+            { key: 'pan_unidades', label: 'Pan', color: '#33403A' },
+            { key: 'torta', label: 'Torta', color: '#855332' },
+            { key: 'bocadito', label: 'Bocadito', color: '#23577A' },
+        ],
+    };
+    const DESCRIPCIONES = {
+        latas: 'Latas de Pan producidas por día.',
+        unidades: 'Unidades producidas por día: Pan (incluye latas convertidas), Tortas y Bocaditos.',
+    };
+
+    // * Ajusta la leyenda y el texto explicativo a la medida elegida (Torta y Bocadito solo aparecen en unidades)
+    function mostrarMedida() {
+        dashboard.querySelectorAll('[data-leyenda-unidades]').forEach(item => {
+            item.hidden = medida.value !== 'unidades';
+        });
+        descripcion.textContent = `${DESCRIPCIONES[medida.value]} Las fechas futuras del mes son fechas del calendario, no predicciones.`;
+    }
 
     // * Muestra la tabla de datos del período elegido y oculta la otra
     function mostrarTablas() {
@@ -82,7 +103,9 @@ if (dashboard) {
         // ! de la petición vieja puede terminar DESPUÉS de la nueva. Al comparar, la vieja se descarta.
         const actual = ++version;
         const modo = periodo.value;
+        const familias = FAMILIAS[medida.value];
         mostrarTablas();
+        mostrarMedida();
 
         try {
             // ? Chart.js se importa dinámicamente: solo se descarga cuando hace falta, y el dashboard carga más rápido
@@ -98,15 +121,16 @@ if (dashboard) {
             grafico?.destroy();
             grafico = null;
 
-            const datos = series[modo]; // lista de días: [{ fecha: '2026-11-06', pan: 2, torta: 2, bocadito: 2 }, ...]
+            // lista de días: [{ fecha: '2026-11-06', pan_latas: 20, pan_unidades: 240, torta: 2, bocadito: 30, ... }, ...]
+            const datos = series[modo];
 
             grafico = new Chart(canvas, {
                 type: 'bar',
                 data: {
                     // * Eje X: "2026-11-06" → "06/11" (día/mes), cortando el texto de la fecha
                     labels: datos.map(fila => `${fila.fecha.slice(8, 10)}/${fila.fecha.slice(5, 7)}`),
-                    // * Una serie de barras por familia (pan, torta, bocadito)
-                    datasets: FAMILIAS.map(familia => ({
+                    // * Una serie de barras por familia de la medida elegida
+                    datasets: familias.map(familia => ({
                         label: familia.label,
                         data: datos.map(fila => fila[familia.key]),
                         backgroundColor: familia.color,
@@ -120,7 +144,7 @@ if (dashboard) {
                     animation: false,           // sin animación de Chart.js: ya hay una de entrada propia
                     plugins: {
                         legend: { display: false }, // la leyenda es la del HTML (.leyenda-dashboard)
-                        tooltip: { mode: 'index', intersect: false }, // al pasar el mouse muestra las 3 familias del día
+                        tooltip: { mode: 'index', intersect: false }, // al pasar el mouse muestra todas las familias del día
                     },
                     scales: {
                         // ? En "mes_actual" hay ~30 fechas: se limitan las etiquetas visibles para que no se amontonen
@@ -139,8 +163,9 @@ if (dashboard) {
     }
 
     // ================= 5. ARRANQUE =================
-    // * Cambiar el período redibuja el gráfico; y se dibuja una vez al cargar la página
+    // * Cambiar el período o la medida redibuja el gráfico; y se dibuja una vez al cargar la página
     periodo.addEventListener('change', mostrarGrafico);
+    medida.addEventListener('change', mostrarGrafico);
     mostrarGrafico();
 
     // ! Aquí estaba iniciarConsulta(...) para el filtro "Consultar período histórico" (carga parcial por fetch).

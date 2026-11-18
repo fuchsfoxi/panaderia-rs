@@ -291,8 +291,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         if (cambio) {
             producto.value = '';
-            detalle.querySelectorAll('[data-campo]')
-                .forEach(control => { control.value = ['coches', 'latas_adicionales'].includes(control.dataset.campo) ? '0' : ''; });
+            // ? Coches y latas quedan vacíos: el placeholder muestra "0" y el servidor trata el vacío como cero
+            detalle.querySelectorAll('[data-campo]').forEach(control => { control.value = ''; });
             limpiarFoto();
             mostrarEditor(false);
             detalle.querySelector('[data-participantes]').replaceChildren();
@@ -439,15 +439,14 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btn-cancelar-form').addEventListener('click', () => formulario.reset());
     formulario.addEventListener('reset', () => {
         const contexto = { fecha: fecha.value, turno: turno.value, categoria: inputCategoria.value };
-        // El reset nativo recuperaría old(); después dejamos cantidades en cero y conservamos la sesión.
+        // El reset nativo recuperaría old(); después dejamos los campos vacíos (coches/latas muestran el placeholder "0")
+        // y conservamos la sesión.
         queueMicrotask(() => {
             fecha.value = contexto.fecha;
             turno.value = contexto.turno;
             inputCategoria.value = contexto.categoria;
             detalle.querySelectorAll('[data-campo], [data-control="empleado"], [data-control="rol"]')
-                .forEach(control => {
-                    control.value = ['coches', 'latas_adicionales'].includes(control.dataset.campo) ? '0' : '';
-                });
+                .forEach(control => { control.value = ''; });
             detalle.querySelector('[data-participantes]').replaceChildren();
             detalle.querySelector('[data-error-detalle]').textContent = '';
             mostrarCamposDe(inputCategoria.value);

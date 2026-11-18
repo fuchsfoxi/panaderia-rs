@@ -11,7 +11,6 @@
 
     {{-- * DASHBOARD: pantalla de solo lectura con 4 bloques: hoy, resumen mensual, gráfico y actividad --}}
     {{-- ? Todos los datos salen de UNA sola variable: $datosDashboard (la arma App\Queries\ConsultarDashboard) --}}
-    {{-- TODO: el controlador aún pasa variables que esta vista ya no usa ($totalLotesHoy, $ultimasProducciones...). Limpiarlo después --}}
     <main class="dashboard" data-dashboard>
 
         {{-- * ENCABEZADO: título y accesos rápidos --}}
@@ -157,32 +156,42 @@
 
         {{-- ================= BLOQUE 3: EVOLUCIÓN (GRÁFICO) ================= --}}
         {{-- * Gráfico de barras dibujado por dashboard.js con Chart.js; aquí solo va el "esqueleto" y los datos --}}
-        {{-- ? El gráfico cuenta REGISTROS (lotes) por día, no cantidades: 2 lotes de pan = barra de 2, sean 5 o 50 latas --}}
-        {{-- TODO: decidir con la dueña si prefiere ver cantidades (latas/unidades) en vez de número de registros --}}
+        {{-- ? El gráfico muestra CANTIDADES por día (decisión del propietario, 17/11/2026), con latas y unidades por separado: --}}
+        {{-- ?   Latas    → solo Pan (Torta y Bocadito no se miden en latas) --}}
+        {{-- ?   Unidades → Pan (productos por unidad + latas convertidas con su factor), Tortas y Bocaditos --}}
         <section class="panel-fijo" aria-labelledby="evolucion-titulo">
             <div class="dashboard-titulo-seccion">
                 <div>
-                    <p class="dashboard-kicker">REGISTROS POR DÍA</p>
+                    <p class="dashboard-kicker">CANTIDADES POR DÍA</p>
                     <h2 id="evolucion-titulo">Evolución de la producción</h2>
                 </div>
-                {{-- * Selector de período: el JS lo muestra y redibuja el gráfico al cambiar --}}
-                <label class="selector-dashboard" hidden data-control-serie>
-                    <span class="solo-lectores">Período del gráfico</span>
-                    <select data-serie aria-label="Período del gráfico">
-                        <option value="siete_dias">Últimos 7 días</option>
-                        <option value="mes_actual">Mes actual</option>
-                    </select>
-                </label>
+                {{-- * Selectores de medida y período: el JS los muestra y redibuja el gráfico al cambiar --}}
+                <div class="selectores-grafico">
+                    <label class="selector-dashboard" hidden data-control-medida>
+                        <span class="solo-lectores">Medida del gráfico</span>
+                        <select data-medida aria-label="Medida del gráfico">
+                            <option value="latas">Latas</option>
+                            <option value="unidades">Unidades</option>
+                        </select>
+                    </label>
+                    <label class="selector-dashboard" hidden data-control-serie>
+                        <span class="solo-lectores">Período del gráfico</span>
+                        <select data-serie aria-label="Período del gráfico">
+                            <option value="siete_dias">Últimos 7 días</option>
+                            <option value="mes_actual">Mes actual</option>
+                        </select>
+                    </label>
+                </div>
             </div>
 
             <div class="tarjeta-evolucion">
-                <p class="explicacion-grafico" data-descripcion-serie>Registros diarios por familia. Las fechas futuras del mes son fechas del calendario, no predicciones.</p>
+                <p class="explicacion-grafico" data-descripcion-serie>Latas de Pan producidas por día. Las fechas futuras del mes son fechas del calendario, no predicciones.</p>
 
                 {{-- * Leyenda propia (círculo / cuadrado / triángulo): las formas ayudan a distinguir sin depender solo del color --}}
                 <div class="leyenda-dashboard" aria-label="Familias">
                     <span><i class="marca-pan" aria-hidden="true"></i>Pan</span>
-                    <span><i class="marca-torta" aria-hidden="true"></i>Torta</span>
-                    <span><i class="marca-bocadito" aria-hidden="true"></i>Bocadito</span>
+                    <span data-leyenda-unidades><i class="marca-torta" aria-hidden="true"></i>Torta</span>
+                    <span data-leyenda-unidades><i class="marca-bocadito" aria-hidden="true"></i>Bocadito</span>
                 </div>
 
                 {{-- ? El nombre data-grafico-turnos es histórico (antes mostraba turnos). Se conserva porque DashboardTest lo comprueba --}}
@@ -194,26 +203,29 @@
 
                 {{-- * Tabla alternativa con los mismos datos (accesibilidad y respaldo si falla el gráfico) --}}
                 {{-- ? El JS muestra solo la tabla del período elegido; sin JS se ven las dos --}}
+                {{-- ! "(parcial)" = ese día hay lotes históricos sin unidad o factor: el número no es el total completo --}}
                 @foreach (['siete_dias' => 'Últimos 7 días', 'mes_actual' => 'Mes actual'] as $periodo => $titulo)
                     <details class="tabla-serie" data-tabla-serie="{{ $periodo }}">
                         <summary>Ver datos: {{ $titulo }}</summary>
                         <table>
-                            <caption>{{ $titulo }}: registros por fecha y familia</caption>
+                            <caption>{{ $titulo }}: cantidades por fecha y familia</caption>
                             <thead>
                                 <tr>
                                     <th scope="col">Fecha</th>
-                                    <th scope="col">Pan</th>
-                                    <th scope="col">Torta</th>
-                                    <th scope="col">Bocadito</th>
+                                    <th scope="col">Pan (latas)</th>
+                                    <th scope="col">Pan (unidades)</th>
+                                    <th scope="col">Torta (unidades)</th>
+                                    <th scope="col">Bocadito (unidades)</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($datosDashboard['series'][$periodo] as $dia)
                                     <tr>
                                         <th scope="row"><time datetime="{{ $dia['fecha'] }}">{{ \Illuminate\Support\Carbon::parse($dia['fecha'])->format('d/m/Y') }}</time></th>
-                                        <td>{{ $dia['pan'] }}</td>
-                                        <td>{{ $dia['torta'] }}</td>
-                                        <td>{{ $dia['bocadito'] }}</td>
+                                        <td>{{ number_format($dia['pan_latas'], 0, ',', '.') }}@unless($dia['pan_latas_completas']) (parcial)@endunless</td>
+                                        <td>{{ number_format($dia['pan_unidades'], 0, ',', '.') }}@unless($dia['pan_unidades_completas']) (parcial)@endunless</td>
+                                        <td>{{ number_format($dia['torta'], 0, ',', '.') }}</td>
+                                        <td>{{ number_format($dia['bocadito'], 0, ',', '.') }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
