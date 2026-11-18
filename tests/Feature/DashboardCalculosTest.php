@@ -46,7 +46,14 @@ function loteCalculo(array $f, string $familia, string $fecha, array $extra = []
     return IsolatedMariaDb::detail($modelo, $produccion, $f, $extra);
 }
 
-test('totales fijos, unidades históricas, familias y series no dependen del filtro', function () {
+/** Fila esperada de la serie del gráfico: cantidades del día, Pan en latas y unidades por separado. */
+function diaCalculo(string $fecha, int $panLatas = 0, int $panUnidades = 0, int $torta = 0, int $bocadito = 0, bool $latasCompletas = true, bool $unidadesCompletas = true): array
+{
+    return ['fecha' => $fecha, 'pan_latas' => $panLatas, 'pan_unidades' => $panUnidades, 'torta' => $torta, 'bocadito' => $bocadito,
+        'pan_latas_completas' => $latasCompletas, 'pan_unidades_completas' => $unidadesCompletas];
+}
+
+test('totales fijos, unidades históricas, familias y series de cantidades ignoran parámetros de período', function () {
     loteCalculo($this->f, 'Pan', '2027-01-02', ['cantidad' => 2, 'panes_por_lata_usado' => 10, 'hora_finalizacion' => '08:30']);
     loteCalculo($this->f, 'Pan', '2027-01-02', ['cantidad' => 3, 'panes_por_lata_usado' => 20]);
     loteCalculo($this->f, 'Pan', '2027-01-02', ['cantidad' => 7, 'unidad_medida_id' => $this->directa->id]);
@@ -63,10 +70,10 @@ test('totales fijos, unidades históricas, familias y series no dependen del fil
         ->and($datos['mensual']['bocadito'][0]['cantidad'])->toBe(124);
     expect($datos['series']['siete_dias'])->toHaveCount(7)
         ->and($datos['series']['siete_dias'][0]['fecha'])->toBe('2026-12-27')
-        ->and($datos['series']['siete_dias'][3])->toBe(['fecha' => '2026-12-30', 'pan' => 1, 'torta' => 0, 'bocadito' => 0])
-        ->and($datos['series']['siete_dias'][6])->toBe(['fecha' => '2027-01-02', 'pan' => 3, 'torta' => 1, 'bocadito' => 1])
+        ->and($datos['series']['siete_dias'][3])->toBe(diaCalculo('2026-12-30', panLatas: 99, panUnidades: 198))
+        ->and($datos['series']['siete_dias'][6])->toBe(diaCalculo('2027-01-02', panLatas: 5, panUnidades: 87, torta: 4, bocadito: 25))
         ->and($datos['series']['mes_actual'])->toHaveCount(31)
-        ->and($datos['series']['mes_actual'][2]['bocadito'])->toBe(1);
+        ->and($datos['series']['mes_actual'][2]['bocadito'])->toBe(99);
 });
 
 test('factores ausentes marcan totales incompletos y no entregan ranking definitivo', function () {
@@ -115,7 +122,7 @@ test('el instante UTC cruza el año según Lima y las series completan ceros', f
     $this->travelTo(Carbon::parse('2027-01-01 05:30:00', 'UTC'));
     $b = $this->get('/dashboard')->assertOk()->viewData('datosDashboard');
     expect($b['hoy']['torta'])->toBe(0)->and($b['series']['mes_actual'])->toHaveCount(31)
-        ->and($b['series']['mes_actual'][0])->toBe(['fecha' => '2027-01-01', 'pan' => 0, 'torta' => 0, 'bocadito' => 0]);
+        ->and($b['series']['mes_actual'][0])->toBe(diaCalculo('2027-01-01'));
 });
 
 test('rankings de torta y bocadito suman por producto sin mezclar familias y respetan empate', function () {
@@ -141,7 +148,8 @@ test('factores incompletos de mes anterior afectan solo la semana, no el mes act
     expect($datos['hoy']['pan']['unidades_completas'])->toBeTrue()
         ->and($datos['mensual']['pan_unidades']['completo'])->toBeTrue()
         ->and($datos['mensual']['pan_unidades']['productos'][0]['cantidad'])->toBe(20)
-        ->and($datos['series']['siete_dias'][4]['pan'])->toBe(1);
+        ->and($datos['series']['siete_dias'][4])->toBe(diaCalculo('2026-12-31', panLatas: 4, unidadesCompletas: false))
+        ->and($datos['series']['siete_dias'][6]['pan_unidades_completas'])->toBeTrue();
 });
 
 test('una unidad Pan histórica no identificada no se suma ni declara completo el cálculo', function () {
@@ -174,7 +182,7 @@ test('el mes completo incluye día bisiesto y ceros sin fabricar registros', fun
     loteCalculo($this->f, 'Torta', '2028-02-29', ['cantidad' => 2]);
     $datos = $this->get('/dashboard')->assertOk()->viewData('datosDashboard');
     expect($datos['hoy']['registros'])->toBe(0)->and($datos['series']['mes_actual'])->toHaveCount(29)
-        ->and(end($datos['series']['mes_actual']))->toBe(['fecha' => '2028-02-29', 'pan' => 0, 'torta' => 1, 'bocadito' => 0])
+        ->and(end($datos['series']['mes_actual']))->toBe(diaCalculo('2028-02-29', torta: 2))
         ->and($datos['mensual']['torta'][0]['cantidad'])->toBe(2);
 });
 

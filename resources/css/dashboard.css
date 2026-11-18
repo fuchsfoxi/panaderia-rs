@@ -97,6 +97,7 @@ body { margin:0; font-family:'Huninn',sans-serif; background:var(--color-bg); co
 .tarjeta-hoy, .tarjeta-ranking, .tarjeta-evolucion, .actividad-lista { min-width:0; background:#FFF; border:1px solid #DCD6C4; border-radius:18px; padding:20px; }
 .tarjeta-hoy h3, .tarjeta-ranking h3 { font-size:16px; font-weight:600; }
 .tarjeta-cabecera { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.selectores-grafico { display:flex; flex-wrap:wrap; gap:10px; }
 .selector-dashboard select { max-width:100%; min-height:44px; border:1px solid #7D9481; border-radius:10px; padding:8px 28px 8px 10px; background:#FFF; color:#33403A; font:inherit; font-size:14px; cursor:pointer; }
 .tarjeta-numero { font-size:clamp(30px,3vw,42px); line-height:1.1; font-variant-numeric:tabular-nums; margin:22px 0 6px!important; overflow-wrap:anywhere; }
 .tarjeta-unidad, .ranking-unidad, .ranking-vacio, .actividad-nota, .explicacion-grafico { color:#4E6254; font-size:14px; line-height:1.5; }

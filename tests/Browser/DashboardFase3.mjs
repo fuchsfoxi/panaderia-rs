@@ -6,7 +6,7 @@ const { default: puppeteer } = await import(process.env.PUPPETEER_MODULE || 'pup
 const dir = process.env.DASHBOARD_FASE3_HTML;
 assert.ok(dir?.startsWith('/tmp/'));
 const html = await readFile(resolve(dir, 'dashboard.html'), 'utf8');
-const origen = new URL(html.match(/class="dashboard-periodo" action="([^"]+)/)[1]).origin;
+const origen = new URL(html.match(/class="dashboard-enlace" href="([^"]+)/)[1]).origin;
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME_BIN || '/opt/google/chrome/chrome', headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage'] });
 const resultados = [];
 const errores = [];
@@ -29,7 +29,7 @@ try {
                     }
                     if (url.origin === origen && url.pathname === '/dashboard') {
                         peticiones.push(url.search);
-                        const nombre = url.searchParams.has('parcial') ? 'dashboard-parcial' : url.searchParams.has('vacio') ? 'dashboard-vacio' : url.searchParams.has('desconocido') ? 'dashboard-desconocido' : url.search ? 'dashboard-filtrado' : 'dashboard';
+                        const nombre = url.searchParams.has('parcial') ? 'dashboard-parcial' : url.searchParams.has('vacio') ? 'dashboard-vacio' : url.searchParams.has('desconocido') ? 'dashboard-desconocido' : 'dashboard';
                         return await req.respond({ status: 200, contentType: 'text/html; charset=utf-8', body: await readFile(resolve(dir, nombre + '.html'), 'utf8') });
                     }
                     await req.abort();
@@ -57,17 +57,15 @@ try {
                 assert.equal(await page.$eval('[data-tabla-serie="mes_actual"]', e => e.hidden), false);
                 assert.equal(await page.$eval('[data-tabla-serie="siete_dias"]', e => e.hidden), true);
                 assert.match(await page.$eval('[data-descripcion-serie]', e => e.textContent), /no predicciones/);
-                await page.click('[data-ver-turnos]');
-                assert.equal(await page.$eval('[data-serie]', e => e.value), 'turnos');
-                assert.match(await page.$eval('[data-descripcion-serie]', e => e.textContent), /turno/);
-                await page.$eval('#dashboard-desde', e => { e.value = '2026-12-01'; });
-                await page.$eval('#dashboard-hasta', e => { e.value = '2026-12-31'; });
-                await page.click('[data-filtros-dashboard] button');
-                await page.waitForFunction(() => document.querySelector('[data-dashboard-contenido]')?.textContent.includes('Resumen del periodo'));
-                assert.equal(await page.$eval('[data-unidad-diaria]', e => e.value), 'unidades');
-                assert.equal(await page.$eval('[data-unidad-mensual]', e => e.value), 'unidades');
-                assert.equal(await page.$eval('[data-serie]', e => e.value), 'turnos');
-                assert.ok(await page.$eval('[data-ver-turnos]', e => !e.hidden));
+                // Medida del gráfico: Latas muestra solo Pan; Unidades agrega Torta y Bocadito
+                assert.equal(await page.$eval('[data-medida]', e => e.value), 'latas');
+                assert.match(await page.$eval('[data-descripcion-serie]', e => e.textContent), /Latas de Pan/);
+                assert.deepEqual(await page.$$eval('[data-leyenda-unidades]', e => e.map(x => x.hidden)), [true, true]);
+                await page.select('[data-medida]', 'unidades');
+                assert.match(await page.$eval('[data-descripcion-serie]', e => e.textContent), /Unidades producidas/);
+                assert.deepEqual(await page.$$eval('[data-leyenda-unidades]', e => e.map(x => x.hidden)), [false, false]);
+                assert.equal(await page.$eval('[data-error-grafico]', e => e.hidden), true);
+                assert.equal(peticiones.length, n);
                 await page.$eval('[data-unidad-diaria]', e => e.focus());
                 assert.equal(await page.$eval('[data-unidad-diaria]', e => e.matches(':focus-visible')), true);
                 await page.keyboard.press('Tab');
@@ -90,6 +88,7 @@ try {
                 assert.equal(await page.$eval('[data-pan-diario="unidades"]', e => e.hidden), false);
                 assert.equal(await page.$eval('[data-tabla-serie="mes_actual"]', e => e.hidden), false);
                 assert.equal(await page.$eval('[data-control-diario]', e => e.hidden), true);
+                assert.equal(await page.$eval('[data-control-medida]', e => e.hidden), true);
             }
             await page.screenshot({ path: resolve(dir, `dashboard-${ancho}-${js ? 'js' : 'nojs'}.png`), fullPage: true });
             resultados.push({ ancho, js, resultado: 'aprobado' });

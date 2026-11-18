@@ -73,14 +73,19 @@ function crearLoteDashboard(array $fixtures, string $fecha, int $turnoId, ?int $
     return $produccion->detallesPan()->orderByDesc('id')->firstOrFail();
 }
 
+function hoyDashboard($response): array
+{
+    return $response->viewData('datosDashboard')['hoy'];
+}
+
 test('dashboard autenticado sin producción muestra ceros estados vacíos y accesos nombrados', function () {
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
-        ->assertSeeText('No hay producción registrada hoy.')
-        ->assertSeeText('Aún no hay lotes de Pan registrados.')
+        ->assertSeeText('Aún no hay producciones registradas.')
         ->assertSee('data-grafico-turnos', false)->assertDontSee('modal-torta', false);
-    expect($response->viewData('totalLotesHoy'))->toBe(0)
-        ->and($response->viewData('totalLatasHoy'))->toBe(0)
-        ->and($response->viewData('ultimasProducciones'))->toBeEmpty();
+    expect(hoyDashboard($response))->toBe([
+        'pan' => ['latas' => 0, 'unidades' => 0, 'unidades_completas' => true, 'latas_completas' => true],
+        'torta' => 0, 'bocadito' => 0, 'registros' => 0,
+    ])->and($response->viewData('datosDashboard')['actividad'])->toBeEmpty();
 
     $document = new DOMDocument;
     @$document->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
@@ -97,9 +102,8 @@ test('dashboard tolera catálogos vacíos sin exigir que Pan o turnos existan', 
     DB::table('categorias')->delete();
     DB::table('turnos')->delete();
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
-        ->assertSeeText('No hay turnos disponibles.')->assertSeeText('No hay producción registrada hoy.');
-    expect($response->viewData('totalLotesHoy'))->toBe(0)
-        ->and($response->viewData('produccionPorTurno'))->toBeEmpty();
+        ->assertSeeText('Aún no hay producciones registradas.');
+    expect(hoyDashboard($response)['registros'])->toBe(0);
 });
 
 test('dashboard cuenta lotes y suma latas de hoy sin confundirlos con sesiones ni otras fechas', function () {
@@ -112,76 +116,47 @@ test('dashboard cuenta lotes y suma latas de hoy sin confundirlos con sesiones n
     expect(Produccion::where('fecha', $this->fechaHoy)->count())->toBe(2);
 
     $total = 3 * DetallePan::LATAS_POR_COCHE + 11;
-    $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
-        ->assertDontSeeText('No hay producción registrada hoy.');
-    expect($response->viewData('totalLotesHoy'))->toBe(3)
-        ->and($response->viewData('totalLatasHoy'))->toBe($total);
-    $response->assertSee('data-metrica="lotes">3<', false)
-        ->assertSee('data-metrica="latas">'.$total.'<', false);
+    $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk();
+    expect(hoyDashboard($response)['registros'])->toBe(3)
+        ->and(hoyDashboard($response)['pan']['latas'])->toBe($total)
+        ->and(end($response->viewData('datosDashboard')['series']['siete_dias'])['pan_latas'])->toBe($total);
 });
 
-test('dashboard excluye otras familias de métricas turnos y últimas producciones', function (string $familia, string $clase) {
-    $pan = crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id, 9);
+test('dashboard separa las familias sin sumar detalles inconsistentes de Pan', function (string $familia, string $clase) {
+    crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id, 9);
     $otra = Produccion::create([
         'fecha' => $this->fechaHoy, 'categoria_id' => $this->fixtures['productos'][$familia]->categoria_id,
         'registrado_por_usuario_id' => $this->fixtures['usuario']->id,
     ]);
-    IsolatedMariaDb::detail($clase, $otra, $this->fixtures);
-    // Una fila inconsistente en detalle_pan tampoco habilita una sesión de otra familia.
+    $detalle = IsolatedMariaDb::detail($clase, $otra, $this->fixtures);
+    // Una fila inconsistente en detalle_pan bajo otra familia no se cuenta como Pan.
     IsolatedMariaDb::detail(DetallePan::class, $otra, $this->fixtures, ['cantidad' => 999]);
-    $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk();
-    expect($response->viewData('totalLotesHoy'))->toBe(1)
-        ->and($response->viewData('totalLatasHoy'))->toBe(9)
-        ->and($response->viewData('ultimasProducciones')->pluck('id')->all())->toBe([$pan->id])
-        ->and($response->viewData('produccionPorTurno')->sum('lotes'))->toBe(1);
+    $hoy = hoyDashboard($this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk());
+    expect($hoy['pan']['latas'])->toBe(9)
+        ->and($hoy[strtolower($familia)])->toBe($detalle->cantidad)
+        ->and($hoy['registros'])->toBe(2);
 })->with([
     ['Torta', DetalleTorta::class], ['Bocadito', DetalleBocadito::class],
 ]);
 
-test('dashboard resume turnos del catálogo con IDs arbitrarios y usa la cabecera sobre el detalle legacy', function () {
-    expect($this->fixtures['turno']->id)->toBeGreaterThan(2)
-        ->and($this->noche->id)->toBeGreaterThan(2)
-        ->and($this->fixtures['productos']['Pan']->categoria_id)->not->toBe(1);
-    $primero = crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id, 10);
-    $primero->update(['turno_id' => $this->noche->id]);
-    crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id, 11);
-    crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->noche->id, 7);
-    crearLoteDashboard($this->fixtures, '2026-10-08', $this->noche->id, 90);
-    $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk();
-    $turnos = $response->viewData('produccionPorTurno')->keyBy('nombre');
-    expect($turnos->get('Mañana'))->toBe(['nombre' => 'Mañana', 'lotes' => 2, 'latas' => 21])
-        ->and($turnos->get('Noche'))->toBe(['nombre' => 'Noche', 'lotes' => 1, 'latas' => 7])
-        ->and($turnos->get('Primer turno ficticio'))->toBe(['nombre' => 'Primer turno ficticio', 'lotes' => 0, 'latas' => 0])
-        ->and($turnos->sum('latas'))->toBe($response->viewData('totalLatasHoy'));
-});
-
-test('dashboard identifica sesiones sin turno sin inventarlo ni perder cantidades', function () {
+test('dashboard muestra sesiones sin turno en la actividad sin perder cantidades', function () {
     $detalle = crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id, 8);
     $detalle->produccion()->update(['turno_id' => null]);
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
         ->assertSeeText('Sin turno registrado');
-    expect($response->viewData('produccionPorTurno')->last())->toBe([
-        'nombre' => 'Sin turno registrado', 'lotes' => 1, 'latas' => 8,
-    ])->and($response->viewData('totalLatasHoy'))->toBe(8);
+    expect($response->viewData('datosDashboard')['actividad'][0]['turno'])->toBe('Sin turno registrado')
+        ->and(hoyDashboard($response)['pan']['latas'])->toBe(8);
 });
 
-test('dashboard limita las últimas producciones a cinco y ordena por fecha y detalle descendentes', function () {
+test('dashboard limita la actividad a cinco y ordena por fecha y detalle descendentes', function () {
     $ids = [];
     foreach (['2026-10-08', '2026-10-03', '2026-10-09', '2026-10-07', '2026-10-09', '2026-10-05', '2026-10-06'] as $fecha) {
         $ids[] = crearLoteDashboard($this->fixtures, $fecha, $this->fixtures['turno']->id)->id;
     }
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
-        ->assertSeeText('Pan ficticio')->assertSeeText('Mañana')
-        ->assertSeeText($this->fixtures['usuario']->username)->assertSeeText('Registró la sesión');
-    $ultimas = $response->viewData('ultimasProducciones');
-    expect($ultimas->pluck('id')->all())->toBe([$ids[4], $ids[2], $ids[0], $ids[3], $ids[6]])
-        ->and(substr_count($response->getContent(), 'data-detalle-id='))->toBe(5);
-    foreach ($ultimas as $detalle) {
-        expect($detalle->relationLoaded('producto'))->toBeTrue()
-            ->and($detalle->relationLoaded('produccion'))->toBeTrue()
-            ->and($detalle->produccion->relationLoaded('turno'))->toBeTrue()
-            ->and($detalle->produccion->relationLoaded('usuario'))->toBeTrue();
-    }
+        ->assertSeeText('Pan ficticio')->assertSeeText('Mañana');
+    expect(array_column($response->viewData('datosDashboard')['actividad'], 'id'))->toBe([$ids[4], $ids[2], $ids[0], $ids[3], $ids[6]])
+        ->and(substr_count($response->getContent(), 'class="actividad-fila"'))->toBe(5);
 });
 
 test('dashboard conserva lotes de productos inactivos y escapa los nombres del catálogo', function () {
@@ -190,19 +165,19 @@ test('dashboard conserva lotes de productos inactivos y escapa los nombres del c
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
         ->assertSee('&lt;script&gt;ejemplo&lt;/script&gt;', false)
         ->assertDontSee('<script>ejemplo</script>', false);
-    expect($response->viewData('totalLotesHoy'))->toBe(1);
+    expect(hoyDashboard($response)['registros'])->toBe(1);
 });
 
 test('dashboard usa la fecha Laravel al cambiar de día y conserva el historial anterior', function () {
     crearLoteDashboard($this->fixtures, '2026-10-09', $this->fixtures['turno']->id, 12);
     $this->travelTo(Carbon::parse('2026-10-10 00:01:00', config('app.timezone')));
     $response = $this->actingAs($this->fixtures['usuario'])->get(route('dashboard'))->assertOk()
-        ->assertSeeText('10/10/2026')->assertSeeText('No hay producción registrada hoy.')
-        ->assertSeeText('Pan ficticio');
-    expect($response->viewData('fechaHoy')->toDateString())->toBe('2026-10-10')
-        ->and($response->viewData('totalLotesHoy'))->toBe(0)
-        ->and($response->viewData('totalLatasHoy'))->toBe(0)
-        ->and($response->viewData('ultimasProducciones'))->toHaveCount(1);
+        ->assertSeeText('10/10/2026')->assertSeeText('Pan ficticio');
+    $datos = $response->viewData('datosDashboard');
+    expect(end($datos['series']['siete_dias'])['fecha'])->toBe('2026-10-10')
+        ->and($datos['hoy']['registros'])->toBe(0)
+        ->and($datos['hoy']['pan']['latas'])->toBe(0)
+        ->and($datos['actividad'])->toHaveCount(1);
 });
 
 test('la configuración por defecto y el reloj Laravel utilizan America Lima', function () {
@@ -243,9 +218,9 @@ test('hoy y la fecha por defecto siguen el día de Lima sin desplazar DATE ni fi
             ->and(today()->toDateString())->toBe($fechaLocal);
 
         $dashboard = $this->get(route('dashboard'))->assertOk();
-        expect($dashboard->viewData('fechaHoy')->toDateString())->toBe($fechaLocal)
-            ->and($dashboard->viewData('totalLotesHoy'))->toBe(1)
-            ->and($dashboard->viewData('totalLatasHoy'))->toBe($latas);
+        expect(end($dashboard->viewData('datosDashboard')['series']['siete_dias'])['fecha'])->toBe($fechaLocal)
+            ->and(hoyDashboard($dashboard)['registros'])->toBe(1)
+            ->and(hoyDashboard($dashboard)['pan']['latas'])->toBe($latas);
 
         $produccion = $this->get(route('produccion.index', ['turno_id' => $turnoId]))->assertOk();
         expect($produccion->viewData('fechaSeleccionada'))->toBe($fechaLocal)
@@ -273,15 +248,15 @@ test('login dashboard registro de Pan y regreso actualizan métricas e historial
     ])->assertRedirect('dashboard');
     $this->assertAuthenticatedAs($this->fixtures['usuario']);
     $inicial = $this->get(route('dashboard'))->assertOk();
-    expect($inicial->viewData('totalLotesHoy'))->toBe(0);
+    expect(hoyDashboard($inicial)['registros'])->toBe(0);
     $this->get(route('produccion.index'))->assertOk();
     $datos = datosLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id);
     $this->post(route('produccion.store'), $datos)->assertRedirect(route('produccion.index', [
         'fecha' => $this->fechaHoy, 'turno_id' => $this->fixtures['turno']->id,
     ]))->assertSessionHasNoErrors();
     $actualizado = $this->get(route('dashboard'))->assertOk()->assertSeeText('Pan ficticio');
-    expect($actualizado->viewData('totalLotesHoy'))->toBe(1)
-        ->and($actualizado->viewData('totalLatasHoy'))->toBe(DetallePan::LATAS_POR_COCHE + 4);
+    expect(hoyDashboard($actualizado)['registros'])->toBe(1)
+        ->and(hoyDashboard($actualizado)['pan']['latas'])->toBe(DetallePan::LATAS_POR_COCHE + 4);
     $this->get(route('history.index'))->assertOk()->assertSeeText('Pan ficticio')
         ->assertSeeText((DetallePan::LATAS_POR_COCHE + 4).' latas');
 });
@@ -307,6 +282,6 @@ test('dashboard mantiene consultas acotadas al pasar de uno a varios lotes recie
     foreach (range(1, 9) as $numero) {
         crearLoteDashboard($this->fixtures, $this->fechaHoy, $this->fixtures['turno']->id);
     }
-    // Dos lecturas agregadas preparan métricas fijas y actividad de tres familias.
+    // Dos lecturas agregadas preparan métricas fijas, series y actividad de tres familias.
     expect($medir())->toBe($consultas)->toBeLessThanOrEqual(11);
 });

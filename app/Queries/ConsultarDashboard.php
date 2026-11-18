@@ -9,7 +9,13 @@ use OverflowException;
 
 class ConsultarDashboard
 {
-    /** Los cálculos fijos nunca dependen del filtro histórico de la pantalla. */
+    /** Cantidades de un día sin producción. "_completas" = false si algún lote no permite calcular el total. */
+    private const DIA_VACIO = [
+        'pan_latas' => 0, 'pan_unidades' => 0, 'torta' => 0, 'bocadito' => 0,
+        'pan_latas_completas' => true, 'pan_unidades_completas' => true,
+    ];
+
+    /** Resumen de hoy, ranking del mes, cantidades por día y actividad reciente (zona America/Lima). */
     public function ejecutar(CarbonImmutable $hoy): array
     {
         $hoy = $hoy->setTimezone('America/Lima')->startOfDay();
@@ -42,7 +48,7 @@ class ConsultarDashboard
         $productos = ['pan' => [], 'torta' => [], 'bocadito' => []];
         $panUnidadesCompleto = true;
         $panLatasCompleto = true;
-        $conteos = [];
+        $cantidades = [];
         foreach ($filas as $fila) {
             $familia = $fila->familia;
             $fecha = (string) $fila->fecha;
@@ -51,7 +57,16 @@ class ConsultarDashboard
             $unidades = $this->entero($fila->unidades);
             $incompleto = (int) $fila->sin_factor > 0 || (int) $fila->unidad_desconocida > 0;
             $desconocido = (int) $fila->unidad_desconocida > 0;
-            $conteos[$fecha][$familia] = $this->sumar($conteos[$fecha][$familia] ?? 0, $registros);
+            $dia = $cantidades[$fecha] ?? self::DIA_VACIO;
+            if ($familia === 'pan') {
+                $dia['pan_latas'] = $this->sumar($dia['pan_latas'], $latas);
+                $dia['pan_unidades'] = $this->sumar($dia['pan_unidades'], $unidades);
+                $dia['pan_latas_completas'] = $dia['pan_latas_completas'] && ! $desconocido;
+                $dia['pan_unidades_completas'] = $dia['pan_unidades_completas'] && ! $incompleto;
+            } else {
+                $dia[$familia] = $this->sumar($dia[$familia], $unidades);
+            }
+            $cantidades[$fecha] = $dia;
             if ($fecha === $hoy->toDateString()) {
                 $diario['registros'] = $this->sumar($diario['registros'], $registros);
                 if ($familia === 'pan') {
@@ -84,7 +99,7 @@ class ConsultarDashboard
                 'torta' => $this->ranking($productos['torta'], 'unidades'),
                 'bocadito' => $this->ranking($productos['bocadito'], 'unidades'),
             ],
-            'series' => ['siete_dias' => $this->serie($semana, $hoy, $conteos), 'mes_actual' => $this->serie($mes, $finMes, $conteos)],
+            'series' => ['siete_dias' => $this->serie($semana, $hoy, $cantidades), 'mes_actual' => $this->serie($mes, $finMes, $cantidades)],
             'actividad' => $this->actividad(),
         ];
     }
@@ -124,12 +139,13 @@ class ConsultarDashboard
             ])->all();
     }
 
-    private function serie(CarbonImmutable $desde, CarbonImmutable $hasta, array $conteos): array
+    /** Un día por fecha, con ceros en los días sin producción. Pan va en latas y en unidades por separado. */
+    private function serie(CarbonImmutable $desde, CarbonImmutable $hasta, array $cantidades): array
     {
         $resultado = [];
         for ($dia = $desde; $dia->lessThanOrEqualTo($hasta); $dia = $dia->addDay()) {
             $fecha = $dia->toDateString();
-            $resultado[] = ['fecha' => $fecha, 'pan' => $conteos[$fecha]['pan'] ?? 0, 'torta' => $conteos[$fecha]['torta'] ?? 0, 'bocadito' => $conteos[$fecha]['bocadito'] ?? 0];
+            $resultado[] = ['fecha' => $fecha] + ($cantidades[$fecha] ?? self::DIA_VACIO);
         }
 
         return $resultado;

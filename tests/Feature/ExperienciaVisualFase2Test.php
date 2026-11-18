@@ -120,20 +120,19 @@ test('categoría ausente consulta Pan aun cuando existan otras familias', functi
     expect($response->viewData('detalles')->pluck('id')->all())->toBe([$pan->id]);
 });
 
-test('Dashboard filtra periodo real sin sumar unidades o familias distintas como latas', function () {
+test('Dashboard ignora parámetros de período y siempre resume el día actual sin mezclar latas y unidades', function () {
+    // La consulta de Pan por período se retiró del Dashboard (17/11/2026); el filtro por fechas vive en el Historial.
     loteVisualFase2($this->f, 'Pan', '2026-10-22', null, ['cantidad' => 18]);
     loteVisualFase2($this->f, 'Pan', '2026-10-23', null, ['cantidad' => 20, 'unidad_medida_id' => UnidadMedida::where('codigo', 'UNIDAD')->sole()->id, 'panes_por_lata_usado' => null, 'hora_finalizacion' => null]);
-    loteVisualFase2($this->f, 'Pan', '2026-10-24', null, ['cantidad' => 12]);
+    loteVisualFase2($this->f, 'Pan', '2026-10-23', null, ['cantidad' => 12]);
     loteVisualFase2($this->f, 'Torta');
-    $response = $this->get('/dashboard?fecha_inicio=2026-10-22&fecha_fin=2026-10-23')->assertOk()->assertSeeText('Resumen del periodo')->assertSee('data-grafico-turnos', false);
-    expect($response->viewData('totalLotesHoy'))->toBe(2)->and($response->viewData('totalLatasHoy'))->toBe(18)
-        ->and($response->viewData('ultimasProducciones'))->toHaveCount(2)->and($response->viewData('produccionPorTurno')->sum('latas'))->toBe(18);
-});
-
-test('Dashboard muestra error de periodo invalido sin agregar datos de otras fechas', function () {
-    loteVisualFase2($this->f);
-    $response = $this->get('/dashboard?fecha_inicio=2026-10-24&fecha_fin=2026-10-22')->assertOk()->assertSeeText('Revisa el periodo indicado.');
-    expect($response->viewData('totalLotesHoy'))->toBe(0)->and($response->viewData('totalLatasHoy'))->toBe(0);
+    foreach (['/dashboard', '/dashboard?fecha_inicio=2026-10-22&fecha_fin=2026-10-22', '/dashboard?fecha_inicio=2026-10-24&fecha_fin=2026-10-22'] as $ruta) {
+        $response = $this->get($ruta)->assertOk()->assertSee('data-grafico-turnos', false)
+            ->assertDontSee('data-filtros-dashboard', false)->assertDontSeeText('Revisa el periodo indicado.');
+        $hoy = $response->viewData('datosDashboard')['hoy'];
+        expect($hoy['pan']['latas'])->toBe(12)->and($hoy['pan']['unidades'])->toBe(20 + 12 * 12)
+            ->and($hoy['torta'])->toBeGreaterThan(0)->and($hoy['registros'])->toBe(3);
+    }
 });
 
 test('observación desplegable conserva old input error y persistencia del lote', function () {

@@ -56,23 +56,29 @@ function exportarVisualDashboard(string $nombre, string $html): void
     file_put_contents($dir.'/'.$nombre.'.html', $html);
 }
 
-test('presenta datos preparados y conserva el resumen histórico', function () {
+test('presenta datos preparados, gráfico por cantidades y sin consulta de período', function () {
     agregarVisualDashboard($this->f, 'Pan', ['cantidad' => 2, 'panes_por_lata_usado' => 10, 'hora_finalizacion' => '08:30']);
     agregarVisualDashboard($this->f, 'Torta', ['cantidad' => 4, 'hora_vitrina' => '09:15']);
     agregarVisualDashboard($this->f, 'Bocadito', ['cantidad' => 7]);
     $response = $this->get('/dashboard')->assertOk()->assertSeeText('Producción de hoy')->assertSeeText('Resumen mensual')
         ->assertSeeText('Producciones por fecha')->assertSeeText('Hora de finalización')->assertSeeText('Hora de vitrina')
-        ->assertSeeText('Sin hora registrada')->assertSeeText('Bocadito ficticio')->assertSee('data-filtros-dashboard', false);
+        ->assertSeeText('Sin hora registrada')->assertSeeText('Bocadito ficticio')
+        ->assertSeeText('CANTIDADES POR DÍA')->assertSee('data-medida', false)->assertSeeText('Pan (latas)')->assertSeeText('Pan (unidades)')
+        ->assertDontSee('data-filtros-dashboard', false)->assertDontSeeText('Consultar período histórico');
     expect(substr_count($response->getContent(), '<canvas'))->toBe(1);
+    $dom = new DOMDocument;
+    @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
+    $xpath = new DOMXPath($dom);
+    // Última fila de los últimos 7 días = hoy: 2 latas, 20 panes, 4 tortas y 7 bocaditos.
+    $celdas = $xpath->query('(//*[@data-tabla-serie="siete_dias"]//tbody/tr)[last()]/td');
+    expect(array_map(fn ($celda) => trim($celda->textContent), iterator_to_array($celdas)))->toBe(['2', '20', '4', '7']);
     exportarVisualDashboard('dashboard', $response->getContent());
-    $filtrado = $this->get('/dashboard?fecha_inicio=2026-12-01&fecha_fin=2026-12-31')->assertOk()->assertSeeText('Resumen del periodo');
-    expect($filtrado->viewData('datosDashboard')['hoy']['registros'])->toBe(3);
-    exportarVisualDashboard('dashboard-filtrado', $filtrado->getContent());
 });
 
 test('comunica cantidades parciales y no presenta ranking incompleto', function () {
     agregarVisualDashboard($this->f, 'Pan', ['cantidad' => 3, 'panes_por_lata_usado' => null]);
-    $response = $this->get('/dashboard')->assertOk()->assertSeeText('Total parcial')->assertSeeText('Clasificación no disponible');
+    $response = $this->get('/dashboard')->assertOk()->assertSeeText('Total parcial')->assertSeeText('Clasificación no disponible')
+        ->assertSeeText('0 (parcial)');
     $dom = new DOMDocument;
     @$dom->loadHTML('<?xml encoding="UTF-8">'.$response->getContent());
     $xpath = new DOMXPath($dom);
