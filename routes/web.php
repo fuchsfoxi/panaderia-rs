@@ -25,7 +25,7 @@ Route::middleware(['auth', EnsureUsuarioActivo::class, 'auth.session'])->group(f
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
     Route::middleware('can:administrar-sistema')->group(function () {
-        Route::redirect('/personal', '/usuarios')->name('personal.index');
+        Route::redirect('/personal', '/usuarios')->name('personal.index'); //? redirect  
         Route::get('/grupos', [GrupoController::class, 'index'])->name('grupos.index');
         Route::get('/grupos/crear', [GrupoController::class, 'create'])->name('grupos.create');
         Route::post('/grupos', [GrupoController::class, 'store'])->name('grupos.store');
